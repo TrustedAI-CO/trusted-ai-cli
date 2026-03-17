@@ -20,7 +20,7 @@ from tai.core.config import load_config
 from tai.core.context import AppContext
 from tai.core.errors import ConfigError
 
-from tai.commands import auth, secret, config, ai, api, claude
+from tai.commands import auth, secret, config, ai, api, claude, project
 
 console = Console()
 err_console = Console(stderr=True)
@@ -95,6 +95,7 @@ app.add_typer(config.app)
 app.add_typer(ai.app)
 app.add_typer(api.app)
 app.add_typer(claude.app)
+app.add_typer(project.app)
 
 
 # ── Plugin discovery via entry points ─────────────────────────────────────────

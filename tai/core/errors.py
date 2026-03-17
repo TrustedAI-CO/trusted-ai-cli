@@ -48,6 +48,13 @@ class SecretNotFoundError(TaiError):
         super().__init__(f"Secret '{name}' not found", hint="Run: tai secret set " + name)
 
 
+class ProjectError(TaiError):
+    """Invalid or missing project manifest (.tai.toml)."""
+
+    def __init__(self, message: str, hint: str | None = None):
+        super().__init__(message, hint=hint or "Run: tai project init")
+
+
 class ApiError(TaiError):
     """Company API returned an error."""
 
