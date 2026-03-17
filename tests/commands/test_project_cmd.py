@@ -142,9 +142,9 @@ def test_link_interactive_picker(tmp_path):
     with (
         patch("tai.commands.project.find_repo_root", return_value=tmp_path),
         patch("tai.commands.project.build_client", return_value=list_client),
+        patch("tai.commands.project.search_select", return_value=PROJECTS_LIST[0]),
     ):
-        # user picks "1" → first project
-        result = runner.invoke(app, ["link"], input="1\n", obj=_ctx(tmp_path))
+        result = runner.invoke(app, ["link"], obj=_ctx(tmp_path))
 
     assert result.exit_code == 0
     assert "Video Research" in result.output
@@ -152,17 +152,19 @@ def test_link_interactive_picker(tmp_path):
     assert "2ef55eff03158039b95cf6e8ff60d632" in manifest_text
 
 
-def test_link_interactive_invalid_choice(tmp_path):
+def test_link_user_cancels(tmp_path):
     list_client = _mock_client(PROJECTS_LIST)
     list_client.get.return_value.json.return_value = PROJECTS_LIST
 
     with (
         patch("tai.commands.project.find_repo_root", return_value=tmp_path),
         patch("tai.commands.project.build_client", return_value=list_client),
+        patch("tai.commands.project.search_select", return_value=None),
     ):
-        result = runner.invoke(app, ["link"], input="99\n", obj=_ctx(tmp_path))
+        result = runner.invoke(app, ["link"], obj=_ctx(tmp_path))
 
-    assert result.exit_code == 1
+    assert result.exit_code == 0
+    assert not (tmp_path / ".tai.toml").exists()
 
 
 def test_link_outside_git_repo():

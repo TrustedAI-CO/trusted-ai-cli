@@ -8,9 +8,10 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from tai.core.errors import ProjectError, handle_error
+from tai.core.errors import ApiError, ProjectError, handle_error
 from tai.core.http import build_client
 from tai.core.project import ProjectManifest, find_repo_root, load_manifest, save_manifest
+from tai.core.prompt import search_select
 
 app = typer.Typer(name="project", help="Manage project tool bindings.")
 console = Console()
@@ -50,15 +51,21 @@ def _require_manifest(ctx: typer.Context):
 
 
 def _fetch_project(ctx: typer.Context, page_id: str) -> dict:
-    client = build_client(ctx.obj)
-    resp = client.get(f"/projects/{page_id}")
-    return resp.json()
+    try:
+        client = build_client(ctx.obj)
+        return client.get(f"/projects/{page_id}").json()
+    except ApiError as e:
+        err_console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(1)
 
 
 def _patch_project(ctx: typer.Context, page_id: str, payload: dict) -> dict:
-    client = build_client(ctx.obj)
-    resp = client.patch(f"/projects/{page_id}", json=payload)
-    return resp.json()
+    try:
+        client = build_client(ctx.obj)
+        return client.patch(f"/projects/{page_id}", json=payload).json()
+    except ApiError as e:
+        err_console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(1)
 
 
 def _print_project(data: dict) -> None:
@@ -88,30 +95,25 @@ def link(ctx: typer.Context) -> None:
         err_console.print("[bold red]Error:[/bold red] Not inside a git repository.")
         raise typer.Exit(1)
 
-    client = build_client(ctx.obj)
-    projects = client.get("/projects").json()
+    try:
+        client = build_client(ctx.obj)
+        projects = client.get("/projects").json()
+    except ApiError as e:
+        err_console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(1)
 
     if not projects:
         err_console.print("[yellow]No projects found.[/yellow]")
         raise typer.Exit(1)
 
-    console.print("\n[bold]Available projects:[/bold]\n")
-    for i, p in enumerate(projects, 1):
-        phase = f"  [{p.get('phase', '')}]" if p.get("phase") else ""
-        console.print(f"  [cyan]{i:2}[/cyan]  {p['name']}{phase}  [dim]{p.get('status', '')}[/dim]")
+    chosen = search_select(
+        "Search project:",
+        projects,
+        label_fn=lambda p: f"{p['name']}  [{p.get('phase', '—')}]  {p.get('status', '')}",
+    )
 
-    console.print()
-    raw = typer.prompt("Pick a number")
-
-    try:
-        idx = int(raw) - 1
-        if not (0 <= idx < len(projects)):
-            raise ValueError
-    except ValueError:
-        err_console.print(f"[bold red]Error:[/bold red] Invalid choice '{raw}'.")
-        raise typer.Exit(1)
-
-    chosen = projects[idx]
+    if chosen is None:
+        raise typer.Exit(0)
     manifest = ProjectManifest(notion_page=chosen["notion_page_id"])
     save_manifest(manifest, root)
     console.print(f"\n[green]Linked[/green] → [bold]{chosen['name']}[/bold]")
@@ -134,15 +136,17 @@ def new(ctx: typer.Context) -> None:
         prompt_suffix=" [Development/Consulting/Research/Internal/Recruitment]: ",
     )
 
-    client = build_client(ctx.obj)
-    payload = {"name": name}
-    if description:
-        payload["description"] = description
-    if category:
-        payload["category"] = category
-
-    resp = client.post("/projects", json=payload)
-    created = resp.json()
+    try:
+        client = build_client(ctx.obj)
+        payload = {"name": name}
+        if description:
+            payload["description"] = description
+        if category:
+            payload["category"] = category
+        created = client.post("/projects", json=payload).json()
+    except ApiError as e:
+        err_console.print(f"[bold red]Error:[/bold red] {e}")
+        raise typer.Exit(1)
 
     manifest = ProjectManifest(notion_page=created["notion_page_id"])
     save_manifest(manifest, root)
