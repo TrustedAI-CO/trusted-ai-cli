@@ -81,27 +81,73 @@ def _print_project(data: dict) -> None:
 
 
 @app.command()
-def link(
-    ctx: typer.Context,
-    notion_url: Annotated[str, typer.Argument(help="Notion project page URL or ID.")],
-) -> None:
-    """Link this repo to a Notion project page."""
+def link(ctx: typer.Context) -> None:
+    """Interactively pick a project and link this repo to it."""
     root = find_repo_root()
     if root is None:
         err_console.print("[bold red]Error:[/bold red] Not inside a git repository.")
         raise typer.Exit(1)
 
-    try:
-        manifest = ProjectManifest(notion_page=notion_url)
-    except Exception:
-        err_console.print(
-            "[bold red]Error:[/bold red] Could not extract a Notion page ID from the provided value.\n"
-            "[dim]Hint: Pass the full Notion page URL, e.g. https://www.notion.so/My-Project-abc123[/dim]"
-        )
+    client = build_client(ctx.obj)
+    projects = client.get("/projects").json()
+
+    if not projects:
+        err_console.print("[yellow]No projects found.[/yellow]")
         raise typer.Exit(1)
 
+    console.print("\n[bold]Available projects:[/bold]\n")
+    for i, p in enumerate(projects, 1):
+        phase = f"  [{p.get('phase', '')}]" if p.get("phase") else ""
+        console.print(f"  [cyan]{i:2}[/cyan]  {p['name']}{phase}  [dim]{p.get('status', '')}[/dim]")
+
+    console.print()
+    raw = typer.prompt("Pick a number")
+
+    try:
+        idx = int(raw) - 1
+        if not (0 <= idx < len(projects)):
+            raise ValueError
+    except ValueError:
+        err_console.print(f"[bold red]Error:[/bold red] Invalid choice '{raw}'.")
+        raise typer.Exit(1)
+
+    chosen = projects[idx]
+    manifest = ProjectManifest(notion_page=chosen["notion_page_id"])
     save_manifest(manifest, root)
-    console.print(f"[green]Linked[/green] → notion page [cyan]{manifest.notion_page}[/cyan]")
+    console.print(f"\n[green]Linked[/green] → [bold]{chosen['name']}[/bold]")
+    console.print("[dim]Run: tai project status[/dim]")
+
+
+@app.command()
+def new(ctx: typer.Context) -> None:
+    """Create a new project in Notion and link this repo to it."""
+    root = find_repo_root()
+    if root is None:
+        err_console.print("[bold red]Error:[/bold red] Not inside a git repository.")
+        raise typer.Exit(1)
+
+    name = typer.prompt("Project name")
+    description = typer.prompt("Description", default="")
+    category = typer.prompt(
+        "Category",
+        default="Development",
+        prompt_suffix=" [Development/Consulting/Research/Internal/Recruitment]: ",
+    )
+
+    client = build_client(ctx.obj)
+    payload = {"name": name}
+    if description:
+        payload["description"] = description
+    if category:
+        payload["category"] = category
+
+    resp = client.post("/projects", json=payload)
+    created = resp.json()
+
+    manifest = ProjectManifest(notion_page=created["notion_page_id"])
+    save_manifest(manifest, root)
+    console.print(f"\n[green]Created[/green] → [bold]{created['name']}[/bold]")
+    console.print(f"[dim]Notion: {created['notion_url']}[/dim]")
     console.print("[dim]Run: tai project status[/dim]")
 
 

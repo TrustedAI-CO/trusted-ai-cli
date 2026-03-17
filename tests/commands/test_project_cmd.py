@@ -129,23 +129,79 @@ def test_set_unknown_tool(tmp_path):
 # ── tai project link ──────────────────────────────────────────────────────────
 
 
-def test_link_writes_manifest(tmp_path):
-    with patch("tai.commands.project.find_repo_root", return_value=tmp_path):
-        result = runner.invoke(
-            app,
-            ["link", "https://www.notion.so/Video-Research-2ef55eff03158039b95cf6e8ff60d632"],
-            obj=_ctx(tmp_path),
-        )
+PROJECTS_LIST = [
+    {"notion_page_id": "2ef55eff03158039b95cf6e8ff60d632", "notion_url": "https://www.notion.so/2ef55eff03158039b95cf6e8ff60d632", "name": "Video Research", "status": "In progress", "phase": "POC"},
+    {"notion_page_id": "29255eff031580779115e0a409355b98", "notion_url": "https://www.notion.so/29255eff031580779115e0a409355b98", "name": "SafeChat Improvement", "status": "In progress", "phase": "Production"},
+]
+
+
+def test_link_interactive_picker(tmp_path):
+    list_client = _mock_client(PROJECTS_LIST)
+    list_client.get.return_value.json.return_value = PROJECTS_LIST
+
+    with (
+        patch("tai.commands.project.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.project.build_client", return_value=list_client),
+    ):
+        # user picks "1" → first project
+        result = runner.invoke(app, ["link"], input="1\n", obj=_ctx(tmp_path))
 
     assert result.exit_code == 0
+    assert "Video Research" in result.output
     manifest_text = (tmp_path / ".tai.toml").read_text()
     assert "2ef55eff03158039b95cf6e8ff60d632" in manifest_text
 
 
-def test_link_rejects_invalid_notion_url(tmp_path):
-    with patch("tai.commands.project.find_repo_root", return_value=tmp_path):
+def test_link_interactive_invalid_choice(tmp_path):
+    list_client = _mock_client(PROJECTS_LIST)
+    list_client.get.return_value.json.return_value = PROJECTS_LIST
+
+    with (
+        patch("tai.commands.project.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.project.build_client", return_value=list_client),
+    ):
+        result = runner.invoke(app, ["link"], input="99\n", obj=_ctx(tmp_path))
+
+    assert result.exit_code == 1
+
+
+def test_link_outside_git_repo():
+    with patch("tai.commands.project.find_repo_root", return_value=None):
+        result = runner.invoke(app, ["link"], input="1\n", obj=_ctx(Path("/tmp")))
+    assert result.exit_code == 1
+
+
+# ── tai project new ───────────────────────────────────────────────────────────
+
+
+def test_new_creates_and_links_project(tmp_path):
+    created = {
+        "notion_page_id": "aabbccdd11223344aabbccdd11223344",
+        "notion_url": "https://www.notion.so/aabbccdd11223344aabbccdd11223344",
+        "name": "My New Project",
+        "status": "Not started",
+        "phase": None,
+    }
+    mock_client = _mock_client(created, status=201)
+    mock_client.post.return_value = mock_client.get.return_value  # reuse same mock resp
+
+    with (
+        patch("tai.commands.project.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.project.build_client", return_value=mock_client),
+    ):
         result = runner.invoke(
-            app, ["link", "not-a-notion-url"], obj=_ctx(tmp_path)
+            app, ["new"],
+            input="My New Project\nA test project\nDevelopment\n",
+            obj=_ctx(tmp_path),
         )
 
+    assert result.exit_code == 0
+    assert "My New Project" in result.output
+    manifest_text = (tmp_path / ".tai.toml").read_text()
+    assert "aabbccdd11223344aabbccdd11223344" in manifest_text
+
+
+def test_new_outside_git_repo():
+    with patch("tai.commands.project.find_repo_root", return_value=None):
+        result = runner.invoke(app, ["new"], input="Test\n\n\n", obj=_ctx(Path("/tmp")))
     assert result.exit_code == 1
