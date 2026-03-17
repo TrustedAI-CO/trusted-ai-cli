@@ -130,8 +130,8 @@ def test_set_unknown_tool(tmp_path):
 
 
 PROJECTS_LIST = [
-    {"notion_page_id": "2ef55eff03158039b95cf6e8ff60d632", "notion_url": "https://www.notion.so/2ef55eff03158039b95cf6e8ff60d632", "name": "Video Research", "status": "In progress", "phase": "POC"},
-    {"notion_page_id": "29255eff031580779115e0a409355b98", "notion_url": "https://www.notion.so/29255eff031580779115e0a409355b98", "name": "SafeChat Improvement", "status": "In progress", "phase": "Production"},
+    {"notion_page_id": "2ef55eff03158039b95cf6e8ff60d632", "notion_url": "https://www.notion.so/2ef55eff03158039b95cf6e8ff60d632", "name": "Video Research", "client": "Acme Corp", "status": "In progress", "phase": "POC"},
+    {"notion_page_id": "29255eff031580779115e0a409355b98", "notion_url": "https://www.notion.so/29255eff031580779115e0a409355b98", "name": "SafeChat Improvement", "client": None, "status": "In progress", "phase": "Production"},
 ]
 
 

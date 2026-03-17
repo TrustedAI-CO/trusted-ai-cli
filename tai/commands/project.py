@@ -23,6 +23,14 @@ _TOOL_FIELDS = {
     "chat": "gchat_space",
 }
 
+def _project_row(p: dict) -> str:
+    name   = p.get("name", "")[:30].ljust(30)
+    client = (p.get("client") or "—")[:20].ljust(20)
+    phase  = (p.get("phase") or "—")[:12].ljust(12)
+    status = p.get("status") or "—"
+    return f"{name}  {client}  {phase}  {status}"
+
+
 _TOOL_LABELS = {
     "github_repo": "GitHub",
     "drive_folder": "Drive",
@@ -107,9 +115,9 @@ def link(ctx: typer.Context) -> None:
         raise typer.Exit(1)
 
     chosen = search_select(
-        "Search project:",
+        "Project:",
         projects,
-        label_fn=lambda p: f"{p['name']}  [{p.get('phase', '—')}]  {p.get('status', '')}",
+        label_fn=_project_row,
     )
 
     if chosen is None:

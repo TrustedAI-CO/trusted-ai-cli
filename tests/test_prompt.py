@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -54,14 +54,19 @@ def test_completer_returns_empty_when_no_match():
 # ── search_select ─────────────────────────────────────────────────────────────
 
 
+def _mock_fuzzy(return_value):
+    m = MagicMock()
+    m.execute.return_value = return_value
+    return m
+
+
 def test_search_select_returns_chosen_item():
     projects = [
         {"id": "abc", "name": "Video Research"},
         {"id": "def", "name": "SafeChat"},
     ]
 
-    with patch("questionary.autocomplete") as mock_ac:
-        mock_ac.return_value.ask.return_value = "Video Research"
+    with patch("tai.core.prompt.inquirer.fuzzy", return_value=_mock_fuzzy("Video Research")):
         result = search_select("Pick:", projects, label_fn=lambda p: p["name"])
 
     assert result == {"id": "abc", "name": "Video Research"}
@@ -70,8 +75,7 @@ def test_search_select_returns_chosen_item():
 def test_search_select_returns_none_on_cancel():
     projects = [{"id": "abc", "name": "Video Research"}]
 
-    with patch("questionary.autocomplete") as mock_ac:
-        mock_ac.return_value.ask.return_value = None
+    with patch("tai.core.prompt.inquirer.fuzzy", return_value=_mock_fuzzy(None)):
         result = search_select("Pick:", projects, label_fn=lambda p: p["name"])
 
     assert result is None
@@ -80,27 +84,23 @@ def test_search_select_returns_none_on_cancel():
 def test_search_select_returns_none_on_unmatched_input():
     projects = [{"id": "abc", "name": "Video Research"}]
 
-    with patch("questionary.autocomplete") as mock_ac:
-        mock_ac.return_value.ask.return_value = "something else entirely"
+    with patch("tai.core.prompt.inquirer.fuzzy", return_value=_mock_fuzzy("something else")):
         result = search_select("Pick:", projects, label_fn=lambda p: p["name"])
 
     assert result is None
 
 
-def test_search_select_passes_max_shown_to_completer():
+def test_search_select_passes_max_shown_as_pool_size():
     projects = [{"id": str(i), "name": f"Project {i}"} for i in range(20)]
 
     captured_choices = None
 
-    def fake_autocomplete(message, choices, **kwargs):
+    def fake_fuzzy(message, choices, **kwargs):
         nonlocal captured_choices
-        # choices is a callable — call it with empty string to see initial list
-        captured_choices = choices("")
-        m = __import__("unittest.mock", fromlist=["MagicMock"]).MagicMock()
-        m.ask.return_value = None
-        return m
+        captured_choices = choices
+        return _mock_fuzzy(None)
 
-    with patch("questionary.autocomplete", side_effect=fake_autocomplete):
+    with patch("tai.core.prompt.inquirer.fuzzy", side_effect=fake_fuzzy):
         search_select("Pick:", projects, label_fn=lambda p: p["name"], max_shown=5)
 
     assert len(captured_choices) == 5
