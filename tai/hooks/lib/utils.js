@@ -49,6 +49,20 @@ function getTempDir() {
 }
 
 /**
+ * Counter file prefix used by suggest-compact and compact-status.
+ * Path pattern: {tmpdir}/claude-tool-count-{sessionId}
+ */
+const COUNTER_FILE_PREFIX = 'claude-tool-count-';
+
+/**
+ * Get the counter file path for a given session ID
+ * @param {string} sessionId - Session ID (or 'default')
+ */
+function getCounterFilePath(sessionId) {
+  return path.join(getTempDir(), `${COUNTER_FILE_PREFIX}${sessionId}`);
+}
+
+/**
  * Ensure a directory exists (create if not)
  * @param {string} dirPath - Directory path to create
  * @returns {string} The directory path
@@ -496,6 +510,8 @@ module.exports = {
   getLearnedSkillsDir,
   getTempDir,
   ensureDir,
+  COUNTER_FILE_PREFIX,
+  getCounterFilePath,
 
   // Date/Time
   getDateString,
