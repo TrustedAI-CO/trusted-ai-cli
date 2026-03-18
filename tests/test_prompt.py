@@ -90,17 +90,20 @@ def test_search_select_returns_none_on_unmatched_input():
     assert result is None
 
 
-def test_search_select_passes_max_shown_as_pool_size():
+def test_search_select_all_items_searchable_max_shown_controls_height():
     projects = [{"id": str(i), "name": f"Project {i}"} for i in range(20)]
 
     captured_choices = None
+    captured_kwargs: dict = {}
 
     def fake_fuzzy(message, choices, **kwargs):
-        nonlocal captured_choices
+        nonlocal captured_choices, captured_kwargs
         captured_choices = choices
+        captured_kwargs = kwargs
         return _mock_fuzzy(None)
 
     with patch("tai.core.prompt.inquirer.fuzzy", side_effect=fake_fuzzy):
         search_select("Pick:", projects, label_fn=lambda p: p["name"], max_shown=5)
 
-    assert len(captured_choices) == 5
+    assert len(captured_choices) == 20  # all items searchable
+    assert captured_kwargs["max_height"] == 5  # visible rows capped

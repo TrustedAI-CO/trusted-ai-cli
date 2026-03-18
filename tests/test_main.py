@@ -28,11 +28,13 @@ def test_unknown_profile_exits_nonzero():
 
 def test_verbose_flag_propagates():
     with patch("tai.core.auth.current_email", return_value="u@test.com"):
-        result = runner.invoke(app, ["--verbose", "auth", "whoami"])
+        result = runner.invoke(app, ["--verbose", "whoami"])
     # verbose mode should not crash; profile debug line appears on stderr
     assert result.exit_code == 0
 
 
 def test_json_flag_available():
+    import re
     result = runner.invoke(app, ["--help"])
-    assert "--json" in result.output
+    clean = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+    assert "--json" in clean
