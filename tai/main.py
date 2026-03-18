@@ -52,12 +52,7 @@ def main(
         envvar="TAI_JSON",
     ),
     version: bool = typer.Option(False, "--version", help="Show version and exit."),
-    docs: bool = typer.Option(False, "--docs", help="Print LLM-friendly usage docs and exit."),
 ):
-    if docs:
-        print(DOCS)
-        raise typer.Exit()
-
     if version:
         try:
             v = importlib.metadata.version("trusted-ai-cli")
@@ -110,6 +105,12 @@ app.command(name="open")(project.open_tool)
 app.command(name="login")(login)
 app.command(name="logout")(logout)
 app.command(name="whoami")(whoami)
+
+
+@app.command(name="docs")
+def docs_cmd() -> None:
+    """Print LLM-friendly usage reference in Markdown and exit."""
+    print(DOCS)
 
 
 # ── Plugin discovery via entry points ─────────────────────────────────────────
