@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-03-19
+
+### Added
+- Content writer skill (`.claude/skills/tai/content-writer/`) — interactive guided content creation for blog posts, technical articles, release announcements, tutorials, case studies, and comparison posts
+- Voice profile system — persistent writing style profiles at `~/.tai-skills/voice-profiles/` for consistent tone across content
+- AI-slop detection quality gate — scans drafts for ~60 generic AI phrases across 9 categories and auto-rewrites them with specific language
+- Codebase-aware technical writing — reads source files, tests, and docs to include accurate code examples
+- Git-aware release announcements — generates release content from git log, CHANGELOG, and merged PRs
+- 6 content templates: how-to guide, product announcement, case study, tutorial, comparison post, changelog entry
+- Readability and factual grounding quality checks with structured reporting
+
 ## [0.1.1] - 2026-03-19
 
 ### Added
