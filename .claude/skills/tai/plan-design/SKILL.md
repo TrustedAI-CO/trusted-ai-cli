@@ -1,5 +1,5 @@
 ---
-name: plan-design-review
+name: plan-design
 version: 2.0.0
 description: |
   [TAI] Designer's eye plan review — interactive, like CEO and Eng review.
@@ -96,7 +96,7 @@ branch name wherever the instructions say "the base branch."
 
 ---
 
-# /plan-design-review: Designer's Eye Plan Review
+# /plan-design: Designer's Eye Plan Review
 
 You are a senior product designer reviewing a PLAN — not a live site. Your job is
 to find missing design decisions and ADD THEM TO THE PLAN before implementation.
@@ -214,7 +214,7 @@ Pattern:
 5. AskUserQuestion if there's a genuine design choice to resolve
 6. Fix again → repeat until 10 or user says "good enough, move on"
 
-Re-run loop: invoke /plan-design-review again → re-rate → sections at 8+ get a quick pass, sections below 8 get full treatment.
+Re-run loop: invoke /plan-design again → re-rate → sections at 8+ get a quick pass, sections below 8 get full treatment.
 
 ## Review Sections (7 passes, after scope is agreed)
 
@@ -345,7 +345,7 @@ After producing the Completion Summary above, persist the review result:
 ```bash
 _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
 mkdir -p ~/.tai-skills/projects/$SLUG
-echo '{"skill":"plan-design-review","timestamp":"TIMESTAMP","status":"STATUS","overall_score":N,"unresolved":N,"decisions_made":N}' >> ~/.tai-skills/projects/$SLUG/$BRANCH-reviews.jsonl
+echo '{"skill":"plan-design","timestamp":"TIMESTAMP","status":"STATUS","overall_score":N,"unresolved":N,"decisions_made":N}' >> ~/.tai-skills/projects/$SLUG/$BRANCH-reviews.jsonl
 ```
 
 Substitute values from the Completion Summary:
@@ -366,7 +366,7 @@ echo "---CONFIG---"
 echo "false"
 ```
 
-Parse the output. Find the most recent entry for each skill (plan-ceo-review, plan-eng-review, plan-design-review, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design-review` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
+Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng, plan-design, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
 
 ```
 +====================================================================+

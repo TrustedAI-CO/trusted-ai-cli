@@ -324,7 +324,7 @@ Before falling back to git diff heuristics, check for richer test plan sources:
    _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
    ls -t ~/.tai-skills/projects/$SLUG/*-test-plan-*.md 2>/dev/null | head -1
    ```
-2. **Conversation context:** Check if a prior `/plan-eng-review` or `/plan-ceo-review` produced test plan output in this conversation
+2. **Conversation context:** Check if a prior `/plan-eng` or `/plan-ceo` produced test plan output in this conversation
 3. **Use whichever source is richer.** Fall back to git diff analysis only if neither is available.
 
 ---
