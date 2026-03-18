@@ -22,6 +22,7 @@ from tai.core.errors import ConfigError
 
 from tai.commands import secret, config, ai, api, claude, meetings, project, tasks
 from tai.commands.auth import login, logout, whoami
+from tai.docs import DOCS
 
 console = Console()
 err_console = Console(stderr=True)
@@ -51,7 +52,12 @@ def main(
         envvar="TAI_JSON",
     ),
     version: bool = typer.Option(False, "--version", help="Show version and exit."),
+    docs: bool = typer.Option(False, "--docs", help="Print LLM-friendly usage docs and exit."),
 ):
+    if docs:
+        print(DOCS)
+        raise typer.Exit()
+
     if version:
         try:
             v = importlib.metadata.version("trusted-ai-cli")
