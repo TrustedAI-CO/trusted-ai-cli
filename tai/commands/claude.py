@@ -1,9 +1,10 @@
-"""tai claude — manage Claude Code authentication."""
+"""tai claude — manage Claude Code authentication and hooks."""
 
 from __future__ import annotations
 
 import base64
 import hashlib
+import json
 import os
 import secrets
 import shutil
@@ -15,7 +16,7 @@ import httpx
 import typer
 from rich.console import Console
 
-app = typer.Typer(name="claude", help="Manage Claude Code authentication.")
+app = typer.Typer(name="claude", help="Manage Claude Code authentication and hooks.")
 console = Console()
 err_console = Console(stderr=True)
 
@@ -165,3 +166,171 @@ def status(ctx: typer.Context) -> None:
 
     result = subprocess.run([claude_bin, "auth", "status"])
     raise typer.Exit(result.returncode)
+
+
+# ── Hook management ──────────────────────────────────────────────────────────
+
+
+@app.command(name="setup-hooks")
+def setup_hooks(
+    ctx: typer.Context,
+    list_hooks: bool = typer.Option(
+        False, "--list", "-l", help="List available hooks without installing."
+    ),
+    remove: bool = typer.Option(
+        False, "--remove", "-r", help="Remove all tai-managed hooks."
+    ),
+    json_output: bool = typer.Option(
+        False, "--json", help="Output as JSON."
+    ),
+) -> None:
+    """Install tai Claude Code hooks into ~/.claude/settings.json.
+
+    Hooks provide automated quality checks, session management, and
+    developer experience improvements for Claude Code sessions.
+
+    Run without flags to install.  Use --list to preview, --remove to uninstall.
+    """
+    from tai.hooks import load_hook_definitions
+
+    if not shutil.which("node"):
+        err_console.print(
+            "[bold red]Error:[/bold red] 'node' not found in PATH."
+        )
+        err_console.print(
+            "[dim]Hint: Hooks require Node.js — https://nodejs.org[/dim]"
+        )
+        raise typer.Exit(1)
+
+    definitions = load_hook_definitions()
+
+    # --list: show available hooks and exit
+    if list_hooks:
+        _print_hook_list(definitions, json_output)
+        return
+
+    # --remove: strip tai hooks from settings
+    if remove:
+        _remove_hooks(json_output)
+        return
+
+    # Default: install hooks
+    _install_hooks(definitions, json_output)
+
+
+def _print_hook_list(
+    definitions: dict, json_output: bool
+) -> None:
+    """Print available hooks grouped by event type."""
+    if json_output:
+        flat = []
+        for event_type, entries in definitions.items():
+            for entry in entries:
+                flat.append({
+                    "event": event_type,
+                    "matcher": entry.get("matcher", "*"),
+                    "description": entry.get("description", ""),
+                })
+        print(json.dumps(flat, indent=2))
+        return
+
+    for event_type, entries in definitions.items():
+        console.print(f"\n[bold]{event_type}[/bold]")
+        for entry in entries:
+            matcher = entry.get("matcher", "*")
+            desc = entry.get("description", "").removeprefix("[tai] ")
+            console.print(f"  [{matcher}] {desc}")
+
+
+def _remove_hooks(json_output: bool) -> None:
+    """Remove tai-managed hooks from settings.json."""
+    from tai.hooks import (
+        is_tai_hook,
+        read_settings,
+        remove_tai_hooks,
+        write_settings,
+    )
+
+    try:
+        settings = read_settings()
+    except json.JSONDecodeError:
+        _abort_bad_json()
+
+    existing_hooks = settings.get("hooks", {})
+    tai_count = sum(
+        1
+        for entries in existing_hooks.values()
+        for e in entries
+        if is_tai_hook(e)
+    )
+
+    if tai_count == 0:
+        if json_output:
+            print(json.dumps({"removed": 0}))
+        else:
+            console.print("[dim]No tai-managed hooks found.[/dim]")
+        return
+
+    cleaned = remove_tai_hooks(existing_hooks)
+    updated_settings = {**settings, "hooks": cleaned}
+    # Remove empty hooks key
+    if not cleaned:
+        updated_settings.pop("hooks", None)
+    write_settings(updated_settings)
+
+    if json_output:
+        print(json.dumps({"removed": tai_count}))
+    else:
+        console.print(f"Removed {tai_count} tai-managed hook(s).")
+
+
+def _install_hooks(
+    definitions: dict, json_output: bool
+) -> None:
+    """Resolve and install hooks into settings.json."""
+    from tai.hooks import (
+        merge_hooks,
+        read_settings,
+        resolve_hooks,
+        write_settings,
+    )
+
+    try:
+        settings = read_settings()
+    except json.JSONDecodeError:
+        _abort_bad_json()
+
+    resolved = resolve_hooks(definitions)
+    existing_hooks = settings.get("hooks", {})
+    merged = merge_hooks(existing_hooks, resolved)
+
+    updated_settings = {**settings, "hooks": merged}
+    write_settings(updated_settings)
+
+    total = sum(len(entries) for entries in resolved.values())
+
+    if json_output:
+        print(json.dumps({
+            "installed": total,
+            "events": {k: len(v) for k, v in resolved.items()},
+        }))
+    else:
+        console.print(f"\nInstalled {total} hook(s):\n")
+        for event_type, entries in resolved.items():
+            console.print(f"  [bold]{event_type}[/bold]: {len(entries)}")
+        console.print(
+            "\n[dim]Hooks are active in new Claude Code sessions.[/dim]"
+        )
+        console.print(
+            "[dim]Re-run after upgrading tai to refresh hook scripts.[/dim]"
+        )
+
+
+def _abort_bad_json() -> None:
+    from tai.hooks import SETTINGS_PATH
+
+    err_console.print(
+        f"[bold red]Error:[/bold red] {SETTINGS_PATH} contains invalid JSON."
+    )
+    err_console.print("[dim]Hint: Fix the JSON syntax and try again.[/dim]")
+    raise typer.Exit(1)

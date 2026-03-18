@@ -40,6 +40,11 @@ tai = "tai.main:app"
 [tool.hatch.build.targets.wheel]
 packages = ["tai"]
 
+[tool.hatch.build.targets.wheel.force-include]
+"tai/hooks/hooks.json" = "tai/hooks/hooks.json"
+"tai/hooks/scripts" = "tai/hooks/scripts"
+"tai/hooks/lib" = "tai/hooks/lib"
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "--cov=tai --cov-report=term-missing --cov-fail-under=80"
