@@ -5,7 +5,6 @@ from __future__ import annotations
 import sys
 from typing import Callable, TypeVar
 
-import questionary
 from InquirerPy import inquirer
 
 T = TypeVar("T")
