@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.2] - 2026-03-19
+
+### Added
+- Visualization support for content-writer skill — Mermaid diagram guidance, visualization quality gate (Step 3D), briefing preference (Step 0E), and per-template visualization hints
+- Visualization reference guide (`references/visualization-guide.md`) with diagram type decision matrix, quality checklist, and anti-patterns
+
 ## [0.2.1] - 2026-03-19
 
 ### Added
