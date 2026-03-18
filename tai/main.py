@@ -22,6 +22,7 @@ from tai.core.errors import ConfigError
 
 from tai.commands import secret, config, ai, api, claude, meetings, project, tasks
 from tai.commands.auth import login, logout, whoami
+from tai.commands.setup import setup
 from tai.docs import DOCS
 
 console = Console()
@@ -102,6 +103,7 @@ app.add_typer(meetings.app)
 app.command(name="link")(project.link)
 app.command(name="unlink")(project.unlink)
 app.command(name="open")(project.open_tool)
+app.command(name="setup")(setup)
 app.command(name="login")(login)
 app.command(name="logout")(logout)
 app.command(name="whoami")(whoami)

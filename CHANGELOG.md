@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.5] - 2026-03-19
+
+### Added
+- `tai setup` interactive config wizard that prompts for every variable in the active profile, with Enter-to-skip for already-set values, sensitive field masking, and type coercion
+
 ## [0.2.4] - 2026-03-19
 
 ### Fixed
