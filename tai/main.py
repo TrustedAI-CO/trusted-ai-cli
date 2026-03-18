@@ -20,7 +20,7 @@ from tai.core.config import load_config
 from tai.core.context import AppContext
 from tai.core.errors import ConfigError
 
-from tai.commands import secret, config, ai, api, claude, meetings, project, tasks, skills
+from tai.commands import secret, config, ai, api, claude, meetings, project, tasks
 from tai.commands.auth import login, logout, whoami
 from tai.docs import DOCS
 
@@ -99,7 +99,6 @@ app.add_typer(claude.app)
 app.add_typer(project.app)
 app.add_typer(tasks.app)
 app.add_typer(meetings.app)
-app.add_typer(skills.app)
 app.command(name="link")(project.link)
 app.command(name="unlink")(project.unlink)
 app.command(name="open")(project.open_tool)

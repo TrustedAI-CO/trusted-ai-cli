@@ -114,7 +114,6 @@ def install_skills(source_dir: Path, *, force: bool = False) -> InstallResult:
     Each skill gets its own top-level directory so Claude Code
     discovers them as personal skills (e.g. tai-review, tai-ship).
 
-    When force=False (default), existing skills are skipped.
     When force=True, existing skills are overwritten.
     """
     base = skills_install_dir()
