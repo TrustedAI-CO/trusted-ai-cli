@@ -64,6 +64,10 @@ class ProjectError(TaiError):
         super().__init__(message, hint=hint or "Run: tai project init")
 
 
+class SkillError(TaiError):
+    """Skill installation or update failed."""
+
+
 class ApiError(TaiError):
     """Company API returned an error."""
 
