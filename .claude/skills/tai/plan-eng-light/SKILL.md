@@ -14,6 +14,18 @@ allowed-tools:
 
 # /plan-eng-light: Fast Engineering Plan Review
 
+## Language
+
+Respond in the same language the user is using. If the user writes in Japanese,
+respond entirely in Japanese. If Vietnamese, respond entirely in Vietnamese.
+Keep these in English regardless of language:
+- Severity labels: [CRITICAL], [WARNING], [AUTO-FIXED], [HIGH], [MEDIUM], [LOW]
+- Verdict strings: Ship it, Adjust, Rethink, Kill it
+- Section headers from skill templates (e.g., ### Premise, ### Top Risks)
+- Log/machine-readable output (.jsonl entries, bash commands)
+- Technical terms: SQL, CSRF, API, LLM, XSS, etc.
+Translate all prose, explanations, recommendations, and AskUserQuestion text.
+
 This is the light version of `/plan-eng`. Scope check and architecture only — no interactive walkthrough.
 
 ## Step 0: Detect base branch

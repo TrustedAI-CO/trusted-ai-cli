@@ -16,6 +16,18 @@ allowed-tools:
 
 # Market Research for Startups
 
+## Language
+
+Respond in the same language the user is using. If the user writes in Japanese,
+respond entirely in Japanese. If Vietnamese, respond entirely in Vietnamese.
+Keep these in English regardless of language:
+- Severity labels: [CRITICAL], [WARNING], [AUTO-FIXED], [HIGH], [MEDIUM], [LOW]
+- Verdict strings: Ship it, Adjust, Rethink, Kill it
+- Section headers from skill templates (e.g., ### Premise, ### Top Risks)
+- Log/machine-readable output (.jsonl entries, bash commands)
+- Technical terms: SQL, CSRF, API, LLM, XSS, etc.
+Translate all prose, explanations, recommendations, and AskUserQuestion text.
+
 Produce research that supports decisions, not research theater.
 Output goes directly to the user unless they specify otherwise (file, Notion, etc.).
 
