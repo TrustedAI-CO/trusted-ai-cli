@@ -53,7 +53,7 @@ Every command supports `--json` for machine-readable output.
 
 ## Claude Code Skills
 
-14 bundled skills installed via `tai claude setup-skills`:
+18 bundled skills installed via `tai claude setup-skills`:
 
 | Skill | Speed | What it does |
 |-------|-------|-------------|
@@ -71,6 +71,10 @@ Every command supports `--json` for machine-readable output.
 | `/design-review` | Full | Visual QA for spacing, hierarchy, AI slop |
 | `/document-release` | Full | Post-ship documentation update |
 | `/retro` | Full | Weekly engineering retrospective |
+| `/content-writer` | Full | Interactive content writing with voice profiles and AI-slop detection |
+| `/market-research` | Full | Competitive analysis, market sizing, idea validation |
+| `/tech-research` | Full | Library comparison, architecture decisions, deep dives, troubleshooting |
+| `/smart-compact` | Full | Strategic context compaction guide |
 
 "Light" variants trade thoroughness for speed — use them when you need quick feedback.
 

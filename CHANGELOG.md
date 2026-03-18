@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.3] - 2026-03-19
+
+### Added
+- Technical research skill (`/tech-research`) with 4 modes: library/tool comparison, architecture decision records, technology deep dives, and troubleshooting research
+- Output templates for each mode: comparison matrix, ADR, deep-dive summary, and troubleshooting report
+- Research quality checklist for sourcing standards, objectivity, and decision orientation
+- Optional context7 MCP and chub CLI integration for authoritative documentation lookup
+- Research log persistence (`~/.tai-skills/projects/$SLUG/research-log.jsonl`)
+
+### Changed
+- Updated README skill table to list all 18 bundled skills (was 14)
+
 ## [0.2.2] - 2026-03-19
 
 ### Added
