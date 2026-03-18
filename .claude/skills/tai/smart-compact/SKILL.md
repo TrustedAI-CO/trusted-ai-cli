@@ -1,8 +1,8 @@
 ---
-name: compact
+name: smart-compact
 version: 1.0.0
 description: |
-  [TAI] Strategic context compaction guide. Suggests when and how to compact
+  [TAI] Smart context compaction guide. Suggests when and how to compact
   based on tai workflow phases (/plan-ceo → /plan-eng → implement → /review → /ship).
   Use when sessions are long, context is stale, or transitioning between phases.
 allowed-tools:
@@ -10,9 +10,9 @@ allowed-tools:
   - Read
 ---
 
-# Strategic Compact
+# Smart Compact
 
-Suggests manual `/compact` at strategic points in your workflow rather than relying on arbitrary auto-compaction.
+Suggests manual `/compact` at smart points in your workflow rather than relying on arbitrary auto-compaction.
 
 ## When to Compact
 
@@ -49,7 +49,7 @@ Suggests manual `/compact` at strategic points in your workflow rather than rely
 
 ## How the Hooks Work
 
-Two hooks support strategic compaction (installed via `tai claude setup-hooks`):
+Two hooks support smart compaction (installed via `tai claude setup-hooks`):
 
 1. **suggest-compact** (PreToolUse on Edit/Write) — Counts tool calls and nudges you at ~50 calls, then every 25 after that. The nudge appears on stderr; you decide whether to act.
 
