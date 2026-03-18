@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.1] - 2026-03-19
+
+### Added
+- Multilingual language policy for all 15 TAI skills — skills now respond in the user's conversational language (Japanese, Vietnamese, etc.) while keeping severity labels, verdict strings, and technical terms in English for consistency
+
+## [0.2.0] - 2026-03-19
+
+### Added
+- `tai-market-research` Claude Code skill — startup market research with 3 specialized modes: competitive analysis (SWOT, competitive matrix, positioning gaps), market sizing (TAM/SAM/SOM with top-down + bottom-up), and idea validation (go/no-go assessment)
+- Web search integration (WebSearch + WebFetch) for real-time market data
+- Quality gate with source attribution, recency checks, and contrarian evidence requirements
+
 ## [0.1.2] - 2026-03-19
 
 ### Added
