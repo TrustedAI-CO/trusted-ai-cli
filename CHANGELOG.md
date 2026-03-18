@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-03-19
+
+### Added
+- `tai claude compact-status` command with `--json` support — shows session tool-call count, compaction history, and suggestions
+- Strategic compact skill (`.claude/skills/tai/compact/SKILL.md`) — tai-workflow-aware compaction guide for Claude Code sessions
+- Pre-compact resume notes — automatically saves git state and active tasks to `.context/compact-resume.md` before compaction
+- Shared `getCounterFilePath()` utility in hooks lib to keep counter path convention in sync
+
+### Changed
+- `suggest-compact.js` refactored to use shared counter path helper instead of inline path construction
+
 ## [0.1.0] - 2026-03-19
 
 ### Added
