@@ -19,3 +19,4 @@
 **Context:** Natural follow-up after base hook infrastructure lands. These hooks would be written fresh (in JS or Python), not ported from ECC. Need to handle tool detection (is ruff installed?) gracefully.
 
 **Depends on:** setup-hooks feature landing first.
+
