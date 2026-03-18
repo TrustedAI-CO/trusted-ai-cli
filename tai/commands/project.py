@@ -1,4 +1,4 @@
-"""tai project — link a repo to its Notion project and manage tool bindings."""
+"""tai project — manage Notion project bindings."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from tai.core.errors import ApiError, ProjectError, handle_error
+from tai.core.errors import ApiError, handle_error
 from tai.core.http import build_client
 from tai.core.project import ProjectManifest, find_repo_root, load_manifest, save_manifest
 from tai.core.prompt import search_select
@@ -17,19 +17,12 @@ app = typer.Typer(name="project", help="Manage project tool bindings.")
 console = Console()
 err_console = Console(stderr=True)
 
-_TOOL_FIELDS = {
+_OPEN_FIELDS = {
     "github": "github_repo",
     "drive": "drive_folder",
     "chat": "gchat_space",
+    "notion": "notion_url",
 }
-
-def _project_row(p: dict) -> str:
-    name   = p.get("name", "")[:30].ljust(30)
-    client = (p.get("client") or "—")[:20].ljust(20)
-    phase  = (p.get("phase") or "—")[:12].ljust(12)
-    status = p.get("status") or "—"
-    return f"{name}  {client}  {phase}  {status}"
-
 
 _TOOL_LABELS = {
     "github_repo": "GitHub",
@@ -39,6 +32,14 @@ _TOOL_LABELS = {
     "status": "Status",
     "phase": "Phase",
 }
+
+
+def _project_row(p: dict) -> str:
+    name   = p.get("name", "")[:30].ljust(30)
+    phase  = (p.get("phase") or "—")[:12].ljust(12)
+    status = (p.get("status") or "—")[:14].ljust(14)
+    client = p.get("client") or "—"
+    return f"{name}  {phase}  {status}  {client}"
 
 
 def _require_manifest(ctx: typer.Context):
@@ -51,7 +52,7 @@ def _require_manifest(ctx: typer.Context):
     if manifest is None:
         err_console.print(
             "[bold red]Error:[/bold red] This repo is not linked to a project.\n"
-            "[dim]Hint: Run: tai project link <notion-url>[/dim]"
+            "[dim]Hint: Run: tai link[/dim]"
         )
         raise typer.Exit(1)
 
@@ -66,14 +67,6 @@ def _fetch_project(ctx: typer.Context, page_id: str) -> dict:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
         raise typer.Exit(1)
 
-
-def _patch_project(ctx: typer.Context, page_id: str, payload: dict) -> dict:
-    try:
-        client = build_client(ctx.obj)
-        return client.patch(f"/projects/{page_id}", json=payload).json()
-    except ApiError as e:
-        err_console.print(f"[bold red]Error:[/bold red] {e}")
-        raise typer.Exit(1)
 
 
 def _print_project(data: dict) -> None:
@@ -95,7 +88,6 @@ def _print_project(data: dict) -> None:
 # ── commands ──────────────────────────────────────────────────────────────────
 
 
-@app.command()
 def link(ctx: typer.Context) -> None:
     """Interactively pick a project and link this repo to it."""
     root = find_repo_root()
@@ -114,11 +106,7 @@ def link(ctx: typer.Context) -> None:
         err_console.print("[yellow]No projects found.[/yellow]")
         raise typer.Exit(1)
 
-    chosen = search_select(
-        "Project:",
-        projects,
-        label_fn=_project_row,
-    )
+    chosen = search_select("Project:", projects, label_fn=_project_row)
 
     if chosen is None:
         raise typer.Exit(0)
@@ -126,6 +114,51 @@ def link(ctx: typer.Context) -> None:
     save_manifest(manifest, root)
     console.print(f"\n[green]Linked[/green] → [bold]{chosen['name']}[/bold]")
     console.print("[dim]Run: tai project status[/dim]")
+
+
+def unlink(ctx: typer.Context) -> None:
+    """Remove the project link from this repo."""
+    root = find_repo_root()
+    if root is None:
+        err_console.print("[bold red]Error:[/bold red] Not inside a git repository.")
+        raise typer.Exit(1)
+
+    tai_toml = root / ".tai.toml"
+    if not tai_toml.exists():
+        err_console.print("[yellow]This repo is not linked to any project.[/yellow]")
+        raise typer.Exit(0)
+
+    tai_toml.unlink()
+    console.print("[green]Unlinked[/green] — .tai.toml removed.")
+
+
+
+def open_tool(
+    ctx: typer.Context,
+    tool: Annotated[str, typer.Argument(help="Tool to open: github | drive | chat | notion")],
+) -> None:
+    """Open a linked resource in the browser."""
+    if tool not in _OPEN_FIELDS:
+        valid = " | ".join(_OPEN_FIELDS)
+        err_console.print(
+            f"[bold red]Error:[/bold red] Unknown tool '{tool}'. Valid options: {valid}"
+        )
+        raise typer.Exit(1)
+
+    _, manifest = _require_manifest(ctx)
+    data = _fetch_project(ctx, manifest.notion_page)
+    field = _OPEN_FIELDS[tool]
+    url = data.get(field)
+
+    if not url:
+        err_console.print(
+            f"[bold red]Error:[/bold red] No {_TOOL_LABELS.get(field, tool)} URL set for this project.\n"
+            f"[dim]Hint: Update it directly in Notion.[/dim]"
+        )
+        raise typer.Exit(1)
+
+    typer.launch(url)
+    console.print(f"[green]Opening[/green] {_TOOL_LABELS.get(field, tool)} → [cyan]{url}[/cyan]")
 
 
 @app.command()
@@ -168,25 +201,4 @@ def status(ctx: typer.Context) -> None:
     """Show all tool bindings for this project."""
     root, manifest = _require_manifest(ctx)
     data = _fetch_project(ctx, manifest.notion_page)
-    _print_project(data)
-
-
-@app.command()
-def set(
-    ctx: typer.Context,
-    tool: Annotated[str, typer.Argument(help="Tool to bind: github | drive | chat")],
-    value: Annotated[str, typer.Argument(help="URL or identifier to bind.")],
-) -> None:
-    """Update a tool binding for this project."""
-    if tool not in _TOOL_FIELDS:
-        valid = " | ".join(_TOOL_FIELDS)
-        err_console.print(
-            f"[bold red]Error:[/bold red] Unknown tool '{tool}'. Valid options: {valid}"
-        )
-        raise typer.Exit(1)
-
-    _, manifest = _require_manifest(ctx)
-    field = _TOOL_FIELDS[tool]
-    data = _patch_project(ctx, manifest.notion_page, {field: value})
-    console.print(f"[green]Updated[/green] {_TOOL_LABELS.get(field, tool)} → [cyan]{value}[/cyan]")
     _print_project(data)

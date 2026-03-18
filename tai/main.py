@@ -20,7 +20,8 @@ from tai.core.config import load_config
 from tai.core.context import AppContext
 from tai.core.errors import ConfigError
 
-from tai.commands import auth, secret, config, ai, api, claude, project
+from tai.commands import secret, config, ai, api, claude, meetings, project, tasks
+from tai.commands.auth import login, logout, whoami
 
 console = Console()
 err_console = Console(stderr=True)
@@ -89,13 +90,20 @@ def main(
 
 # ── Register built-in command groups ─────────────────────────────────────────
 
-app.add_typer(auth.app)
 app.add_typer(secret.app)
 app.add_typer(config.app)
 app.add_typer(ai.app)
 app.add_typer(api.app)
 app.add_typer(claude.app)
 app.add_typer(project.app)
+app.add_typer(tasks.app)
+app.add_typer(meetings.app)
+app.command(name="link")(project.link)
+app.command(name="unlink")(project.unlink)
+app.command(name="open")(project.open_tool)
+app.command(name="login")(login)
+app.command(name="logout")(logout)
+app.command(name="whoami")(whoami)
 
 
 # ── Plugin discovery via entry points ─────────────────────────────────────────
