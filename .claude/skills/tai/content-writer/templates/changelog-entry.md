@@ -31,6 +31,10 @@ Features or capabilities that no longer exist. Include migration guidance.
 Internal changes relevant to developers working on the project.
 - {Change} — {why it matters for contributors}
 
+### Visualization Opportunities
+Usually none needed. Changelog entries are scannable text. Consider a diagram only
+for major architectural changes that affect how users interact with the system.
+
 ## Writing Rules
 - User-facing language: "You can now..." not "Refactored the internal..."
 - One line per change. If you need more, the feature deserves its own announcement.

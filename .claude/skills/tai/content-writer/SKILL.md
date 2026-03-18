@@ -199,6 +199,19 @@ Summarize what shipped. Let the user confirm or correct the scope.
 **If D (reference material):** Ask the user to provide it. Read any file paths they give.
 For URLs, use WebSearch to gather context.
 
+### 0E. Visualization preference
+
+AskUserQuestion:
+- A) Suggest diagrams — propose Mermaid diagrams wherever they'd help the reader
+  understand structure, flow, or comparisons
+- B) Minimal — include diagrams only when prose alone can't communicate the idea clearly
+- C) No visuals — text and code snippets only
+
+RECOMMENDATION: Let the user choose — some content types (changelogs, short announcements)
+rarely need diagrams, while tutorials and architecture posts benefit heavily.
+
+Store the user's choice. Reference it in Step 2 (drafting) and Step 3D (quality gate).
+
 ---
 
 ## Step 1: Outline
@@ -251,6 +264,21 @@ Write the full content following:
 - Keep paragraphs short (3-4 sentences max). Use subheadings liberally.
 - End sections with a transition that pulls the reader forward.
 - For technical content: show the output of code, not just the code itself.
+
+**Visualization rules (skip if user chose "no visuals" in Step 0E):**
+- Use Mermaid code blocks (` ```mermaid `) for all diagrams. The viewer or platform
+  renders them — no external tools needed.
+- Read the visualization guide before drafting:
+
+```bash
+cat "${SKILL_DIR}/references/visualization-guide.md" 2>/dev/null || cat ~/.claude/skills/tai-content-writer/references/visualization-guide.md 2>/dev/null || echo "VIZ_GUIDE_NOT_FOUND"
+```
+
+- Consult the template's "Visualization Opportunities" section for placement guidance.
+- Keep diagrams simple: 4-12 nodes, clear labels, one idea per diagram.
+- Add a one-line caption above each diagram explaining what the reader is looking at.
+- If the user chose "minimal," only include diagrams where prose alone fails to
+  communicate structure, sequence, or relationships clearly.
 
 **Do NOT:**
 - Use filler phrases ("In this article, we will explore...")
@@ -354,6 +382,51 @@ Ungrounded: {N} ← these need attention
 
 For each ungrounded claim, suggest a correction or flag for user review.
 
+### 3D. Visualization Check (skip if user chose "no visuals" in Step 0E)
+
+Read the visualization guide:
+
+```bash
+cat "${SKILL_DIR}/references/visualization-guide.md" 2>/dev/null || cat ~/.claude/skills/tai-content-writer/references/visualization-guide.md 2>/dev/null || echo "VIZ_GUIDE_NOT_FOUND"
+```
+
+Scan the draft for missed visualization opportunities:
+1. Processes described as sequential steps in prose → suggest a flowchart
+2. Multi-component systems described textually → suggest an architecture diagram
+3. Comparisons laid out in paragraphs → suggest a comparison table or side-by-side diagram
+4. State transitions or lifecycles → suggest a state diagram
+5. Multi-actor interactions → suggest a sequence diagram
+
+For each opportunity found:
+1. Quote the section that could benefit
+2. Describe what type of diagram would help and why
+3. Provide the Mermaid code block ready to insert
+
+Produce a visualization report:
+
+```
+VISUALIZATION REPORT
+====================
+Viz preference: {suggest / minimal / none}
+Sections scanned: {N}
+Opportunities found: {M}
+Diagrams already present: {K}
+
+SUGGESTED:
+1. Section: "{section name}" (line ~N)
+   Type: {flowchart / sequence / state / etc.}
+   Why: {what the diagram communicates that prose doesn't}
+
+2. ...
+```
+
+**If user chose "suggest":** Include the generated Mermaid code blocks directly
+in the draft at the suggested locations. Present the report for awareness.
+
+**If user chose "minimal":** List opportunities but only insert diagrams where
+prose genuinely fails to communicate the idea. Present each insertion via the
+revision step for approval.
+
 ---
 
 ## Step 4: Revise
@@ -447,3 +520,6 @@ Output:      {file path or "inline"}
   force content into a rigid template.
 - **Custom slop patterns are additive.** Check both the bundled patterns and
   `~/.tai-skills/custom-slop-patterns.md` if it exists.
+- **Visualizations are suggested, not forced.** Respect the user's preference from
+  Step 0E. Use Mermaid code blocks for output — the viewer or platform renders them.
+  A diagram should add information that prose alone can't communicate clearly.

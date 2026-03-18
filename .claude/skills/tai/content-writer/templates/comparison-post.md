@@ -42,6 +42,12 @@ State your recommendation clearly:
 - "For most teams building {use case}, we recommend {X} because {reason}."
 - Acknowledge the tradeoff: "You give up {thing} but gain {thing}."
 
+### Visualization Opportunities
+- Architecture comparison: side-by-side diagrams showing how each option structures
+  the same system.
+- Decision flowchart: a "which should I choose?" flowchart based on the reader's
+  constraints (team size, use case, performance needs).
+
 ## Writing Rules
 - Be opinionated. "It depends" is not a conclusion.
 - Use real code for both options. Show the same task implemented in each.

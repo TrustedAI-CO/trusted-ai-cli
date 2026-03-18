@@ -34,6 +34,11 @@ if anonymized).
 3-5 bullet points: what the reader can learn from this story and apply to their
 own situation. These should be actionable, not just observations.
 
+### Visualization Opportunities
+- The Approach: an architecture or flowchart showing the solution design.
+- The Results: a before/after comparison diagram if the change is structural.
+- Key Takeaways: a decision flowchart if the takeaways involve conditional advice.
+
 ## Writing Rules
 - Specificity is credibility. "Reduced deploy time from 45 minutes to 3 minutes"
   beats "Significantly reduced deploy time."

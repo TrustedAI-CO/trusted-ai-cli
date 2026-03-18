@@ -30,6 +30,13 @@ to stop at any section and have a working (if incomplete) version.
 Show the complete working example. If the sections built incrementally, this is the
 final assembled version with all pieces connected.
 
+### Visualization Opportunities
+- After the Introduction: an architecture or component diagram showing how the pieces
+  the reader will build fit together.
+- Per-section: a sequence diagram or flowchart showing execution flow for complex
+  interactions. Especially useful when multiple components communicate.
+- Putting It Together: an updated architecture diagram reflecting the complete system.
+
 ### Going Further (optional)
 - 2-3 ideas for extending what the reader built
 - Links to advanced topics, related tutorials, or documentation
