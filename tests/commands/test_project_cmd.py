@@ -94,6 +94,7 @@ def test_link_interactive_picker(tmp_path):
     with (
         patch("tai.commands.project.find_repo_root", return_value=tmp_path),
         patch("tai.commands.project.build_client", return_value=list_client),
+        patch("tai.commands.project.is_interactive", return_value=True),
         patch("tai.commands.project.search_select", return_value=PROJECTS_LIST[0]),
     ):
         result = runner.invoke(main_app, ["link"], obj=_ctx(tmp_path))
@@ -111,6 +112,7 @@ def test_link_user_cancels(tmp_path):
     with (
         patch("tai.commands.project.find_repo_root", return_value=tmp_path),
         patch("tai.commands.project.build_client", return_value=list_client),
+        patch("tai.commands.project.is_interactive", return_value=True),
         patch("tai.commands.project.search_select", return_value=None),
     ):
         result = runner.invoke(main_app, ["link"], obj=_ctx(tmp_path))
@@ -120,7 +122,10 @@ def test_link_user_cancels(tmp_path):
 
 
 def test_link_outside_git_repo():
-    with patch("tai.commands.project.find_repo_root", return_value=None):
+    with (
+        patch("tai.commands.project.find_repo_root", return_value=None),
+        patch("tai.commands.project.is_interactive", return_value=True),
+    ):
         result = runner.invoke(main_app, ["link"], obj=_ctx(Path("/tmp")))
     assert result.exit_code == 1
 

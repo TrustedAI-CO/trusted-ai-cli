@@ -44,7 +44,7 @@ def test_client_raises_api_error_on_4xx(app_ctx):
         client = build_client(app_ctx)
         with pytest.raises(ApiError) as exc_info:
             client.get("/not-found")
-    assert exc_info.value.exit_code == 2
+    assert exc_info.value.exit_code == 3  # NOT_FOUND for 404
 
 
 @respx.mock

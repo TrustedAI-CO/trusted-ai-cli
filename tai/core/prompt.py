@@ -2,12 +2,18 @@
 
 from __future__ import annotations
 
+import sys
 from typing import Callable, TypeVar
 
 import questionary
 from InquirerPy import inquirer
 
 T = TypeVar("T")
+
+
+def is_interactive() -> bool:
+    """Return True when stdin is a real TTY (not piped / CI / agent shell)."""
+    return sys.stdin.isatty()
 
 
 def make_completer(items: list[str], max_shown: int = 10) -> Callable[[str], list[str]]:

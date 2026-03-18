@@ -34,7 +34,16 @@ def test_secret_not_found_has_hint():
 def test_api_error():
     e = ApiError(404, "not found")
     assert "404" in str(e)
-    assert e.exit_code == 2
+    assert e.exit_code == 3  # NOT_FOUND
+
+def test_api_error_conflict():
+    assert ApiError(409, "conflict").exit_code == 5  # CONFLICT
+
+def test_api_error_permission():
+    assert ApiError(403, "forbidden").exit_code == 4  # PERMISSION_DENIED
+
+def test_api_error_generic():
+    assert ApiError(500, "server error").exit_code == 2  # USAGE/generic
 
 
 def test_handle_error_exits(capsys):

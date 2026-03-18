@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import json
 from typing import Annotated
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from tai.core.errors import ApiError, handle_error
+from tai.core.errors import ApiError, ExitCode, handle_error
 from tai.core.http import build_client
 from tai.core.project import ProjectManifest, find_repo_root, load_manifest, save_manifest
-from tai.core.prompt import search_select
+from tai.core.prompt import is_interactive, search_select
 
 app = typer.Typer(name="project", help="Manage project tool bindings.")
 console = Console()
@@ -90,6 +91,11 @@ def _print_project(data: dict) -> None:
 
 def link(ctx: typer.Context) -> None:
     """Interactively pick a project and link this repo to it."""
+    if not is_interactive():
+        err_console.print("[bold red]Error:[/bold red] tai link requires an interactive terminal.")
+        err_console.print("[dim]Hint: Run in a terminal, not in a script or agent.[/dim]")
+        raise typer.Exit(ExitCode.USAGE)
+
     root = find_repo_root()
     if root is None:
         err_console.print("[bold red]Error:[/bold red] Not inside a git repository.")
@@ -100,7 +106,7 @@ def link(ctx: typer.Context) -> None:
         projects = client.get("/projects").json()
     except ApiError as e:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(e.exit_code)
 
     if not projects:
         err_console.print("[yellow]No projects found.[/yellow]")
@@ -201,4 +207,7 @@ def status(ctx: typer.Context) -> None:
     """Show all tool bindings for this project."""
     root, manifest = _require_manifest(ctx)
     data = _fetch_project(ctx, manifest.notion_page)
-    _print_project(data)
+    if getattr(ctx.obj, "json_output", False):
+        console.print_json(json.dumps(data))
+    else:
+        _print_project(data)

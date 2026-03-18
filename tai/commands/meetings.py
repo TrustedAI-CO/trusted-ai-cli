@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
+import json
+
 import typer
 from rich.console import Console
 
-from tai.core.errors import ApiError
+from tai.core.errors import ApiError, ExitCode
 from tai.core.http import build_client
 from tai.core.project import find_repo_root, load_manifest
-from tai.core.prompt import search_select
+from tai.core.prompt import is_interactive, search_select
 
 app = typer.Typer(name="meetings", help="Manage project meetings.")
 console = Console()
@@ -41,20 +43,20 @@ def _fetch_meetings(ctx: typer.Context, project_id: str) -> list[dict]:
         return client.get(f"/projects/{project_id}/meetings").json()
     except ApiError as e:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(e.exit_code)
 
 
 def _resolve_short_id(meetings: list[dict], short_id: str) -> dict:
     matches = [m for m in meetings if m["short_id"].startswith(short_id)]
     if not matches:
         err_console.print(f"[bold red]Error:[/bold red] No meeting found with ID starting '{short_id}'.")
-        raise typer.Exit(1)
+        raise typer.Exit(ExitCode.NOT_FOUND)
     if len(matches) > 1:
         err_console.print(
             f"[bold red]Error:[/bold red] Ambiguous ID '{short_id}' — {len(matches)} meetings match. "
             "Provide more characters."
         )
-        raise typer.Exit(1)
+        raise typer.Exit(ExitCode.CONFLICT)
     return matches[0]
 
 
@@ -80,8 +82,9 @@ def list_meetings(
     all_projects: bool = typer.Option(False, "-a", "--all", help="Show meetings across all projects."),
     limit: int | None = typer.Option(None, "-n", "--limit", help="Limit number of results."),
     filter_text: str | None = typer.Option(None, "-f", "--filter", help="Filter by title (case-insensitive substring)."),
+    quiet: bool = typer.Option(False, "-q", "--quiet", help="Output meeting titles only, one per line."),
 ) -> None:
-    """Pick a meeting to open in Notion."""
+    """Pick a meeting to open in Notion (interactive), or list meetings (non-interactive/--json/--quiet)."""
     if ctx.invoked_subcommand is not None:
         return
 
@@ -91,7 +94,7 @@ def list_meetings(
             meetings = client.get("/meetings").json()
         except ApiError as e:
             err_console.print(f"[bold red]Error:[/bold red] {e}")
-            raise typer.Exit(1)
+            raise typer.Exit(e.exit_code)
     else:
         manifest = _require_manifest(ctx)
         meetings = _fetch_meetings(ctx, manifest.notion_page)
@@ -106,11 +109,23 @@ def list_meetings(
         console.print(msg)
         return
 
-    chosen = search_select("Meeting:", meetings, label_fn=_meeting_row)
-    if chosen is None:
-        raise typer.Exit(0)
+    json_output = getattr(ctx.obj, "json_output", False)
 
-    _open(chosen)
+    if json_output:
+        console.print_json(json.dumps(meetings))
+    elif quiet:
+        for m in meetings:
+            print(m["title"])
+    elif is_interactive():
+        chosen = search_select("Meeting:", meetings, label_fn=_meeting_row)
+        if chosen is None:
+            raise typer.Exit(0)
+        _open(chosen)
+    else:
+        # Non-interactive fallback: print plain list to stdout
+        for m in meetings:
+            date = m.get("date") or "—"
+            print(f"{m['short_id']}  {m['title']}  {date}")
 
 
 @app.command()
@@ -139,6 +154,9 @@ def add(ctx: typer.Context) -> None:
         ).json()
     except ApiError as e:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(e.exit_code)
 
-    console.print(f"[green]Created[/green] {meeting['short_id']} {meeting['title']}")
+    if getattr(ctx.obj, "json_output", False):
+        console.print_json(json.dumps(meeting))
+    else:
+        console.print(f"[green]Created[/green] {meeting['short_id']} {meeting['title']}")

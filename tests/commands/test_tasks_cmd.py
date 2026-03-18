@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -22,9 +23,9 @@ TASK_DONE = {**TASK_A, "status": "Done"}
 MANIFEST_TOML = '[project]\nnotion_page = "2ef55eff03158039b95cf6e8ff60d632"\n'
 
 
-def _ctx(tmp_path: Path) -> AppContext:
+def _ctx(tmp_path: Path, json_output: bool = False) -> AppContext:
     cfg = TaiConfig(profiles={"default": ProfileConfig(api_base_url="http://api.test")})
-    return AppContext(profile="default", config=cfg)
+    return AppContext(profile="default", config=cfg, json_output=json_output)
 
 
 def _mock_client(get_data=None, post_data=None, patch_data=None) -> MagicMock:
@@ -159,6 +160,7 @@ def test_done_interactive_picker(tmp_path):
     with (
         patch("tai.commands.tasks.find_repo_root", return_value=tmp_path),
         patch("tai.commands.tasks.build_client", return_value=mock_client),
+        patch("tai.commands.tasks.is_interactive", return_value=True),
         patch("tai.commands.tasks.search_select", return_value=TASK_A),
     ):
         result = runner.invoke(app, ["done"], obj=_ctx(tmp_path))
@@ -174,6 +176,7 @@ def test_done_interactive_cancelled(tmp_path):
     with (
         patch("tai.commands.tasks.find_repo_root", return_value=tmp_path),
         patch("tai.commands.tasks.build_client", return_value=mock_client),
+        patch("tai.commands.tasks.is_interactive", return_value=True),
         patch("tai.commands.tasks.search_select", return_value=None),
     ):
         result = runner.invoke(app, ["done"], obj=_ctx(tmp_path))
@@ -189,7 +192,7 @@ def test_done_not_found(tmp_path):
     ):
         result = runner.invoke(app, ["done", "zzzzzzzz"], obj=_ctx(tmp_path))
 
-    assert result.exit_code == 1
+    assert result.exit_code == 3  # NOT_FOUND
     assert "No task found" in result.output
 
 
@@ -204,5 +207,81 @@ def test_done_ambiguous_id(tmp_path):
     ):
         result = runner.invoke(app, ["done", "aabb"], obj=_ctx(tmp_path))
 
-    assert result.exit_code == 1
+    assert result.exit_code == 5  # CONFLICT
     assert "Ambiguous" in result.output
+
+
+# ── json output ───────────────────────────────────────────────────────────────
+
+
+def test_list_json_output(tmp_path):
+    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
+    with (
+        patch("tai.commands.tasks.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.tasks.build_client", return_value=_mock_client(get_data=[TASK_A, TASK_B])),
+    ):
+        result = runner.invoke(app, [], obj=_ctx(tmp_path, json_output=True))
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data) == 2
+    assert data[0]["short_id"] == "aabbccdd"
+
+
+def test_add_json_output(tmp_path):
+    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
+    with (
+        patch("tai.commands.tasks.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.tasks.build_client", return_value=_mock_client(post_data=TASK_A)),
+    ):
+        result = runner.invoke(app, ["add"], input="Write tests\n", obj=_ctx(tmp_path, json_output=True))
+
+    assert result.exit_code == 0
+    # output contains the prompt line followed by JSON — extract the JSON block
+    json_part = result.output[result.output.index("{"):]
+    data = json.loads(json_part)
+    assert data["short_id"] == "aabbccdd"
+
+
+def test_done_json_output(tmp_path):
+    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
+    with (
+        patch("tai.commands.tasks.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.tasks.build_client", return_value=_mock_client(get_data=[TASK_A], patch_data=TASK_DONE)),
+    ):
+        result = runner.invoke(app, ["done", "aabbccdd"], obj=_ctx(tmp_path, json_output=True))
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["status"] == "Done"
+
+
+# ── quiet mode ────────────────────────────────────────────────────────────────
+
+
+def test_list_quiet(tmp_path):
+    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
+    with (
+        patch("tai.commands.tasks.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.tasks.build_client", return_value=_mock_client(get_data=[TASK_A, TASK_B])),
+    ):
+        result = runner.invoke(app, ["-q"], obj=_ctx(tmp_path))
+
+    assert result.exit_code == 0
+    lines = result.output.strip().splitlines()
+    assert lines == ["Write tests", "Deploy service"]
+
+
+# ── non-interactive done ──────────────────────────────────────────────────────
+
+
+def test_done_non_interactive_no_id_exits(tmp_path):
+    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
+    with (
+        patch("tai.commands.tasks.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.tasks.build_client", return_value=_mock_client(get_data=[TASK_A])),
+        patch("tai.commands.tasks.is_interactive", return_value=False),
+    ):
+        result = runner.invoke(app, ["done"], obj=_ctx(tmp_path))
+
+    assert result.exit_code == 2  # USAGE

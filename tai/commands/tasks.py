@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
+import json
 from typing import Annotated
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-from tai.core.errors import ApiError, handle_error
+from tai.core.errors import ApiError, ExitCode, handle_error
 from tai.core.http import build_client
 from tai.core.project import find_repo_root, load_manifest
-from tai.core.prompt import search_select
+from tai.core.prompt import is_interactive, search_select
 
 app = typer.Typer(name="tasks", help="Manage project tasks.")
 console = Console()
@@ -41,58 +42,24 @@ def _fetch_tasks(ctx: typer.Context, project_id: str) -> list[dict]:
         return client.get(f"/projects/{project_id}/tasks").json()
     except ApiError as e:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(e.exit_code)
 
 
 def _resolve_short_id(tasks: list[dict], short_id: str) -> str:
     matches = [t for t in tasks if t["short_id"].startswith(short_id)]
     if not matches:
         err_console.print(f"[bold red]Error:[/bold red] No task found with ID starting '{short_id}'.")
-        raise typer.Exit(1)
+        raise typer.Exit(ExitCode.NOT_FOUND)
     if len(matches) > 1:
         err_console.print(
             f"[bold red]Error:[/bold red] Ambiguous ID '{short_id}' — {len(matches)} tasks match. "
             "Provide more characters."
         )
-        raise typer.Exit(1)
+        raise typer.Exit(ExitCode.CONFLICT)
     return matches[0]["task_id"]
 
 
-# ── commands ──────────────────────────────────────────────────────────────────
-
-
-@app.callback(invoke_without_command=True)
-def list_tasks(
-    ctx: typer.Context,
-    all_projects: bool = typer.Option(False, "-a", "--all", help="Show tasks across all projects."),
-    limit: int | None = typer.Option(None, "-n", "--limit", help="Limit number of results."),
-    filter_text: str | None = typer.Option(None, "-f", "--filter", help="Filter by name (case-insensitive substring)."),
-) -> None:
-    """List tasks for the current project (or all with -a)."""
-    if ctx.invoked_subcommand is not None:
-        return
-
-    if all_projects:
-        try:
-            client = build_client(ctx.obj)
-            tasks = client.get("/tasks").json()
-        except ApiError as e:
-            err_console.print(f"[bold red]Error:[/bold red] {e}")
-            raise typer.Exit(1)
-    else:
-        manifest = _require_manifest(ctx)
-        tasks = _fetch_tasks(ctx, manifest.notion_page)
-
-    if filter_text:
-        tasks = [t for t in tasks if filter_text.lower() in (t.get("name") or "").lower()]
-    if limit is not None:
-        tasks = tasks[:limit]
-
-    if not tasks:
-        msg = f"[dim]No tasks matching '{filter_text}'.[/dim]" if filter_text else "[dim]No tasks found.[/dim]"
-        console.print(msg)
-        return
-
+def _print_table(tasks: list[dict]) -> None:
     table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
     table.add_column("ID", style="dim", no_wrap=True)
     table.add_column("Task")
@@ -116,6 +83,53 @@ def list_tasks(
     console.print(table)
 
 
+# ── commands ──────────────────────────────────────────────────────────────────
+
+
+@app.callback(invoke_without_command=True)
+def list_tasks(
+    ctx: typer.Context,
+    all_projects: bool = typer.Option(False, "-a", "--all", help="Show tasks across all projects."),
+    limit: int | None = typer.Option(None, "-n", "--limit", help="Limit number of results."),
+    filter_text: str | None = typer.Option(None, "-f", "--filter", help="Filter by name (case-insensitive substring)."),
+    quiet: bool = typer.Option(False, "-q", "--quiet", help="Output task names only, one per line."),
+) -> None:
+    """List tasks for the current project (or all with -a)."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    if all_projects:
+        try:
+            client = build_client(ctx.obj)
+            tasks = client.get("/tasks").json()
+        except ApiError as e:
+            err_console.print(f"[bold red]Error:[/bold red] {e}")
+            raise typer.Exit(e.exit_code)
+    else:
+        manifest = _require_manifest(ctx)
+        tasks = _fetch_tasks(ctx, manifest.notion_page)
+
+    if filter_text:
+        tasks = [t for t in tasks if filter_text.lower() in (t.get("name") or "").lower()]
+    if limit is not None:
+        tasks = tasks[:limit]
+
+    if not tasks:
+        msg = f"[dim]No tasks matching '{filter_text}'.[/dim]" if filter_text else "[dim]No tasks found.[/dim]"
+        console.print(msg)
+        return
+
+    json_output = getattr(ctx.obj, "json_output", False)
+
+    if json_output:
+        console.print_json(json.dumps(tasks))
+    elif quiet:
+        for task in tasks:
+            print(task["name"])
+    else:
+        _print_table(tasks)
+
+
 @app.command()
 def add(ctx: typer.Context) -> None:
     """Create a new task for the current project."""
@@ -130,9 +144,12 @@ def add(ctx: typer.Context) -> None:
         ).json()
     except ApiError as e:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(e.exit_code)
 
-    console.print(f"[green]Created[/green] {task['short_id']} {task['name']}")
+    if getattr(ctx.obj, "json_output", False):
+        console.print_json(json.dumps(task))
+    else:
+        console.print(f"[green]Created[/green] {task['short_id']} {task['name']}")
 
 
 def _task_row(task: dict) -> str:
@@ -160,11 +177,15 @@ def done(
 
     if short_id is not None:
         task_id = _resolve_short_id(tasks, short_id)
-    else:
+    elif is_interactive():
         chosen = search_select("Mark as done:", open_tasks, label_fn=_task_row)
         if chosen is None:
             raise typer.Exit(0)
         task_id = chosen["task_id"]
+    else:
+        err_console.print("[bold red]Error:[/bold red] No task ID given and stdin is not interactive.")
+        err_console.print("[dim]Hint: tai tasks done <short_id>[/dim]")
+        raise typer.Exit(ExitCode.USAGE)
 
     try:
         client = build_client(ctx.obj)
@@ -174,6 +195,9 @@ def done(
         ).json()
     except ApiError as e:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
-        raise typer.Exit(1)
+        raise typer.Exit(e.exit_code)
 
-    console.print(f"[green]Done[/green] {task['short_id']} {task['name']}")
+    if getattr(ctx.obj, "json_output", False):
+        console.print_json(json.dumps(task))
+    else:
+        console.print(f"[green]Done[/green] {task['short_id']} {task['name']}")

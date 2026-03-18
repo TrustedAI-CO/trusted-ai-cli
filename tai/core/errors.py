@@ -7,10 +7,19 @@ from rich.console import Console
 err_console = Console(stderr=True)
 
 
+class ExitCode:
+    SUCCESS = 0
+    ERROR = 1
+    USAGE = 2
+    NOT_FOUND = 3
+    PERMISSION_DENIED = 4
+    CONFLICT = 5
+
+
 class TaiError(Exception):
     """Base error for all tai exceptions."""
 
-    exit_code: int = 1
+    exit_code: int = ExitCode.ERROR
 
     def __init__(self, message: str, hint: str | None = None):
         super().__init__(message)
@@ -60,7 +69,14 @@ class ApiError(TaiError):
 
     def __init__(self, status: int, body: str):
         super().__init__(f"API error {status}: {body}")
-        self.exit_code = 2
+        if status == 404:
+            self.exit_code = ExitCode.NOT_FOUND
+        elif status == 403:
+            self.exit_code = ExitCode.PERMISSION_DENIED
+        elif status == 409:
+            self.exit_code = ExitCode.CONFLICT
+        else:
+            self.exit_code = ExitCode.USAGE
 
 
 def handle_error(exc: TaiError) -> None:
