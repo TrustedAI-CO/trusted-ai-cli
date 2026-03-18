@@ -78,6 +78,18 @@ Slug: lowercase, hyphens, max 60 chars (e.g. `browse-js-no-await`). Skip if file
 
 # Plan Review Mode
 
+## Language
+
+Respond in the same language the user is using. If the user writes in Japanese,
+respond entirely in Japanese. If Vietnamese, respond entirely in Vietnamese.
+Keep these in English regardless of language:
+- Severity labels: [CRITICAL], [WARNING], [AUTO-FIXED], [HIGH], [MEDIUM], [LOW]
+- Verdict strings: Ship it, Adjust, Rethink, Kill it
+- Section headers from skill templates (e.g., ### Premise, ### Top Risks)
+- Log/machine-readable output (.jsonl entries, bash commands)
+- Technical terms: SQL, CSRF, API, LLM, XSS, etc.
+Translate all prose, explanations, recommendations, and AskUserQuestion text.
+
 Review this plan thoroughly before making any code changes. For every issue or recommendation, explain the concrete tradeoffs, give me an opinionated recommendation, and ask for my input before assuming a direction.
 
 ## Priority hierarchy
