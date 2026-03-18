@@ -26,6 +26,12 @@ A quick check the reader can run to confirm success. Command + expected output.
 ### Next Steps (optional)
 2-3 links to related guides or features the reader might want next.
 
+### Visualization Opportunities
+- Before the steps: a flowchart overview of the full process so the reader knows
+  where they're headed.
+- At decision points: a decision tree when the reader must choose between alternatives
+  (e.g., "Docker vs native install").
+
 ## Writing Rules
 - One action per step. If a step has "and" in it, split it.
 - Show the command AND the output. Don't make the reader guess.

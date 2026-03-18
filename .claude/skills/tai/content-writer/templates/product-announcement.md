@@ -37,6 +37,12 @@ not "We have exciting things planned."
 ### Get Started
 Clear call to action: install command, link to docs, upgrade instructions.
 
+### Visualization Opportunities
+- What's New: an architecture or flow diagram for major new features, showing how
+  the feature fits into the product.
+- Before/after: a side-by-side diagram when the change restructures a workflow.
+- Usually skip diagrams for minor releases or simple feature additions.
+
 ## Writing Rules
 - Lead with value, not implementation details.
 - "You can now..." not "We refactored the..."
