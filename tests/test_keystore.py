@@ -63,3 +63,13 @@ def test_profile_isolation():
     keystore.store("prod", "SHARED", "prod-value")
     assert keystore.retrieve("dev", "SHARED") == "dev-value"
     assert keystore.retrieve("prod", "SHARED") == "prod-value"
+
+
+def test_password_set_error_falls_back_to_file(tmp_path, monkeypatch):
+    """PasswordSetError (e.g. macOS keychain -25244) should fall back to file store."""
+    monkeypatch.setattr(keystore, "_SECRETS_FILE", tmp_path / "secrets.json")
+    with patch("keyring.set_password", side_effect=keyring.errors.PasswordSetError), \
+         patch("keyring.get_password", side_effect=keyring.errors.KeyringError), \
+         patch("keyring.delete_password", side_effect=keyring.errors.PasswordDeleteError):
+        keystore.store("default", "FALLBACK_KEY", "fallback-value")
+        assert keystore.retrieve("default", "FALLBACK_KEY") == "fallback-value"
