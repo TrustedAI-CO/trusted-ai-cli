@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.4] - 2026-03-19
+
+### Fixed
+- `tai login` crash on macOS when keychain returns error -25244 (`PasswordSetError`). Keystore now catches all `KeyringError` subtypes and falls back to file storage gracefully.
+
 ## [0.2.3] - 2026-03-19
 
 ### Added
