@@ -1,0 +1,144 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/pre-bash-tmux-reminder.js\""
+        }
+      ],
+      "description": "[tai] Suggest tmux for long-running commands (test, build, docker, pytest)"
+    },
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/pre-bash-git-push-reminder.js\""
+        }
+      ],
+      "description": "[tai] Review changes before git push"
+    },
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/doc-file-warning.js\""
+        }
+      ],
+      "description": "[tai] Warn about non-standard documentation files"
+    },
+    {
+      "matcher": "Edit|Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/suggest-compact.js\""
+        }
+      ],
+      "description": "[tai] Suggest /compact at logical intervals (~50 tool calls)"
+    }
+  ],
+  "PreCompact": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/pre-compact.js\""
+        }
+      ],
+      "description": "[tai] Save state before context compaction"
+    }
+  ],
+  "SessionStart": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/session-start.js\""
+        }
+      ],
+      "description": "[tai] Load previous context and detect environment on session start"
+    }
+  ],
+  "PostToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/post-bash-pr-created.js\""
+        }
+      ],
+      "description": "[tai] Log PR URL and review command after gh pr create"
+    },
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/post-bash-build-complete.js\"",
+          "async": true,
+          "timeout": 30
+        }
+      ],
+      "description": "[tai] Log build completion after npm/pnpm/yarn build"
+    },
+    {
+      "matcher": "Edit|Write|MultiEdit",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/quality-gate.js\"",
+          "async": true,
+          "timeout": 30
+        }
+      ],
+      "description": "[tai] Run quality checks after file edits (ruff for Python, biome/prettier for JS)"
+    }
+  ],
+  "Stop": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/session-end.js\"",
+          "async": true,
+          "timeout": 10
+        }
+      ],
+      "description": "[tai] Persist session state after each response"
+    },
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/cost-tracker.js\"",
+          "async": true,
+          "timeout": 10
+        }
+      ],
+      "description": "[tai] Track token and cost metrics per session"
+    }
+  ],
+  "SessionEnd": [
+    {
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "node \"${SCRIPTS_DIR}/session-end-marker.js\"",
+          "async": true,
+          "timeout": 10
+        }
+      ],
+      "description": "[tai] Session end lifecycle marker"
+    }
+  ]
+}
