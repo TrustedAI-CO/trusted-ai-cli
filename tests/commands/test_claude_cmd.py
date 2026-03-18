@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -16,6 +18,18 @@ from tai.commands.claude import (
 )
 
 runner = CliRunner()
+
+
+# ── fixtures for setup-hooks tests ───────────────────────────────────────────
+
+
+@pytest.fixture
+def fake_settings(tmp_path):
+    """Provide a temp settings.json path and patch SETTINGS_PATH."""
+    settings_file = tmp_path / ".claude" / "settings.json"
+    settings_file.parent.mkdir(parents=True)
+    with patch("tai.hooks.SETTINGS_PATH", settings_file):
+        yield settings_file
 
 
 # ── unit tests for helper functions ──────────────────────────────────────────
@@ -221,3 +235,169 @@ def test_status_delegates_to_claude():
 
     assert result.exit_code == 0
     mock_run.assert_called_once_with(["/usr/bin/claude", "auth", "status"])
+
+
+# ── setup-hooks tests ───────────────────────────────────────────────────────
+
+
+def test_setup_hooks_no_node():
+    """Error when node is not installed."""
+    with patch("shutil.which", return_value=None):
+        result = runner.invoke(app, ["setup-hooks"])
+    assert result.exit_code == 1
+    assert "'node' not found" in result.output
+
+
+def test_setup_hooks_happy_path(fake_settings):
+    """Install hooks into a fresh settings.json."""
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        result = runner.invoke(app, ["setup-hooks"])
+
+    assert result.exit_code == 0
+    assert "Installed" in result.output
+
+    settings = json.loads(fake_settings.read_text())
+    assert "hooks" in settings
+    # Should have multiple event types
+    assert len(settings["hooks"]) >= 4
+    # All entries should have [tai] prefix
+    for entries in settings["hooks"].values():
+        for entry in entries:
+            assert entry["description"].startswith("[tai]")
+
+
+def test_setup_hooks_creates_settings(fake_settings):
+    """Creates settings.json when it doesn't exist."""
+    # Ensure the file doesn't exist
+    fake_settings.unlink(missing_ok=True)
+
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        result = runner.invoke(app, ["setup-hooks"])
+
+    assert result.exit_code == 0
+    assert fake_settings.exists()
+    settings = json.loads(fake_settings.read_text())
+    assert "hooks" in settings
+
+
+def test_setup_hooks_idempotent(fake_settings):
+    """Running setup-hooks twice produces identical results."""
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        runner.invoke(app, ["setup-hooks"])
+        first = json.loads(fake_settings.read_text())
+
+        runner.invoke(app, ["setup-hooks"])
+        second = json.loads(fake_settings.read_text())
+
+    assert first == second
+
+
+def test_setup_hooks_preserves_custom_hooks(fake_settings):
+    """Non-tai hooks are preserved during installation."""
+    custom_settings = {
+        "someOtherKey": True,
+        "hooks": {
+            "PreToolUse": [
+                {
+                    "matcher": "Bash",
+                    "hooks": [{"type": "command", "command": "echo custom"}],
+                    "description": "My custom hook",
+                }
+            ],
+        },
+    }
+    fake_settings.write_text(json.dumps(custom_settings))
+
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        result = runner.invoke(app, ["setup-hooks"])
+
+    assert result.exit_code == 0
+    settings = json.loads(fake_settings.read_text())
+
+    # Custom hook is preserved
+    pre_hooks = settings["hooks"]["PreToolUse"]
+    custom = [h for h in pre_hooks if h["description"] == "My custom hook"]
+    assert len(custom) == 1
+
+    # tai hooks are also present
+    tai = [h for h in pre_hooks if h["description"].startswith("[tai]")]
+    assert len(tai) >= 1
+
+    # Other settings keys are preserved
+    assert settings["someOtherKey"] is True
+
+
+def test_setup_hooks_list(fake_settings):
+    """--list shows hooks without modifying settings."""
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        result = runner.invoke(app, ["setup-hooks", "--list"])
+
+    assert result.exit_code == 0
+    assert "PreToolUse" in result.output
+    # Should not have created settings file
+    assert not fake_settings.exists()
+
+
+def test_setup_hooks_remove(fake_settings):
+    """--remove strips tai hooks, preserves custom ones."""
+    # First install
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        runner.invoke(app, ["setup-hooks"])
+
+    # Add a custom hook
+    settings = json.loads(fake_settings.read_text())
+    settings["hooks"]["PreToolUse"].append({
+        "matcher": "Bash",
+        "hooks": [{"type": "command", "command": "echo custom"}],
+        "description": "My custom hook",
+    })
+    fake_settings.write_text(json.dumps(settings))
+
+    # Remove tai hooks
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        result = runner.invoke(app, ["setup-hooks", "--remove"])
+
+    assert result.exit_code == 0
+    assert "Removed" in result.output
+
+    settings = json.loads(fake_settings.read_text())
+    # Only custom hook should remain
+    pre_hooks = settings["hooks"]["PreToolUse"]
+    assert len(pre_hooks) == 1
+    assert pre_hooks[0]["description"] == "My custom hook"
+
+
+def test_setup_hooks_remove_noop(fake_settings):
+    """--remove when no tai hooks exist is a no-op."""
+    fake_settings.write_text(json.dumps({"hooks": {}}))
+
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        result = runner.invoke(app, ["setup-hooks", "--remove"])
+
+    assert result.exit_code == 0
+    assert "No tai-managed hooks" in result.output
+
+
+def test_setup_hooks_json_output(fake_settings):
+    """--json flag produces valid JSON output."""
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        result = runner.invoke(app, ["setup-hooks", "--json"])
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert "installed" in data
+    assert data["installed"] > 0
+    assert "events" in data
+
+
+def test_setup_hooks_corrupted_settings(fake_settings):
+    """Clear error when settings.json has invalid JSON."""
+    fake_settings.write_text("{broken json")
+
+    with patch("shutil.which", return_value="/usr/bin/node"):
+        result = runner.invoke(app, ["setup-hooks"])
+
+    assert result.exit_code == 1
+    # Rich may wrap text across lines; normalize whitespace
+    normalized = " ".join(result.output.split())
+    assert "invalid JSON" in normalized
