@@ -57,24 +57,39 @@ def _mock_client(get_data=None, post_data=None) -> MagicMock:
     return client
 
 
-# ── list (default callback) ───────────────────────────────────────────────────
+# ── list / picker (default callback) ─────────────────────────────────────────
 
 
-def test_list_meetings_shows_table(tmp_path):
+def test_list_picker_opens_selected(tmp_path):
     (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
     with (
         patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
         patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A, MEETING_B])),
+        patch("tai.commands.meetings.search_select", return_value=MEETING_A),
+        patch("typer.launch") as mock_launch,
     ):
         result = runner.invoke(app, [], obj=_ctx(tmp_path))
 
     assert result.exit_code == 0
+    mock_launch.assert_called_once_with(MEETING_A["notion_url"])
     assert "Sprint Planning" in result.output
-    assert "Client Demo" in result.output
-    assert "aabbccdd" in result.output
 
 
-def test_list_meetings_empty(tmp_path):
+def test_list_picker_cancelled(tmp_path):
+    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
+    with (
+        patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
+        patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A, MEETING_B])),
+        patch("tai.commands.meetings.search_select", return_value=None),
+        patch("typer.launch") as mock_launch,
+    ):
+        result = runner.invoke(app, [], obj=_ctx(tmp_path))
+
+    assert result.exit_code == 0
+    mock_launch.assert_not_called()
+
+
+def test_list_empty(tmp_path):
     (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
     with (
         patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
@@ -86,13 +101,26 @@ def test_list_meetings_empty(tmp_path):
     assert "No meetings" in result.output
 
 
+def test_list_no_manifest(tmp_path):
+    with patch("tai.commands.meetings.find_repo_root", return_value=tmp_path):
+        result = runner.invoke(app, [], obj=_ctx(tmp_path))
+    assert result.exit_code == 1
+
+
+def test_list_outside_git_repo():
+    with patch("tai.commands.meetings.find_repo_root", return_value=None):
+        result = runner.invoke(app, [], obj=_ctx(Path("/tmp")))
+    assert result.exit_code == 1
+
+
 def test_list_all_projects(tmp_path):
     with patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A, MEETING_B])):
-        result = runner.invoke(app, ["-a"], obj=_ctx(tmp_path))
+        with (
+            patch("tai.commands.meetings.search_select", return_value=None),
+        ):
+            result = runner.invoke(app, ["-a"], obj=_ctx(tmp_path))
 
     assert result.exit_code == 0
-    assert "Sprint Planning" in result.output
-    assert "Client Demo" in result.output
 
 
 def test_list_filter(tmp_path):
@@ -100,12 +128,16 @@ def test_list_filter(tmp_path):
     with (
         patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
         patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A, MEETING_B])),
+        patch("tai.commands.meetings.search_select", return_value=None) as mock_select,
     ):
         result = runner.invoke(app, ["-f", "Sprint"], obj=_ctx(tmp_path))
 
     assert result.exit_code == 0
-    assert "Sprint Planning" in result.output
-    assert "Client Demo" not in result.output
+    # picker should only receive the filtered meeting
+    call_args = mock_select.call_args
+    items = call_args[0][1]
+    assert len(items) == 1
+    assert items[0]["title"] == "Sprint Planning"
 
 
 def test_list_limit(tmp_path):
@@ -113,24 +145,13 @@ def test_list_limit(tmp_path):
     with (
         patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
         patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A, MEETING_B])),
+        patch("tai.commands.meetings.search_select", return_value=None) as mock_select,
     ):
         result = runner.invoke(app, ["-n", "1"], obj=_ctx(tmp_path))
 
     assert result.exit_code == 0
-    assert "Sprint Planning" in result.output
-    assert "Client Demo" not in result.output
-
-
-def test_list_meetings_no_manifest(tmp_path):
-    with patch("tai.commands.meetings.find_repo_root", return_value=tmp_path):
-        result = runner.invoke(app, [], obj=_ctx(tmp_path))
-    assert result.exit_code == 1
-
-
-def test_list_meetings_outside_git_repo():
-    with patch("tai.commands.meetings.find_repo_root", return_value=None):
-        result = runner.invoke(app, [], obj=_ctx(Path("/tmp")))
-    assert result.exit_code == 1
+    items = mock_select.call_args[0][1]
+    assert len(items) == 1
 
 
 # ── add ───────────────────────────────────────────────────────────────────────
@@ -147,72 +168,3 @@ def test_add_creates_meeting(tmp_path):
     assert result.exit_code == 0
     assert "Sprint Planning" in result.output
     assert "aabbccdd" in result.output
-
-
-# ── open ──────────────────────────────────────────────────────────────────────
-
-
-def test_open_meeting_by_id(tmp_path):
-    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
-    with (
-        patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
-        patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A, MEETING_B])),
-        patch("typer.launch") as mock_launch,
-    ):
-        result = runner.invoke(app, ["open", "aabbccdd"], obj=_ctx(tmp_path))
-
-    assert result.exit_code == 0
-    mock_launch.assert_called_once()
-    assert "aabbccdd11223344aabbccdd11223344" in mock_launch.call_args[0][0]
-
-
-def test_open_meeting_fuzzy_picker(tmp_path):
-    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
-    with (
-        patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
-        patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A, MEETING_B])),
-        patch("tai.commands.meetings.search_select", return_value=MEETING_A),
-        patch("typer.launch") as mock_launch,
-    ):
-        result = runner.invoke(app, ["open"], obj=_ctx(tmp_path))
-
-    assert result.exit_code == 0
-    mock_launch.assert_called_once()
-
-
-def test_open_meeting_cancelled(tmp_path):
-    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
-    with (
-        patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
-        patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A])),
-        patch("tai.commands.meetings.search_select", return_value=None),
-    ):
-        result = runner.invoke(app, ["open"], obj=_ctx(tmp_path))
-
-    assert result.exit_code == 0
-
-
-def test_open_meeting_not_found(tmp_path):
-    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
-    with (
-        patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
-        patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[MEETING_A, MEETING_B])),
-    ):
-        result = runner.invoke(app, ["open", "zzzzzzzz"], obj=_ctx(tmp_path))
-
-    assert result.exit_code == 1
-    assert "No meeting found" in result.output
-
-
-def test_open_meeting_ambiguous_id(tmp_path):
-    (tmp_path / ".tai.toml").write_text(MANIFEST_TOML)
-    meeting1 = {**MEETING_A, "short_id": "aabb1111"}
-    meeting2 = {**MEETING_B, "short_id": "aabb2222"}
-    with (
-        patch("tai.commands.meetings.find_repo_root", return_value=tmp_path),
-        patch("tai.commands.meetings.build_client", return_value=_mock_client(get_data=[meeting1, meeting2])),
-    ):
-        result = runner.invoke(app, ["open", "aabb"], obj=_ctx(tmp_path))
-
-    assert result.exit_code == 1
-    assert "Ambiguous" in result.output

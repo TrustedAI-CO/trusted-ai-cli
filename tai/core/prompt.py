@@ -34,22 +34,21 @@ def search_select(
 ) -> T | None:
     """Interactive fuzzy search — returns chosen item or None if cancelled.
 
+    All items are searchable; only *max_shown* rows are visible at once.
+
     Args:
         message:   Prompt label shown to the user.
         items:     Any list of objects to choose from.
         label_fn:  Extracts the display string from each item.
-        max_shown: Maximum number of items in the autocomplete pool.
+        max_shown: Number of rows visible in the dropdown at once.
     """
     label_to_item = {label_fn(item): item for item in items}
-    # questionary calls `choices` with no args to populate the list;
-    # it handles character-by-character filtering internally (match_middle).
-    # We cap the pool at max_shown so the dropdown never exceeds that count.
-    pool = list(label_to_item.keys())[:max_shown]
+    pool = list(label_to_item.keys())
 
     answer = inquirer.fuzzy(
         message=message,
         choices=pool,
-        max_height="40%",
+        max_height=max_shown,
     ).execute()
 
     if answer is None:

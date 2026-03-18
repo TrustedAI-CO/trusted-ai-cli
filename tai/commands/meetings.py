@@ -2,11 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Annotated
-
 import typer
 from rich.console import Console
-from rich.table import Table
 
 from tai.core.errors import ApiError
 from tai.core.http import build_client
@@ -47,7 +44,7 @@ def _fetch_meetings(ctx: typer.Context, project_id: str) -> list[dict]:
         raise typer.Exit(1)
 
 
-def _resolve_short_id(meetings: list[dict], short_id: str) -> str:
+def _resolve_short_id(meetings: list[dict], short_id: str) -> dict:
     matches = [m for m in meetings if m["short_id"].startswith(short_id)]
     if not matches:
         err_console.print(f"[bold red]Error:[/bold red] No meeting found with ID starting '{short_id}'.")
@@ -58,15 +55,20 @@ def _resolve_short_id(meetings: list[dict], short_id: str) -> str:
             "Provide more characters."
         )
         raise typer.Exit(1)
-    return matches[0]["meeting_id"]
+    return matches[0]
 
 
 def _meeting_row(meeting: dict) -> str:
     short_id = meeting.get("short_id", "")
     title = (meeting.get("title") or "")[:40].ljust(40)
-    date = (meeting.get("date") or "—")[:16].ljust(16)
-    lead = meeting.get("lead") or "—"
-    return f"{short_id}  {title}  {date}  {lead}"
+    date = (meeting.get("date") or "—")[:10].ljust(10)
+    return f"{short_id}  {title}  {date}"
+
+
+def _open(meeting: dict) -> None:
+    url = meeting.get("notion_url") or f"{_NOTION_PAGE_BASE}{meeting['meeting_id']}"
+    typer.launch(url)
+    console.print(f"[green]Opening[/green] [bold]{meeting['title']}[/bold] → [cyan]{url}[/cyan]")
 
 
 # ── commands ──────────────────────────────────────────────────────────────────
@@ -79,7 +81,7 @@ def list_meetings(
     limit: int | None = typer.Option(None, "-n", "--limit", help="Limit number of results."),
     filter_text: str | None = typer.Option(None, "-f", "--filter", help="Filter by title (case-insensitive substring)."),
 ) -> None:
-    """List meetings for the current project (or all with -a)."""
+    """Pick a meeting to open in Notion."""
     if ctx.invoked_subcommand is not None:
         return
 
@@ -104,23 +106,11 @@ def list_meetings(
         console.print(msg)
         return
 
-    table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
-    table.add_column("ID", style="dim", no_wrap=True)
-    table.add_column("Meeting")
-    table.add_column("Date", style="dim")
+    chosen = search_select("Meeting:", meetings, label_fn=_meeting_row)
+    if chosen is None:
+        raise typer.Exit(0)
 
-    for meeting in meetings:
-        notion_url = meeting.get("notion_url") or ""
-        short_id = (
-            f"[link={notion_url}]{meeting['short_id']}[/link]" if notion_url else meeting["short_id"]
-        )
-        table.add_row(
-            short_id,
-            meeting["title"],
-            meeting.get("date") or "—",
-        )
-
-    console.print(table)
+    _open(chosen)
 
 
 @app.command()
@@ -152,32 +142,3 @@ def add(ctx: typer.Context) -> None:
         raise typer.Exit(1)
 
     console.print(f"[green]Created[/green] {meeting['short_id']} {meeting['title']}")
-
-
-@app.command(name="open")
-def open_meeting(
-    ctx: typer.Context,
-    short_id: Annotated[
-        str | None,
-        typer.Argument(help="Short meeting ID (or prefix). Omit for interactive picker."),
-    ] = None,
-) -> None:
-    """Open a meeting's Notion page in the browser."""
-    manifest = _require_manifest(ctx)
-    meetings = _fetch_meetings(ctx, manifest.notion_page)
-
-    if not meetings:
-        console.print("[dim]No meetings found.[/dim]")
-        raise typer.Exit(0)
-
-    if short_id is not None:
-        meeting_id = _resolve_short_id(meetings, short_id)
-        meeting = next(m for m in meetings if m["meeting_id"] == meeting_id)
-    else:
-        meeting = search_select("Open meeting:", meetings, label_fn=_meeting_row)
-        if meeting is None:
-            raise typer.Exit(0)
-
-    url = meeting.get("notion_url") or f"{_NOTION_PAGE_BASE}{meeting['meeting_id']}"
-    typer.launch(url)
-    console.print(f"[green]Opening[/green] Notion → [cyan]{url}[/cyan]")
