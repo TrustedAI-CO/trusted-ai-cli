@@ -93,6 +93,7 @@ def list_tasks(
     limit: int | None = typer.Option(None, "-n", "--limit", help="Limit number of results."),
     filter_text: str | None = typer.Option(None, "-f", "--filter", help="Filter by name (case-insensitive substring)."),
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Output task names only, one per line."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """List tasks for the current project (or all with -a)."""
     if ctx.invoked_subcommand is not None:
@@ -119,7 +120,7 @@ def list_tasks(
         console.print(msg)
         return
 
-    json_output = getattr(ctx.obj, "json_output", False)
+    json_output = json_flag or getattr(ctx.obj, "json_output", False)
 
     if json_output:
         console.print_json(json.dumps(tasks))
@@ -131,7 +132,10 @@ def list_tasks(
 
 
 @app.command()
-def add(ctx: typer.Context) -> None:
+def add(
+    ctx: typer.Context,
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
     """Create a new task for the current project."""
     manifest = _require_manifest(ctx)
     name = typer.prompt("Task name")
@@ -146,7 +150,7 @@ def add(ctx: typer.Context) -> None:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
         raise typer.Exit(e.exit_code)
 
-    if getattr(ctx.obj, "json_output", False):
+    if json_flag or getattr(ctx.obj, "json_output", False):
         console.print_json(json.dumps(task))
     else:
         console.print(f"[green]Created[/green] {task['short_id']} {task['name']}")
@@ -164,6 +168,7 @@ def _task_row(task: dict) -> str:
 def done(
     ctx: typer.Context,
     short_id: Annotated[str | None, typer.Argument(help="Short task ID (or prefix). Omit for interactive picker.")] = None,
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Mark a task as Done."""
     manifest = _require_manifest(ctx)
@@ -197,7 +202,7 @@ def done(
         err_console.print(f"[bold red]Error:[/bold red] {e}")
         raise typer.Exit(e.exit_code)
 
-    if getattr(ctx.obj, "json_output", False):
+    if json_flag or getattr(ctx.obj, "json_output", False):
         console.print_json(json.dumps(task))
     else:
         console.print(f"[green]Done[/green] {task['short_id']} {task['name']}")

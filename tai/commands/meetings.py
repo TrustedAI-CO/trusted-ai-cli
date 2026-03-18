@@ -83,6 +83,7 @@ def list_meetings(
     limit: int | None = typer.Option(None, "-n", "--limit", help="Limit number of results."),
     filter_text: str | None = typer.Option(None, "-f", "--filter", help="Filter by title (case-insensitive substring)."),
     quiet: bool = typer.Option(False, "-q", "--quiet", help="Output meeting titles only, one per line."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Pick a meeting to open in Notion (interactive), or list meetings (non-interactive/--json/--quiet)."""
     if ctx.invoked_subcommand is not None:
@@ -109,7 +110,7 @@ def list_meetings(
         console.print(msg)
         return
 
-    json_output = getattr(ctx.obj, "json_output", False)
+    json_output = json_flag or getattr(ctx.obj, "json_output", False)
 
     if json_output:
         console.print_json(json.dumps(meetings))
@@ -129,7 +130,10 @@ def list_meetings(
 
 
 @app.command()
-def add(ctx: typer.Context) -> None:
+def add(
+    ctx: typer.Context,
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
     """Create a new meeting for the current project."""
     manifest = _require_manifest(ctx)
     title = typer.prompt("Meeting name")
@@ -156,7 +160,7 @@ def add(ctx: typer.Context) -> None:
         err_console.print(f"[bold red]Error:[/bold red] {e}")
         raise typer.Exit(e.exit_code)
 
-    if getattr(ctx.obj, "json_output", False):
+    if json_flag or getattr(ctx.obj, "json_output", False):
         console.print_json(json.dumps(meeting))
     else:
         console.print(f"[green]Created[/green] {meeting['short_id']} {meeting['title']}")

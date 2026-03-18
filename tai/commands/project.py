@@ -203,11 +203,14 @@ def new(ctx: typer.Context) -> None:
 
 
 @app.command()
-def status(ctx: typer.Context) -> None:
+def status(
+    ctx: typer.Context,
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
     """Show all tool bindings for this project."""
     root, manifest = _require_manifest(ctx)
     data = _fetch_project(ctx, manifest.notion_page)
-    if getattr(ctx.obj, "json_output", False):
+    if json_flag or getattr(ctx.obj, "json_output", False):
         console.print_json(json.dumps(data))
     else:
         _print_project(data)
