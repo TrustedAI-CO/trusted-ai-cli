@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.6] - 2026-03-19
+
+### Added
+- Project management skill (`/tai-project`) — guides Claude Code through tai CLI project workflows: linking repos to Notion, viewing status, managing tasks and meetings, opening linked tools, and non-interactive agent patterns
+
+### Fixed
+- README Quick Start and Commands table referenced non-existent `tai tasks list` and `tai meetings list` subcommands (correct: `tai tasks` and `tai meetings`)
+
 ## [0.2.5] - 2026-03-19
 
 ### Added
