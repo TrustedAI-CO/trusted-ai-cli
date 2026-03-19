@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.2.8 (2026-03-19)
+
+### Fixed
+
+- Session expiry now shows a friendly error message instead of a Python traceback
+- Proactive token refresh window widened from 60s to 300s to reduce mid-request expiry
+- Network errors during token refresh caught and surfaced as user-friendly messages
+- HTTP client auto-retries once on 401 (transparent token refresh via httpx Auth flow)
+- Global TaiError handler in CLI entry point prevents unhandled exception tracebacks
+
+### Changed
+
+- CLI entry point changed from `app` to `cli` wrapper for global error handling
+- HTTP client uses `_BearerAuth` (httpx.Auth subclass) instead of static Authorization header
+
 ## v0.2.0 (2026-03-19)
 
 ### Chores

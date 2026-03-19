@@ -19,7 +19,7 @@ from rich.console import Console
 
 from tai.core.config import load_config
 from tai.core.context import AppContext
-from tai.core.errors import ConfigError
+from tai.core.errors import ConfigError, TaiError, handle_error
 
 from tai.commands import secret, config, ai, api, claude, meetings, project, tasks
 from tai.commands.auth import login, logout, whoami
@@ -156,3 +156,14 @@ def _load_plugins() -> None:
 
 
 _load_plugins()
+
+
+def cli() -> None:
+    """Entry point that wraps app() with a global TaiError handler."""
+    if "--verbose" in sys.argv or "-v" in sys.argv:
+        logging.basicConfig(level=logging.DEBUG, format="%(name)s: %(message)s")
+
+    try:
+        app()
+    except TaiError as exc:
+        handle_error(exc)
