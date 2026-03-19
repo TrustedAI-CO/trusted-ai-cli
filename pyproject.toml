@@ -45,6 +45,8 @@ packages = ["tai"]
 "tai/hooks/hooks.json" = "tai/hooks/hooks.json"
 "tai/hooks/scripts" = "tai/hooks/scripts"
 "tai/hooks/lib" = "tai/hooks/lib"
+"tai/data/templates" = "tai/data/templates"
+"tai/data/brand" = "tai/data/brand"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
