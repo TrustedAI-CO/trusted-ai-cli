@@ -15,6 +15,7 @@
 | Learning curve | {docs quality, examples, complexity} | | |
 | License | {license type, commercial implications} | | |
 | Production adoption | {who uses it, at what scale} | | |
+| Trajectory | {growing/stable/declining, based on trends} | | |
 
 ### Head-to-Head
 
@@ -28,10 +29,32 @@
 {Package count, GitHub stars trend, Stack Overflow activity, corporate backing}
 
 #### Maintenance Health
-{Last release date, open issue count, PR merge time, bus factor}
+{Last release date, open issue count, PR merge time, bus factor, funding model}
 
 #### Migration & Lock-in Risk
 {How hard to switch away, proprietary APIs, data portability}
+
+#### Second-Order Effects
+{Hiring pool, long-term ecosystem trajectory, upgrade path pain, community culture}
+
+### Adversarial Red Team
+
+#### Case against the winner
+
+**Steel-man for {Runner-up}:** {The strongest possible argument for choosing the runner-up instead. What would a passionate advocate say?}
+
+**Worst known incident with {Winner}:** {Real production failure, critical bug, or community controversy. Source it.}
+
+**When {Winner} is the wrong choice:** {Specific scenario where the recommendation flips.}
+
+**Hidden costs:** {Operational burden, learning curve gotchas, migration pain that's easy to underweight.}
+
+#### Confidence calibration
+
+```
+RECOMMENDATION CONFIDENCE: {High/Medium/Low}
+Reason: {what the red team found and why it does/doesn't change the recommendation}
+```
 
 ### Recommendation
 
@@ -40,4 +63,4 @@
 **Choose {Runner-up} instead if:** {specific conditions where the other choice wins}.
 
 ### Sources
-1. {URL} — {brief description} [{Date}]
+1. {URL} — {brief description} [{Date}] [Type: Official/Benchmark/Community/Case Study]
