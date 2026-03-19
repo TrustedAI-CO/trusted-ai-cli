@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.7] - 2026-03-19
+
+### Added
+- `tai update` command — self-update the CLI from GitHub Releases with automatic installer detection (uv, pipx, pip), streaming wheel download with size verification, and post-update skills/hooks refresh
+- `tai update --check` flag — check for available updates without installing, with `--json` support for scripting
+- Startup update notification banner — shows a one-line "update available" message when a cached check (24h TTL) finds a newer version
+- Path traversal protection on downloaded wheel asset names
+
+### Removed
+- `tai claude setup-hooks --upgrade` TODO — subsumed by `tai update` which auto-refreshes hooks post-update
+
 ## [0.2.6] - 2026-03-19
 
 ### Added

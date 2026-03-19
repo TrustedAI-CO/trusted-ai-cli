@@ -19,6 +19,7 @@ dependencies = [
     "tomli-w>=1.2", # write TOML (tomllib only reads)
     "python-dotenv>=1.0",
     "inquirerpy>=0.3.4",
+    "packaging>=23.0",
 ]
 
 [project.optional-dependencies]
