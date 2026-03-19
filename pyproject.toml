@@ -32,7 +32,7 @@ dev = [
 ]
 
 [project.scripts]
-tai = "tai.main:app"
+tai = "tai.main:cli"
 
 [project.entry-points."tai.plugins"]
 # third-party plugins register here:
