@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.7] - 2026-03-19
+
+### Changed
+- Market-research skill v2.0: added 10 Market Thinking Frameworks (cognitive patterns), interactive research refinement with AskUserQuestion stops, 3-tier depth levels (quick/standard/deep), cross-research persistence, and preamble with context detection
+- Added external templates for competitor analysis, market sizing, idea validation, and investor-ready output format
+- Added market-specific research quality checklist with depth, objectivity, and completeness checks
+- Strengthened contrarian analysis with structured tables in every research mode
+
 ## [0.2.6] - 2026-03-19
 
 ### Changed
