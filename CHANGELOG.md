@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.1.2 (2026-03-19)
+
+### Bug Fixes
+
+- **ci**: Use sudo to clean dist/ created by semantic-release container
+  ([`32c55ba`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/32c55ba64b06cf6dd6ed3e21a8a09a929393e2d0))
+
+The semantic-release action builds wheels internally with different permissions, making the files
+  undeletable by the runner user.
+
+
 ## v0.1.1 (2026-03-19)
 
 ### Bug Fixes
