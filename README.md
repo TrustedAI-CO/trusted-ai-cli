@@ -4,13 +4,19 @@ Internal CLI for TrustedAI company tools and APIs. Links git repos to Notion pro
 
 ## Install
 
+Requires Python 3.11+.
+
 ```bash
-pip install trusted-ai-cli
-# or with uv
-uv pip install trusted-ai-cli
+uv pip install "trusted-ai-cli @ git+https://github.com/TrustedAI-CO/trusted-ai-cli.git" --python 3.11
 ```
 
-Requires Python 3.11+.
+Or with pip:
+
+```bash
+pip install "trusted-ai-cli @ git+https://github.com/TrustedAI-CO/trusted-ai-cli.git"
+```
+
+For local development, see [Development](#development) below.
 
 ## Quick start
 
