@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.2.9 (2026-03-19)
+
+### Added
+
+- **pdf**: Add `tai pdf compile` command for Markdown/Typst to branded PDF conversion
+- **pdf**: Add `tai pdf setup-templates` to install bundled Typst templates and brand assets
+- **pdf**: Bundled Proposal and Technical Report templates with company branding
+- **pdf**: Brand injection (logo, colors, company name) from `~/.config/tai/brand/`
+- **pdf**: Claude Code skill for agent-friendly PDF generation
+
+### Changed
+
+- Extract `_CMARKER_PACKAGE` constant to DRY up cmarker version references
+
 ## v0.2.1 (2026-03-19)
 
 ### Chores
