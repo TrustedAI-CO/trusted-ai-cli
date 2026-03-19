@@ -16,6 +16,30 @@
 - CLI entry point changed from `app` to `cli` wrapper for global error handling
 - HTTP client uses `_BearerAuth` (httpx.Auth subclass) instead of static Authorization header
 
+## v0.2.0 (2026-03-19)
+
+### Chores
+
+- Bump version and changelog (v0.2.8)
+  ([`2ff5e8b`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2ff5e8baae5cca3e8455e9459ddb87470a9cab77))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+### Documentation
+
+- Update project documentation for v0.2.7
+  ([`c544b6c`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c544b6cfd3cf24e80a265b082b836c6b0d618082))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+### Refactoring
+
+- **cli**: Remove tai claude compact-status command
+  ([`e99d845`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/e99d8456dddc2488d2b5271fd9ad14efd6972e23))
+
+Removes the compact-status command, its helper functions, tests, and all references across docs and
+  skills.
+
 
 ## v0.1.2 (2026-03-19)
 
@@ -467,6 +491,52 @@ Add Mermaid diagram guidance to the content-writer skill: - Step 0E: visualizati
   references/visualization-guide.md with diagram type matrix
 
 * chore: bump version and changelog (v0.2.2)
+
+- **skills**: Upgrade market-research to v2.0 with depth framework
+  ([#14](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/14),
+  [`69e80d1`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/69e80d1cbf8f276d085e9763121fdcec6267a505))
+
+* feat(skills): upgrade market-research to v2.0 with depth framework
+
+Add 10 Market Thinking Frameworks as cognitive patterns (Jobs-to-be-Done, Porter's Five Forces,
+  Inversion, Timing, Moat Classification, Blue Ocean, Proxy Skepticism, Willingness-to-Pay,
+  Distribution, Second-Order Thinking).
+
+Add interactive research refinement with AskUserQuestion stops, 3-tier depth levels
+  (quick/standard/deep), cross-research persistence with staleness detection, and preamble with
+  context detection.
+
+Add external templates for competitor analysis, market sizing, idea validation, and investor-ready
+  output format. Add market-specific research quality checklist.
+
+* chore: bump version and changelog (v0.2.7)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
+
+- **skills**: Upgrade tech-research to v2.0 with depth framework
+  ([#13](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/13),
+  [`bb6bb81`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bb6bb818308cc987fe175481a396dc1182bcfcb0))
+
+* feat(skills): upgrade tech-research skill to v2.0 with depth framework
+
+Transplant plan-ceo's proven depth patterns into tech-research: - Research Prime Directives and
+  Thinking Instincts for structured analysis - Depth modes (Quick/Standard/Deep) with user selection
+  - Multi-source triangulation protocol for claim verification - Adversarial red team section with
+  confidence calibration - Interactive checkpoints for mid-research steering - Forcing questions per
+  research mode - Completion summary dashboard - Enhanced templates with red team sections and
+  failure modes - Strengthened quality checklist with depth indicators
+
+* chore: bump version and changelog (v0.2.6)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
 - **tasks,meetings**: Add tasks and meetings command groups with filtering
   ([`d00cc4c`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d00cc4c5bdc22fca350eebd0c3fcfd6b63ff8c2d))

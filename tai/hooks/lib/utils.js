@@ -49,7 +49,7 @@ function getTempDir() {
 }
 
 /**
- * Counter file prefix used by suggest-compact and compact-status.
+ * Counter file prefix used by suggest-compact.
  * Path pattern: {tmpdir}/claude-tool-count-{sessionId}
  */
 const COUNTER_FILE_PREFIX = 'claude-tool-count-';

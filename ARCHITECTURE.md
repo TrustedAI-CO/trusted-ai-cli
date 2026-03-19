@@ -10,7 +10,7 @@
 │ commands │ commands │ commands │ commands │ plugins │
 │  auth    │  claude  │  tasks   │  ai      │ (entry  │
 │  config  │  secret  │ meetings │  api     │  points)│
-│  project │         │          │          │         │
+│  project │  setup   │          │          │         │
 ├──────────┴──────────┴──────────┴──────────┴─────────┤
 │                    tai/core/                         │
 │  context · config · auth · http · keystore          │
@@ -46,7 +46,8 @@ tai/
 │   ├── tasks.py         # list, add, done (Notion)
 │   ├── meetings.py      # list, add (Notion)
 │   ├── ai.py            # chat, complete, models
-│   └── api.py           # call, list (raw API)
+│   ├── api.py           # call, list (raw API)
+│   └── setup.py         # Interactive config wizard
 ├── hooks/               # Claude Code integration
 │   ├── __init__.py      # Hook merge/remove logic for settings.json
 │   ├── hooks.json       # Hook definitions (event → matcher → script)
