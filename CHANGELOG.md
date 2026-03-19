@@ -73,7 +73,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [0.1.1] - 2026-03-19
 
 ### Added
-- `tai claude compact-status` command with `--json` support — shows session tool-call count, compaction history, and suggestions
 - Strategic compact skill (`.claude/skills/tai/smart-compact/SKILL.md`) — tai-workflow-aware compaction guide for Claude Code sessions
 - Pre-compact resume notes — automatically saves git state and active tasks to `.context/compact-resume.md` before compaction
 - Shared `getCounterFilePath()` utility in hooks lib to keep counter path convention in sync

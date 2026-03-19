@@ -59,20 +59,8 @@ Two hooks support smart compaction (installed via `tai claude setup-hooks`):
 
 1. **Write important context to files before compacting.** Memory files, `.context/` notes, and TodoWrite all survive.
 2. **Compact after planning, not during.** Once the plan is finalized in TodoWrite or a file, compact to start implementation fresh.
-3. **Use `/compact` with a summary message.** Example: `/compact Focus on implementing the compact-status CLI command next.`
+3. **Use `/compact` with a summary message.** Example: `/compact Focus on implementing the auth refresh logic next.`
 4. **Read the hook suggestion but decide yourself.** The 50-call threshold is a guideline, not a rule. If you're mid-flow, keep going.
-5. **Check session health with `tai claude compact-status`.** See your current tool call count and compaction history.
-
-## Checking Session Health
-
-Run from a terminal (outside or alongside your Claude session):
-
-```bash
-tai claude compact-status          # human-readable summary
-tai claude compact-status --json   # machine-readable output
-```
-
-This reads the session's tool-call counter and compaction log to tell you whether it's time to compact.
 
 ## Resume Notes
 

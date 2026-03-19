@@ -40,7 +40,6 @@ tai ai chat "summarize this week's tasks"
 | `tai claude login` / `logout` / `status` | Claude Code authentication |
 | `tai claude setup-skills` | Install bundled Claude Code skills |
 | `tai claude setup-hooks` | Install Claude Code hooks for quality gates and session management |
-| `tai claude compact-status` | Show session tool-call count, compaction history, and suggestions |
 | `tai link` / `unlink` / `open` | Link repos to Notion projects |
 | `tai project new` / `status` | Create or inspect projects |
 | `tai tasks list` / `add` / `done` | Manage Notion tasks |

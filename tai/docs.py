@@ -165,8 +165,6 @@ tai claude setup-hooks             # install tai hooks into ~/.claude/settings.j
 tai claude setup-hooks --list      # preview available hooks without installing
 tai claude setup-hooks --remove    # remove tai-managed hooks
 tai claude setup-hooks --json      # JSON output (for scripting)
-tai claude compact-status          # show session compaction health
-tai claude compact-status --json   # JSON output (for scripting)
 ```
 
 ### AI / API
