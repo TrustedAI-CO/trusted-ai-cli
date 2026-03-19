@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "trusted-ai-cli"
-version = "0.2.0"
+version = "0.1.2"
 description = "Internal CLI for TrustedAI company tools and APIs"
 requires-python = ">=3.11"
 dependencies = [
@@ -19,6 +19,7 @@ dependencies = [
     "tomli-w>=1.2", # write TOML (tomllib only reads)
     "python-dotenv>=1.0",
     "inquirerpy>=0.3.4",
+    "packaging>=23.0",
 ]
 
 [project.optional-dependencies]
@@ -56,7 +57,7 @@ omit = ["tests/*"]
 version_toml = ["pyproject.toml:project.version"]
 branch = "main"
 changelog_file = "CHANGELOG.md"
-build_command = "uv build --wheel"
+build_command = "pip install build && python -m build --wheel"
 upload_to_vcs_release = true
 
 [tool.semantic_release.commit_parser_options]

@@ -10,6 +10,7 @@ Global options (available on every command):
 from __future__ import annotations
 
 import importlib.metadata
+import logging
 import sys
 from typing import Optional
 
@@ -23,7 +24,11 @@ from tai.core.errors import ConfigError
 from tai.commands import secret, config, ai, api, claude, meetings, project, tasks
 from tai.commands.auth import login, logout, whoami
 from tai.commands.setup import setup
+from tai.commands.update import update
+from tai.core.updater import load_cached_update
 from tai.docs import DOCS
+
+_log = logging.getLogger(__name__)
 
 console = Console()
 err_console = Console(stderr=True)
@@ -89,6 +94,21 @@ def main(
     if verbose:
         err_console.print(f"[dim]Profile: {app_ctx.profile}[/dim]")
 
+    _maybe_show_update_banner()
+
+
+def _maybe_show_update_banner() -> None:
+    """Show a one-line update banner if a cached check says a newer version exists."""
+    try:
+        cached = load_cached_update()
+        if cached and cached.update_available:
+            err_console.print(
+                f"[dim]Update available: {cached.current} -> {cached.latest} — "
+                "run [cyan]tai update[/cyan] to install.[/dim]"
+            )
+    except Exception as exc:
+        _log.debug("Update banner suppressed: %s", exc)
+
 
 # ── Register built-in command groups ─────────────────────────────────────────
 
@@ -104,6 +124,7 @@ app.command(name="link")(project.link)
 app.command(name="unlink")(project.unlink)
 app.command(name="open")(project.open_tool)
 app.command(name="setup")(setup)
+app.command(name="update")(update)
 app.command(name="login")(login)
 app.command(name="logout")(logout)
 app.command(name="whoami")(whoami)

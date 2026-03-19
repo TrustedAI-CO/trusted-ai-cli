@@ -1,6 +1,6 @@
 # tai — TrustedAI CLI
 
-Internal CLI for TrustedAI company tools and APIs. Links git repos to Notion projects, manages secrets, orchestrates tasks and meetings, and ships with 18 bundled Claude Code skills for plan reviews, QA, design audit, and shipping workflows.
+Internal CLI for TrustedAI company tools and APIs. Links git repos to Notion projects, manages secrets, orchestrates tasks and meetings, and ships with 19 bundled Claude Code skills for plan reviews, QA, design audit, and shipping workflows.
 
 ## Install
 
@@ -25,7 +25,7 @@ tai link
 tai project status
 
 # List your tasks
-tai tasks list
+tai tasks
 
 # Chat with AI
 tai ai chat "summarize this week's tasks"
@@ -36,14 +36,13 @@ tai ai chat "summarize this week's tasks"
 | Command | What it does |
 |---------|-------------|
 | `tai login` / `logout` / `whoami` | Google OAuth authentication |
-| `tai setup` | Interactive config wizard — prompts for every variable |
 | `tai claude login` / `logout` / `status` | Claude Code authentication |
 | `tai claude setup-skills` | Install bundled Claude Code skills |
 | `tai claude setup-hooks` | Install Claude Code hooks for quality gates and session management |
 | `tai link` / `unlink` / `open` | Link repos to Notion projects |
 | `tai project new` / `status` | Create or inspect projects |
-| `tai tasks list` / `add` / `done` | Manage Notion tasks |
-| `tai meetings list` / `add` | Manage Notion meetings |
+| `tai tasks` / `add` / `done` | Manage Notion tasks |
+| `tai meetings` / `add` | Manage Notion meetings |
 | `tai ai chat` / `complete` / `models` | AI chat and completions |
 | `tai api call` / `list` | Call company API endpoints |
 | `tai config get` / `set` / `list` | Profile-based configuration |
@@ -54,7 +53,7 @@ Every command supports `--json` for machine-readable output.
 
 ## Claude Code Skills
 
-18 bundled skills installed via `tai claude setup-skills`:
+19 bundled skills installed via `tai claude setup-skills`:
 
 | Skill | Speed | What it does |
 |-------|-------|-------------|
@@ -75,6 +74,7 @@ Every command supports `--json` for machine-readable output.
 | `/content-writer` | Full | Interactive content writing with voice profiles and AI-slop detection |
 | `/market-research` | Full | Competitive analysis, market sizing, idea validation |
 | `/tech-research` | Full | Library comparison, architecture decisions, deep dives, troubleshooting |
+| `/project` | Fast | Project management: link, status, tasks, meetings, open tools |
 | `/smart-compact` | Full | Strategic context compaction guide |
 
 "Light" variants trade thoroughness for speed — use them when you need quick feedback.
