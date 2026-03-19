@@ -44,6 +44,25 @@ Include constraints: timeline, team expertise, existing infrastructure, budget.}
 
 {Same structure as Option A}
 
+### Adversarial Red Team
+
+#### Case against the recommended option
+
+**Steel-man for {rejected option}:** {The strongest argument for the option you're NOT recommending. What would its advocate say about your analysis?}
+
+**Worst-case scenario with {recommended}:** {What's the most realistic way this decision could hurt us? Not hypothetical — find a real failure story if possible.}
+
+**What we're giving up:** {The concrete benefits of the rejected option that we permanently lose by choosing the recommended one.}
+
+**When this decision is wrong:** {The specific future condition that would make us regret this choice.}
+
+#### Confidence calibration
+
+```
+DECISION CONFIDENCE: {High/Medium/Low}
+Reason: {what the red team found and why it does/doesn't change the recommendation}
+```
+
 ### Decision
 
 **We will use {Option X}** because {primary reason}.
@@ -63,4 +82,4 @@ Revisit this decision if:
 - {condition 2}
 
 ### Sources
-1. {URL} — {brief description} [{Date}]
+1. {URL} — {brief description} [{Date}] [Type: Official/Benchmark/Community/Case Study]

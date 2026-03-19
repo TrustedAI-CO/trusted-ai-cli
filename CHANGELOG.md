@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.6] - 2026-03-19
+
+### Changed
+- Tech-research skill v2.0: added Research Prime Directives, Thinking Instincts, depth modes (Quick/Standard/Deep), multi-source triangulation protocol, adversarial red team section, interactive checkpoints, and completion summary dashboard
+- Updated comparison-matrix, architecture-decision-record, and deep-dive-summary templates with red team sections, failure mode analysis, and source type labeling
+- Strengthened research quality checklist with triangulation, adversarial depth, and depth indicator checks
+
 ## [0.2.5] - 2026-03-19
 
 ### Added
