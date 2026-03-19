@@ -28,6 +28,7 @@ _CACHE_TTL = timedelta(hours=24)
 
 
 class Installer(Enum):
+    UV_TOOL = "uv-tool"
     UV = "uv"
     PIPX = "pipx"
     PIP = "pip"
@@ -146,11 +147,18 @@ def check_update(
 def detect_installer() -> Installer:
     """Detect which package manager installed tai.
 
-    Heuristic: check for pipx venv path markers first, then uv on PATH, then pip.
-    Note: if tai was installed via pip in a plain venv but uv is also on PATH,
-    uv will be used. This is generally fine since uv pip install works in any venv.
+    Heuristic: check for uv tool venv path first, then pipx, then uv pip, then pip.
+    The uv tool check must come first because uv tool environments live under
+    ~/.local/share/uv/tools/ and require `uv tool install` to update correctly —
+    plain `uv pip install` would install into the wrong environment.
     """
     exe_path = Path(sys.executable)
+
+    uv_tool_markers = ("uv/tools", ".local/share/uv/tools")
+    if any(marker in str(exe_path) for marker in uv_tool_markers):
+        if shutil.which("uv"):
+            return Installer.UV_TOOL
+
     pipx_markers = ("pipx", ".local/pipx/venvs")
     if any(marker in str(exe_path) for marker in pipx_markers):
         if shutil.which("pipx"):
@@ -230,6 +238,8 @@ def install_wheel(wheel_path: Path, installer: Installer) -> None:
 
 def _build_install_cmd(installer: Installer, wheel_path: Path) -> list[str]:
     match installer:
+        case Installer.UV_TOOL:
+            return ["uv", "tool", "install", "--force", str(wheel_path)]
         case Installer.UV:
             return ["uv", "pip", "install", "--force-reinstall", str(wheel_path)]
         case Installer.PIPX:
