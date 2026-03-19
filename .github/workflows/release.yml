@@ -24,7 +24,7 @@ jobs:
 
       - uses: astral-sh/setup-uv@v5
         with:
-          enable-caching: true
+          enable-cache: true
 
       - name: Install dependencies
         run: uv sync --frozen --extra dev
@@ -40,7 +40,9 @@ jobs:
 
       - name: Build wheel
         if: steps.release.outputs.released == 'true'
-        run: uv build --wheel
+        run: |
+          rm -rf dist/
+          uv build --wheel
 
       - name: Upload wheel to GitHub Release
         if: steps.release.outputs.released == 'true'
