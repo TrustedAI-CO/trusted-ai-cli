@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.3.1 (2026-03-19)
+
+### Bug Fixes
+
+- **updater**: Detect uv tool installs and use correct update command
+  ([#27](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/27),
+  [`a880182`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a880182b99e5d58c822df98531421df05a327a2d))
+
+`uv pip install` installs to system site-packages but doesn't update the `tai` binary in
+  ~/.local/bin/ which is managed by uv tool's isolated venv. This caused ModuleNotFoundError when
+  running `tai` after installing via `uv pip install`. Add UV_TOOL installer detection for paths
+  under ~/.local/share/uv/tools/ and use `uv tool install --force` for updates. Also fix README
+  install instructions to use `uv tool install`.
+
+
 ## v0.3.0 (2026-03-19)
 
 ### Documentation
