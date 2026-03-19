@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## [0.2.8] - 2026-03-19
+
+### Removed
+- `tai claude compact-status` command and all related helpers, tests, and documentation references
+- Compact-status section from smart-compact skill (session health checking via CLI)
+
+### Changed
+- Updated TODOS.md dependency notes to reflect that setup-hooks has landed
+
 ## v0.1.2 (2026-03-19)
 
 ### Bug Fixes
