@@ -33,8 +33,8 @@ tai project status
 # List your tasks
 tai tasks
 
-# Chat with AI
-tai ai chat "summarize this week's tasks"
+# Chat with AI (coming soon)
+# tai ai chat "summarize this week's tasks"
 ```
 
 ## Commands
@@ -49,10 +49,10 @@ tai ai chat "summarize this week's tasks"
 | `tai project new` / `status` | Create or inspect projects |
 | `tai tasks` / `add` / `done` | Manage Notion tasks |
 | `tai meetings` / `add` | Manage Notion meetings |
-| `tai ai chat` / `complete` / `models` | AI chat and completions |
-| `tai api call` / `list` | Call company API endpoints |
+| `tai ai chat` / `complete` / `models` | AI chat and completions *(coming soon)* |
+| `tai api call` / `list` | Call company API endpoints *(coming soon)* |
 | `tai config get` / `set` / `list` | Profile-based configuration |
-| `tai secret set` / `get` / `rotate` / `exec` | Secret management with system keychain |
+| `tai secret set` / `get` / `rotate` / `exec` | Secret management with system keychain *(coming soon)* |
 | `tai docs` | LLM-friendly usage reference |
 
 Every command supports `--json` for machine-readable output.
