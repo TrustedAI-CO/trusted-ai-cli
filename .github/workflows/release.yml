@@ -41,7 +41,7 @@ jobs:
       - name: Build wheel
         if: steps.release.outputs.released == 'true'
         run: |
-          rm -rf dist/
+          sudo rm -rf dist/
           uv build --wheel
 
       - name: Upload wheel to GitHub Release
