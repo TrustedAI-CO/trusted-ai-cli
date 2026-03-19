@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.1.1 (2026-03-19)
+
+### Bug Fixes
+
+- **ci**: Clean dist/ before wheel build and fix uv cache param
+  ([`530ffb6`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/530ffb695704f025d13b1ca0d34f91cb390cb2eb))
+
+semantic-release may leave artifacts in dist/ that cause permission errors when uv build --wheel
+  runs. Also fix enable-caching → enable-cache for astral-sh/setup-uv.
+
+
 ## v0.1.0 (2026-03-19)
 
 ### Bug Fixes
