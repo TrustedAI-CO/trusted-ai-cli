@@ -36,10 +36,10 @@ def _env_var_name(name: str) -> str:
 
 
 def store(profile: str, name: str, value: str) -> None:
-    """Store a secret in the system keychain."""
+    """Store a secret in the system keychain, falling back to file if keychain fails."""
     try:
         keyring.set_password(_service_name(profile), name, value)
-    except keyring.errors.NoKeyringError:
+    except keyring.errors.KeyringError:
         _file_store(profile, name, value)
 
 
@@ -55,7 +55,7 @@ def retrieve(profile: str, name: str) -> str:
         value = keyring.get_password(_service_name(profile), name)
         if value is not None:
             return value
-    except keyring.errors.NoKeyringError:
+    except keyring.errors.KeyringError:
         pass
 
     # 3. File fallback

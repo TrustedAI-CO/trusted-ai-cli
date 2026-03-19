@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.2.6] - 2026-03-19
+
+### Added
+- Project management skill (`/tai-project`) — guides Claude Code through tai CLI project workflows: linking repos to Notion, viewing status, managing tasks and meetings, opening linked tools, and non-interactive agent patterns
+
+### Fixed
+- README Quick Start and Commands table referenced non-existent `tai tasks list` and `tai meetings list` subcommands (correct: `tai tasks` and `tai meetings`)
+
+## [0.2.5] - 2026-03-19
+
+### Added
+- `tai setup` interactive config wizard that prompts for every variable in the active profile, with Enter-to-skip for already-set values, sensitive field masking, and type coercion
+
+## [0.2.4] - 2026-03-19
+
+### Fixed
+- `tai login` crash on macOS when keychain returns error -25244 (`PasswordSetError`). Keystore now catches all `KeyringError` subtypes and falls back to file storage gracefully.
+
+## [0.2.3] - 2026-03-19
+
+### Added
+- Technical research skill (`/tech-research`) with 4 modes: library/tool comparison, architecture decision records, technology deep dives, and troubleshooting research
+- Output templates for each mode: comparison matrix, ADR, deep-dive summary, and troubleshooting report
+- Research quality checklist for sourcing standards, objectivity, and decision orientation
+- Optional context7 MCP and chub CLI integration for authoritative documentation lookup
+- Research log persistence (`~/.tai-skills/projects/$SLUG/research-log.jsonl`)
+
+### Changed
+- Updated README skill table to list all 18 bundled skills (was 14)
+
+## [0.2.2] - 2026-03-19
+
+### Added
+- Visualization support for content-writer skill — Mermaid diagram guidance, visualization quality gate (Step 3D), briefing preference (Step 0E), and per-template visualization hints
+- Visualization reference guide (`references/visualization-guide.md`) with diagram type decision matrix, quality checklist, and anti-patterns
+
 ## [0.2.1] - 2026-03-19
 
 ### Added
@@ -15,6 +51,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - `tai-market-research` Claude Code skill — startup market research with 3 specialized modes: competitive analysis (SWOT, competitive matrix, positioning gaps), market sizing (TAM/SAM/SOM with top-down + bottom-up), and idea validation (go/no-go assessment)
 - Web search integration (WebSearch + WebFetch) for real-time market data
 - Quality gate with source attribution, recency checks, and contrarian evidence requirements
+
+## [0.1.2] - 2026-03-19
+
+### Added
+- Content writer skill (`.claude/skills/tai/content-writer/`) — interactive guided content creation for blog posts, technical articles, release announcements, tutorials, case studies, and comparison posts
+- Voice profile system — persistent writing style profiles at `~/.tai-skills/voice-profiles/` for consistent tone across content
+- AI-slop detection quality gate — scans drafts for ~60 generic AI phrases across 9 categories and auto-rewrites them with specific language
+- Codebase-aware technical writing — reads source files, tests, and docs to include accurate code examples
+- Git-aware release announcements — generates release content from git log, CHANGELOG, and merged PRs
+- 6 content templates: how-to guide, product announcement, case study, tutorial, comparison post, changelog entry
+- Readability and factual grounding quality checks with structured reporting
+
+## [0.1.1] - 2026-03-19
+
+### Added
+- `tai claude compact-status` command with `--json` support — shows session tool-call count, compaction history, and suggestions
+- Strategic compact skill (`.claude/skills/tai/compact/SKILL.md`) — tai-workflow-aware compaction guide for Claude Code sessions
+- Pre-compact resume notes — automatically saves git state and active tasks to `.context/compact-resume.md` before compaction
+- Shared `getCounterFilePath()` utility in hooks lib to keep counter path convention in sync
+
+### Changed
+- `suggest-compact.js` refactored to use shared counter path helper instead of inline path construction
 
 ## [0.1.0] - 2026-03-19
 
