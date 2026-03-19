@@ -1,6 +1,6 @@
 # tai — TrustedAI CLI
 
-Internal CLI for TrustedAI company tools and APIs. Links git repos to Notion projects, manages secrets, orchestrates tasks and meetings, and ships with 14 bundled Claude Code skills for plan reviews, QA, design audit, and shipping workflows.
+Internal CLI for TrustedAI company tools and APIs. Links git repos to Notion projects, manages secrets, orchestrates tasks and meetings, and ships with 18 bundled Claude Code skills for plan reviews, QA, design audit, and shipping workflows.
 
 ## Install
 
@@ -36,9 +36,11 @@ tai ai chat "summarize this week's tasks"
 | Command | What it does |
 |---------|-------------|
 | `tai login` / `logout` / `whoami` | Google OAuth authentication |
+| `tai setup` | Interactive config wizard — prompts for every variable |
 | `tai claude login` / `logout` / `status` | Claude Code authentication |
 | `tai claude setup-skills` | Install bundled Claude Code skills |
 | `tai claude setup-hooks` | Install Claude Code hooks for quality gates and session management |
+| `tai claude compact-status` | Show session tool-call count, compaction history, and suggestions |
 | `tai link` / `unlink` / `open` | Link repos to Notion projects |
 | `tai project new` / `status` | Create or inspect projects |
 | `tai tasks list` / `add` / `done` | Manage Notion tasks |

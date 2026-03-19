@@ -7,7 +7,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ## [0.2.7] - 2026-03-19
 
 ### Changed
-- Market-research skill v2.0: added 10 Market Thinking Frameworks (cognitive patterns), interactive research refinement with AskUserQuestion stops, 3-tier depth levels (quick/standard/deep), cross-research persistence, and preamble with context detection
+- Market-research skill v2.0: 10 Market Thinking Frameworks, interactive research checkpoints, 3-tier depth levels (quick/standard/deep), cross-research persistence, and automatic context detection
 - Added external templates for competitor analysis, market sizing, idea validation, and investor-ready output format
 - Added market-specific research quality checklist with depth, objectivity, and completeness checks
 - Strengthened contrarian analysis with structured tables in every research mode
@@ -74,7 +74,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 
 ### Added
 - `tai claude compact-status` command with `--json` support — shows session tool-call count, compaction history, and suggestions
-- Strategic compact skill (`.claude/skills/tai/compact/SKILL.md`) — tai-workflow-aware compaction guide for Claude Code sessions
+- Strategic compact skill (`.claude/skills/tai/smart-compact/SKILL.md`) — tai-workflow-aware compaction guide for Claude Code sessions
 - Pre-compact resume notes — automatically saves git state and active tasks to `.context/compact-resume.md` before compaction
 - Shared `getCounterFilePath()` utility in hooks lib to keep counter path convention in sync
 

@@ -8,7 +8,7 @@
 
 **Context:** Currently `setup-hooks` is idempotent — running it again replaces [tai] hooks with the latest. An explicit `--upgrade` would add a version check to skip unnecessary writes. Low priority since re-running `setup-hooks` is harmless. Would need version tracking (e.g., a `_tai_hooks_version` field in settings.json).
 
-**Depends on:** setup-hooks feature landing first.
+**Depends on:** None (setup-hooks has landed).
 
 ## Python-native hooks (ruff, pytest, mypy)
 
@@ -18,5 +18,5 @@
 
 **Context:** Natural follow-up after base hook infrastructure lands. These hooks would be written fresh (in JS or Python), not ported from ECC. Need to handle tool detection (is ruff installed?) gracefully.
 
-**Depends on:** setup-hooks feature landing first.
+**Depends on:** None (setup-hooks has landed).
 
