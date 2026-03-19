@@ -2,6 +2,7 @@
 
 from unittest.mock import patch
 
+import httpx
 import pytest
 
 from tai.core import auth, keystore
@@ -72,3 +73,69 @@ def test_validate_domain_succeeds_for_correct_domain():
                return_value={"email": "user@trusted-ai.com", "hd": "trusted-ai.com"}):
         email = auth._validate_domain("fake.token.sig", "client-id", "trusted-ai.com")
     assert email == "user@trusted-ai.com"
+
+
+# ── Refresh window & network error tests ─────────────────────────────────────
+
+
+def test_get_access_token_refreshes_within_300s_window():
+    """Token within 300s of expiry triggers a refresh."""
+    import time
+    # Expiry is 200s from now — inside the 300s window
+    near_expiry = time.time() + 200
+    with patch("tai.core.keystore.retrieve") as mock_retrieve, \
+         patch.object(auth, "_refresh", return_value="refreshed-token") as mock_refresh:
+        mock_retrieve.side_effect = lambda profile, key: (
+            str(near_expiry) if key == "token_expiry" else "old-token"
+        )
+        token = auth.get_access_token("default", "client-id")
+    assert token == "refreshed-token"
+    mock_refresh.assert_called_once_with("default", "client-id")
+
+
+def test_get_access_token_skips_refresh_outside_window():
+    """Token with >300s remaining is returned without refresh."""
+    import time
+    far_expiry = time.time() + 3600
+    with patch("tai.core.keystore.retrieve") as mock_retrieve, \
+         patch.object(auth, "_refresh") as mock_refresh:
+        mock_retrieve.side_effect = lambda profile, key: (
+            str(far_expiry) if key == "token_expiry" else "valid-token"
+        )
+        token = auth.get_access_token("default", "client-id")
+    assert token == "valid-token"
+    mock_refresh.assert_not_called()
+
+
+def test_refresh_raises_auth_error_on_network_timeout():
+    """Network timeout during refresh raises AuthError (not a traceback)."""
+    with patch("tai.core.keystore.retrieve", return_value="refresh-tok"), \
+         patch("httpx.post", side_effect=httpx.TimeoutException("timed out")):
+        with pytest.raises(AuthError, match="network"):
+            auth._refresh("default", "client-id")
+
+
+def test_refresh_raises_auth_error_on_connect_error():
+    """Connection failure during refresh raises AuthError."""
+    with patch("tai.core.keystore.retrieve", return_value="refresh-tok"), \
+         patch("httpx.post", side_effect=httpx.ConnectError("refused")):
+        with pytest.raises(AuthError, match="network"):
+            auth._refresh("default", "client-id")
+
+
+def test_refresh_raises_auth_expired_on_bad_status():
+    """Non-200 response from Google raises AuthExpiredError."""
+    mock_resp = httpx.Response(400, json={"error": "invalid_grant"})
+    with patch("tai.core.keystore.retrieve", return_value="refresh-tok"), \
+         patch("httpx.post", return_value=mock_resp):
+        with pytest.raises(AuthExpiredError):
+            auth._refresh("default", "client-id")
+
+
+def test_refresh_raises_auth_expired_on_missing_access_token():
+    """Response missing access_token key raises AuthExpiredError."""
+    mock_resp = httpx.Response(200, json={"token_type": "Bearer"})
+    with patch("tai.core.keystore.retrieve", return_value="refresh-tok"), \
+         patch("httpx.post", return_value=mock_resp):
+        with pytest.raises(AuthExpiredError):
+            auth._refresh("default", "client-id")

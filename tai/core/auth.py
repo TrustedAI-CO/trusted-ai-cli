@@ -22,12 +22,16 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from threading import Thread
 from typing import NamedTuple
 
+import logging
+
 import httpx
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
 from tai.core import keystore
 from tai.core.errors import AuthError, AuthExpiredError, DomainError
+
+log = logging.getLogger(__name__)
 
 _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
@@ -204,7 +208,7 @@ def get_access_token(profile: str, client_id: str) -> str:
     except Exception:
         raise AuthError()
 
-    if time.time() < expiry - 60:
+    if time.time() < expiry - 300:
         return keystore.retrieve(profile, _KEY_ACCESS)
 
     return _refresh(profile, client_id)
@@ -216,23 +220,39 @@ def _refresh(profile: str, client_id: str) -> str:
     except Exception:
         raise AuthExpiredError()
 
-    resp = httpx.post(
-        _GOOGLE_TOKEN_URL,
-        data={
-            "grant_type": "refresh_token",
-            "refresh_token": refresh_token,
-            "client_id": client_id,
-        },
-        timeout=15,
-    )
+    log.debug("Refreshing access token…")
+    try:
+        resp = httpx.post(
+            _GOOGLE_TOKEN_URL,
+            data={
+                "grant_type": "refresh_token",
+                "refresh_token": refresh_token,
+                "client_id": client_id,
+            },
+            timeout=15,
+        )
+    except (httpx.TimeoutException, httpx.ConnectError) as exc:
+        log.debug("Token refresh failed: %s", exc)
+        raise AuthError(
+            "Could not refresh session — check your network connection",
+        )
+
     if resp.status_code != 200:
+        log.debug("Token refresh rejected (HTTP %s)", resp.status_code)
         raise AuthExpiredError()
 
-    data = resp.json()
+    try:
+        data = resp.json()
+        new_token = data["access_token"]
+    except (ValueError, KeyError) as exc:
+        log.debug("Token refresh returned invalid response: %s", exc)
+        raise AuthExpiredError()
+
     expiry = time.time() + data.get("expires_in", 3600)
-    keystore.store(profile, _KEY_ACCESS, data["access_token"])
+    keystore.store(profile, _KEY_ACCESS, new_token)
     keystore.store(profile, _KEY_EXPIRY, str(expiry))
-    return data["access_token"]
+    log.debug("Token refreshed successfully")
+    return new_token
 
 
 def _store_tokens(
