@@ -68,6 +68,47 @@ class SkillError(TaiError):
     """Skill installation or update failed."""
 
 
+class TypstError(TaiError):
+    """Base for Typst-related errors."""
+
+
+class TypstNotFoundError(TypstError):
+    exit_code: int = ExitCode.NOT_FOUND
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Typst not found in PATH",
+            hint="Install: brew install typst (or cargo install typst-cli)",
+        )
+
+
+class TypstVersionError(TypstError):
+    def __init__(self, installed: str, required: str) -> None:
+        super().__init__(
+            f"Typst {installed} is too old (requires >= {required})",
+            hint="Upgrade: brew upgrade typst (or cargo install typst-cli)",
+        )
+
+
+class TypstCompileError(TypstError):
+    def __init__(self, stderr: str) -> None:
+        super().__init__("Typst compilation failed", hint=stderr)
+
+
+class TemplateError(TaiError):
+    """Template installation or resolution failed."""
+
+
+class TemplateNotFoundError(TemplateError):
+    exit_code: int = ExitCode.NOT_FOUND
+
+    def __init__(self, name: str) -> None:
+        super().__init__(
+            f"Template '{name}' not found",
+            hint="Run: tai pdf setup-templates",
+        )
+
+
 class ApiError(TaiError):
     """Company API returned an error."""
 
