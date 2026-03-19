@@ -35,6 +35,12 @@ Use ASCII diagrams for complex interactions.}
 {Sequence diagram or state diagram if applicable}
 ```
 
+### The Key Insight
+
+{What's the fundamental design choice or insight that makes this work?
+This is the "aha" moment — the thing that, once understood, makes everything
+else click. One paragraph.}
+
 ## Tradeoffs and Limitations
 
 | Design choice | What it enables | What it sacrifices |
@@ -43,8 +49,14 @@ Use ASCII diagrams for complex interactions.}
 
 ### Where It Breaks
 
-- {failure mode 1 — when/why this technology struggles}
-- {failure mode 2}
+- **{Failure mode 1}** — {when/why this technology struggles. Be specific about the
+  boundary condition, not vague.}
+- **{Failure mode 2}**
+
+### Where the Abstraction Leaks
+
+- {Leak 1 — situations where the internal implementation details bleed through
+  the abstraction and users must understand the internals}
 
 ## Practical Implications
 
@@ -55,12 +67,16 @@ Use ASCII diagrams for complex interactions.}
 
 ### When NOT to Use
 
-- {anti-pattern 1 — what it's bad at}
+- {anti-pattern 1 — what it's bad at, with specifics}
 
 ### Common Pitfalls
 
 1. **{Pitfall}** — {what goes wrong and how to avoid it}
 
+### Common Misunderstandings
+
+1. **Myth: {misconception}** — Reality: {what's actually true}
+
 ## Further Reading
 
-1. {URL} — {brief description} [{Date}]
+1. {URL} — {brief description} [{Date}] [Type: Official/Benchmark/Community/Case Study]
