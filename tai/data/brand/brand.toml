@@ -1,0 +1,12 @@
+[company]
+name = "TrustedAI"
+tagline = "AI you can trust."
+
+[colors]
+primary = "#1a73e8"
+secondary = "#4a4a4a"
+accent = "#34a853"
+
+[contact]
+website = "https://trusted-ai.co"
+email = "hello@trusted-ai.co"

@@ -1,22 +1,65 @@
 # CHANGELOG
 
 
-## v0.2.8 (2026-03-19)
+## v0.3.0 (2026-03-19)
 
-### Fixed
+### Documentation
 
-- Session expiry now shows a friendly error message instead of a Python traceback
-- Proactive token refresh window widened from 60s to 300s to reduce mid-request expiry
-- Network errors during token refresh caught and surfaced as user-friendly messages
-- HTTP client auto-retries once on 401 (transparent token refresh via httpx Auth flow)
-- Global TaiError handler in CLI entry point prevents unhandled exception tracebacks
+- Update install instructions and mark upcoming features
+  ([`197b0e0`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/197b0e0cc17dbcc1f06240ae1c87b5a00ff52806))
 
-### Changed
+Fix install commands to use git+https source since the package is not yet on PyPI. Mark tai ai, tai
+  api, and tai secret as coming soon.
 
-- CLI entry point changed from `app` to `cli` wrapper for global error handling
-- HTTP client uses `_BearerAuth` (httpx.Auth subclass) instead of static Authorization header
+### Features
+
+- **pdf**: Add Typst-based PDF generation
+  ([#26](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/26),
+  [`5111d93`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5111d93b69c9d1cf8fd4e545df8e31b6fb86e0a0))
+
+* feat(pdf): add Typst binary detection, version check, and template system
+
+Core infrastructure for PDF generation: - TypstError hierarchy in errors.py (TypstNotFoundError,
+  TypstVersionError, TypstCompileError, TemplateError) - typst.py: find binary, parse version,
+  compile documents with timeout handling - templates.py: discover, parse typst.toml, install/remove
+  templates with path traversal validation - Bundled Typst templates (proposal, report) and brand
+  assets in tai/data/
+
+* feat(pdf): add tai pdf compile command and setup-templates CLI
+
+- pdf.py: setup-templates (install/list/remove) and compile (md/typ → PDF) - Markdown → Typst
+  wrapper with cmarker package for native MD rendering - Brand injection (company name, logo,
+  colors) with string escaping - Register pdf command group in main.py - Add packaging dependency
+  and data force-include in pyproject.toml - Claude Code skill for agent-friendly PDF generation
+
+* chore: bump version and changelog (v0.2.9)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
+
+
+## v0.2.1 (2026-03-19)
+
+### Chores
+
+- Resolve merge conflict in CHANGELOG.md
+  ([`d27ebd5`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d27ebd5bc61a8245bb3c01f5f7dd82b2c8321b2b))
+
 
 ## v0.2.0 (2026-03-19)
+
+### Bug Fixes
+
+- **auth**: Handle session expiry gracefully with auto-retry
+  ([`52549ba`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/52549ba13c556c982c3876da840d09b4a0c18abf))
+
+- Widen proactive refresh window from 60s to 300s - Catch network errors in _refresh() with
+  user-friendly message - Add _BearerAuth httpx.Auth subclass for transparent 401 retry - Skip 401
+  in _raise_on_error (auth flow handles it) - Raise AuthExpiredError on double-401 after retry - Add
+  global TaiError catch-all in cli() entry point - Change entry point from app to cli wrapper
 
 ### Chores
 
@@ -25,7 +68,18 @@
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
+- Bump version and changelog (v0.2.8)
+  ([`d55c05a`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d55c05af9b5c963cc839c9d8c65de80aa11ac6e5))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
 ### Documentation
+
+- Fix install instructions to use git+https source
+  ([`4941326`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4941326349ef2a5a5c0d8e3be86f6c5113167a70))
+
+Package is not published to PyPI. Updated README to show the correct install command from the GitHub
+  repository.
 
 - Update project documentation for v0.2.7
   ([`c544b6c`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c544b6cfd3cf24e80a265b082b836c6b0d618082))

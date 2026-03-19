@@ -7,18 +7,22 @@
 │                    tai CLI (Typer)                   │
 │  main.py — entry point, plugin discovery, globals   │
 ├──────────┬──────────┬──────────┬──────────┬─────────┤
-│ commands │ commands │ commands │ commands │ plugins │
-│  auth    │  claude  │  tasks   │  ai      │ (entry  │
-│  config  │  secret  │ meetings │  api     │  points)│
-│  project │  setup   │          │          │         │
+│ commands │ commands │ commands │ commands │ commands │ plugins │
+│  auth    │  claude  │  tasks   │  ai      │  pdf     │ (entry  │
+│  config  │  secret  │ meetings │  api     │         │  points)│
+│  project │  setup   │          │          │         │         │
 ├──────────┴──────────┴──────────┴──────────┴─────────┤
 │                    tai/core/                         │
-│  context · config · auth · http · keystore          │
-│  project · skills · errors · prompt                 │
-├─────────────────────────────────────────────────────┤
-│              External Services                      │
-│  Google OAuth · Notion API · Company API · Claude   │
-└─────────────────────────────────────────────────────┘
+│  context · config · auth · http · keystore                   │
+│  project · skills · errors · prompt                          │
+│  templates · typst                                           │
+├──────────────────────────────────────────────────────────────┤
+│              tai/data/ (bundled assets)                       │
+│  templates/ (Typst package format) · brand/ (logo, colors)   │
+├──────────────────────────────────────────────────────────────┤
+│              External Services & Tools                       │
+│  Google OAuth · Notion API · Company API · Claude · Typst    │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 ## Directory layout
@@ -36,7 +40,9 @@ tai/
 │   ├── project.py       # .tai.toml manifest (Notion page binding)
 │   ├── skills.py        # Skill discovery, frontmatter parsing, install
 │   ├── errors.py        # TaiError hierarchy + ExitCode constants
-│   └── prompt.py        # TTY detection, fuzzy search picker
+│   ├── prompt.py        # TTY detection, fuzzy search picker
+│   ├── templates.py     # Template discovery, typst.toml parsing, install
+│   └── typst.py         # Typst binary detection, version check, compile
 ├── commands/            # One module per command group
 │   ├── auth.py          # login, logout, whoami
 │   ├── claude.py        # Claude auth, setup-skills, setup-hooks
@@ -47,12 +53,16 @@ tai/
 │   ├── meetings.py      # list, add (Notion)
 │   ├── ai.py            # chat, complete, models
 │   ├── api.py           # call, list (raw API)
+│   ├── pdf.py           # setup-templates, compile (Typst PDF generation)
 │   └── setup.py         # Interactive config wizard
 ├── hooks/               # Claude Code integration
 │   ├── __init__.py      # Hook merge/remove logic for settings.json
 │   ├── hooks.json       # Hook definitions (event → matcher → script)
 │   ├── scripts/         # 12 Node.js hook scripts
 │   └── lib/             # Shared JS utilities
+├── data/                # Bundled assets (installed to user dirs)
+│   ├── templates/       # Typst templates (typst.toml + lib.typ format)
+│   └── brand/           # Company brand assets (logo, brand.toml)
 └── plugins/             # Entry-point discovery
 ```
 
@@ -87,6 +97,23 @@ Hooks are Node.js scripts bundled in `tai/hooks/`. `tai claude setup-hooks` merg
 ### Error handling
 
 All errors inherit from `TaiError(message, hint)`. The `handle_error()` function prints a user-friendly message with an optional hint and exits with the appropriate code. Exit codes: 0 (success), 1 (error), 2 (usage), 3 (not found), 4 (permission denied), 5 (conflict).
+
+### PDF generation (Typst templates)
+
+Templates follow the standard Typst package format (`typst.toml` + `lib.typ` + `template/`). `tai pdf setup-templates` copies bundled templates and brand assets to `~/.config/tai/templates/` and `~/.config/tai/brand/`. `tai pdf compile` converts Markdown or Typst files to branded PDF using the `cmarker` Typst package for markdown rendering.
+
+```
+tai pdf compile report.md --template proposal
+  │
+  ├─ typst.find_typst()           # Check binary exists in PATH
+  ├─ typst.check_version()        # Verify >= 0.12.0
+  ├─ Detect input type (.md)
+  ├─ Resolve template              # ~/.config/tai/templates/proposal/
+  ├─ Load brand assets              # ~/.config/tai/brand/brand.toml + logo.png
+  ├─ Generate intermediate .typ     # Wraps MD in template with cmarker
+  ├─ typst.compile_document()      # subprocess.run(["typst", "compile", ...])
+  └─ Output report.pdf
+```
 
 ### Plugin architecture
 
