@@ -1,19 +1,45 @@
 # CHANGELOG
 
 
-## v0.2.9 (2026-03-19)
+## v0.3.0 (2026-03-19)
 
-### Added
+### Documentation
 
-- **pdf**: Add `tai pdf compile` command for Markdown/Typst to branded PDF conversion
-- **pdf**: Add `tai pdf setup-templates` to install bundled Typst templates and brand assets
-- **pdf**: Bundled Proposal and Technical Report templates with company branding
-- **pdf**: Brand injection (logo, colors, company name) from `~/.config/tai/brand/`
-- **pdf**: Claude Code skill for agent-friendly PDF generation
+- Update install instructions and mark upcoming features
+  ([`197b0e0`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/197b0e0cc17dbcc1f06240ae1c87b5a00ff52806))
 
-### Changed
+Fix install commands to use git+https source since the package is not yet on PyPI. Mark tai ai, tai
+  api, and tai secret as coming soon.
 
-- Extract `_CMARKER_PACKAGE` constant to DRY up cmarker version references
+### Features
+
+- **pdf**: Add Typst-based PDF generation
+  ([#26](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/26),
+  [`5111d93`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5111d93b69c9d1cf8fd4e545df8e31b6fb86e0a0))
+
+* feat(pdf): add Typst binary detection, version check, and template system
+
+Core infrastructure for PDF generation: - TypstError hierarchy in errors.py (TypstNotFoundError,
+  TypstVersionError, TypstCompileError, TemplateError) - typst.py: find binary, parse version,
+  compile documents with timeout handling - templates.py: discover, parse typst.toml, install/remove
+  templates with path traversal validation - Bundled Typst templates (proposal, report) and brand
+  assets in tai/data/
+
+* feat(pdf): add tai pdf compile command and setup-templates CLI
+
+- pdf.py: setup-templates (install/list/remove) and compile (md/typ → PDF) - Markdown → Typst
+  wrapper with cmarker package for native MD rendering - Brand injection (company name, logo,
+  colors) with string escaping - Register pdf command group in main.py - Add packaging dependency
+  and data force-include in pyproject.toml - Claude Code skill for agent-friendly PDF generation
+
+* chore: bump version and changelog (v0.2.9)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
+
 
 ## v0.2.1 (2026-03-19)
 
