@@ -84,5 +84,8 @@
   outline(indent: 1.5em, depth: 3)
   pagebreak()
 
+  // ── Hide thematic breaks (---) ────────────
+  show line: none
+
   body
 }

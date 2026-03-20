@@ -18,9 +18,12 @@
 
   // ── Global styles ──────────────────────────
   apply-body-style()
+
   show heading: set text(font: font-title, fill: color-primary)
+  set heading(numbering: "1.1.")
   show heading.where(level: 1): it => { v(space-md) + it + v(space-sm) }
   show heading.where(level: 2): it => { v(space-sm) + it + v(space-xs) }
+  set figure.caption(separator: [ — ], position: top)
 
   // ── Page setup ─────────────────────────────
   set page(
@@ -28,7 +31,6 @@
     fill: tai-warm,
     numbering: "1",
     number-align: center,
-    header: none,
   )
 
   // ── Logo ──────────────────────────────────
@@ -63,6 +65,9 @@
   v(space-md)
   tai-rule(color: tai-border)
   v(space-lg)
+
+  // ── Hide thematic breaks (---) ────────────
+  show line: none
 
   // ── Body ───────────────────────────────────
   body
