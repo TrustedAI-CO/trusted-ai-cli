@@ -139,6 +139,19 @@ def test_check_update_already_current():
 # ── detect_installer ──────────────────────────────────────────────────────────
 
 
+def test_detect_installer_uv_tool(tmp_path):
+    uv_tool_python = tmp_path / ".local" / "share" / "uv" / "tools" / "tai" / "bin" / "python"
+    uv_tool_python.parent.mkdir(parents=True)
+    uv_tool_python.touch()
+
+    with patch("shutil.which", side_effect=lambda cmd: "/usr/bin/uv" if cmd == "uv" else None), \
+         patch("tai.core.updater.sys") as mock_sys:
+        mock_sys.executable = str(uv_tool_python)
+        result = detect_installer()
+
+    assert result == Installer.UV_TOOL
+
+
 def test_detect_installer_uv(tmp_path):
     with patch("shutil.which", side_effect=lambda cmd: "/usr/bin/uv" if cmd == "uv" else None), \
          patch("tai.core.updater.sys") as mock_sys:
@@ -238,6 +251,20 @@ def test_install_wheel_failure(tmp_path):
         mock_run.return_value.stdout = ""
         with pytest.raises(UpdateError, match="Install failed"):
             install_wheel(wheel, Installer.UV)
+
+
+def test_install_wheel_uv_tool(tmp_path):
+    wheel = tmp_path / WHEEL_NAME
+    wheel.write_bytes(WHEEL_CONTENT)
+
+    with patch("subprocess.run") as mock_run:
+        mock_run.return_value.returncode = 0
+        install_wheel(wheel, Installer.UV_TOOL)
+
+    cmd = mock_run.call_args[0][0]
+    assert cmd[:3] == ["uv", "tool", "install"]
+    assert "--force" in cmd
+    assert str(wheel) in cmd
 
 
 def test_install_wheel_pipx_uses_pipx(tmp_path):

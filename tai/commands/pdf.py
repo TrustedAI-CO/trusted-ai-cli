@@ -20,6 +20,7 @@ from tai.core.errors import (
     TypstError,
     handle_error,
 )
+from tai.core.prompt import is_interactive, search_select
 from tai.core.templates import (
     brand_install_dir,
     discover_templates,
@@ -156,6 +157,35 @@ def _install_templates(force: bool, use_json: bool) -> None:
     )
 
 
+# ── templates ────────────────────────────────────────────────────────────────
+
+
+@app.command("templates")
+def templates_cmd(
+    json_output: bool = typer.Option(False, "--json", help="JSON output."),
+) -> None:
+    """List installed templates."""
+    install_dir = templates_install_dir()
+    templates = discover_templates(install_dir) if install_dir.is_dir() else []
+
+    if json_output:
+        print(json.dumps({
+            "templates": [
+                {"name": t.name, "version": t.version, "description": t.description}
+                for t in templates
+            ],
+        }))
+        return
+
+    if not templates:
+        console.print("[dim]No templates installed.[/dim]")
+        console.print("[dim]Hint: run [cyan]tai pdf setup-templates[/cyan] first.[/dim]")
+        return
+
+    for t in templates:
+        console.print(f"  [bold]{t.name}[/bold] v{t.version} — {t.description}")
+
+
 # ── compile ──────────────────────────────────────────────────────────────────
 
 
@@ -210,6 +240,38 @@ def compile_cmd(
         handle_error(exc)
 
 
+def _template_label(t: "TemplateInfo") -> str:
+    return f"{t.name} — {t.description}" if t.description else t.name
+
+
+def _pick_template() -> str | None:
+    """Prompt the user to pick an installed template, or return None.
+
+    In non-interactive terminals, raises TemplateError with available names.
+    When no templates are installed, raises TemplateError with setup hint.
+    """
+    from tai.core.templates import TemplateInfo
+
+    install_dir = templates_install_dir()
+    templates = discover_templates(install_dir) if install_dir.is_dir() else []
+
+    if not templates:
+        raise TemplateError(
+            "No templates installed",
+            hint="Run: tai pdf setup-templates",
+        )
+
+    if not is_interactive():
+        names = ", ".join(t.name for t in templates)
+        raise TemplateError(
+            "No --template specified and terminal is not interactive",
+            hint=f"Use: --template <name>. Available: {names}",
+        )
+
+    chosen = search_select("Template:", templates, label_fn=_template_label)
+    return chosen.name if chosen is not None else None
+
+
 def _compile_markdown(
     typst_bin: Path,
     md_file: Path,
@@ -226,16 +288,20 @@ def _compile_markdown(
     if not md_content.strip():
         err_console.print("[yellow]Warning:[/yellow] Input file is empty.")
 
-    if template_name is not None:
-        if not validate_template_name(template_name):
+    resolved_template = template_name
+    if resolved_template is None:
+        resolved_template = _pick_template()
+
+    if resolved_template is not None:
+        if not validate_template_name(resolved_template):
             raise TemplateError(
-                f"Invalid template name: {template_name}",
+                f"Invalid template name: {resolved_template}",
                 hint="Template names may only contain letters, numbers, hyphens, and underscores.",
             )
 
-        template_dir = templates_install_dir() / template_name
+        template_dir = templates_install_dir() / resolved_template
         if not template_dir.is_dir():
-            raise TemplateNotFoundError(template_name)
+            raise TemplateNotFoundError(resolved_template)
 
         typ_content = _wrap_md_with_template(md_file, template_dir)
     else:
@@ -336,6 +402,7 @@ def _wrap_md_with_template(md_file: Path, template_dir: Path) -> str:
             secondary_color = colors["secondary"]
 
     brand_vars = f'#let company-name = "{_escape_typst_string(company_name)}"\n'
+    brand_vars += "#let company-logo = none\n"
     if company_tagline:
         brand_vars += f'#let company-tagline = "{_escape_typst_string(company_tagline)}"\n'
     if primary_color:
@@ -343,10 +410,14 @@ def _wrap_md_with_template(md_file: Path, template_dir: Path) -> str:
     if secondary_color:
         brand_vars += f'#let secondary-color = rgb("{_escape_typst_string(secondary_color)}")\n'
 
+    logo_path = brand_dir / "logo.png"
+    if logo_path.is_file():
+        brand_vars += f'#let company-logo = image("{logo_path.as_posix()}")\n'
+
     lib_path = (template_dir / "lib.typ").as_posix()
 
     # Build template() call with frontmatter metadata
-    template_args = ["company-name: company-name"]
+    template_args = ["company-name: company-name", "logo: company-logo"]
     for key in ("title", "subtitle", "author", "organization", "date", "version"):
         if key in frontmatter:
             template_args.append(

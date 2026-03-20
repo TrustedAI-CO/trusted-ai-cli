@@ -1,39 +1,91 @@
-"""Tests for tai.core.templates — discovery, parsing, installation."""
+"""Tests for tai.core.templates — discovery, parsing, and installation."""
 
 from __future__ import annotations
 
+import tomllib
 from pathlib import Path
 
 import pytest
 
 from tai.core.templates import (
-    validate_template_name,
-    parse_typst_toml,
-    discover_templates,
-    install_templates,
-    remove_templates,
-    templates_install_dir,
-    TemplateInfo,
     InstallResult,
+    TemplateInfo,
+    discover_templates,
+    install_brand,
+    install_templates,
+    parse_typst_toml,
+    remove_templates,
+    validate_template_name,
 )
 
 
-# ── validate_template_name ─────────────────────────────────────────────
+# ── fixtures ─────────────────────────────────────────────────────────────────
+
+
+@pytest.fixture
+def template_source(tmp_path: Path) -> Path:
+    """Create a source directory with two valid templates."""
+    for name in ("proposal", "report"):
+        tpl_dir = tmp_path / name
+        tpl_dir.mkdir()
+        (tpl_dir / "typst.toml").write_text(
+            f'[package]\nname = "{name}"\nversion = "0.1.0"\n'
+            f'description = "A {name} template."\nentrypoint = "lib.typ"\n'
+        )
+        (tpl_dir / "lib.typ").write_text(f"// {name} template\n")
+        tpl_sub = tpl_dir / "template"
+        tpl_sub.mkdir()
+        (tpl_sub / "main.typ").write_text(f"// {name} main\n")
+    return tmp_path
+
+
+@pytest.fixture
+def install_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Redirect template install directory to tmp_path."""
+    target = tmp_path / "install"
+    monkeypatch.setattr(
+        "tai.core.templates.templates_install_dir", lambda: target
+    )
+    return target
+
+
+@pytest.fixture
+def brand_source(tmp_path: Path) -> Path:
+    """Create a source directory with brand assets."""
+    brand = tmp_path / "brand"
+    brand.mkdir()
+    (brand / "brand.toml").write_text(
+        '[company]\nname = "TestCo"\n[colors]\nprimary = "#000000"\n'
+    )
+    return brand
+
+
+@pytest.fixture
+def brand_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Redirect brand install directory to tmp_path."""
+    target = tmp_path / "brand_install"
+    monkeypatch.setattr(
+        "tai.core.templates.brand_install_dir", lambda: target
+    )
+    return target
+
+
+# ── validate_template_name ───────────────────────────────────────────────────
 
 
 class TestValidateTemplateName:
-    def test_valid_names(self):
+    def test_valid_names(self) -> None:
         assert validate_template_name("article") is True
         assert validate_template_name("my-template") is True
         assert validate_template_name("template_v2") is True
         assert validate_template_name("Report01") is True
 
-    def test_path_traversal(self):
+    def test_path_traversal(self) -> None:
         assert validate_template_name("../etc/passwd") is False
         assert validate_template_name("..") is False
         assert validate_template_name("foo/../bar") is False
 
-    def test_invalid_chars(self):
+    def test_invalid_chars(self) -> None:
         assert validate_template_name("") is False
         assert validate_template_name(".hidden") is False
         assert validate_template_name("-starts-dash") is False
@@ -41,11 +93,11 @@ class TestValidateTemplateName:
         assert validate_template_name("has/slash") is False
 
 
-# ── parse_typst_toml ───────────────────────────────────────────────────
+# ── parse_typst_toml ─────────────────────────────────────────────────────────
 
 
 class TestParseTypstToml:
-    def test_full_manifest(self, tmp_path: Path):
+    def test_full_manifest(self, tmp_path: Path) -> None:
         toml_file = tmp_path / "typst.toml"
         toml_file.write_text(
             '[package]\n'
@@ -59,7 +111,7 @@ class TestParseTypstToml:
         assert info.description == "Article template"
         assert info.path == tmp_path
 
-    def test_minimal_manifest(self, tmp_path: Path):
+    def test_minimal_manifest(self, tmp_path: Path) -> None:
         toml_file = tmp_path / "typst.toml"
         toml_file.write_text("[package]\n")
         info = parse_typst_toml(toml_file)
@@ -67,18 +119,31 @@ class TestParseTypstToml:
         assert info.version == "0.0.0"
         assert info.description == ""
 
-    def test_empty_toml(self, tmp_path: Path):
+    def test_empty_toml(self, tmp_path: Path) -> None:
         toml_file = tmp_path / "typst.toml"
         toml_file.write_text("")
         info = parse_typst_toml(toml_file)
         assert info.name == tmp_path.name
 
+    def test_invalid_toml_raises(self, tmp_path: Path) -> None:
+        manifest = tmp_path / "typst.toml"
+        manifest.write_text("{broken toml")
+        with pytest.raises(tomllib.TOMLDecodeError):
+            parse_typst_toml(manifest)
 
-# ── discover_templates ─────────────────────────────────────────────────
+    def test_no_package_section(self, tmp_path: Path) -> None:
+        manifest = tmp_path / "typst.toml"
+        manifest.write_text('title = "hello"\n')
+        info = parse_typst_toml(manifest)
+        assert info.name == tmp_path.name
+        assert info.version == "0.0.0"
+
+
+# ── discover_templates ───────────────────────────────────────────────────────
 
 
 class TestDiscoverTemplates:
-    def test_finds_templates(self, tmp_path: Path):
+    def test_finds_templates(self, tmp_path: Path) -> None:
         for name in ("article", "report"):
             d = tmp_path / name
             d.mkdir()
@@ -94,20 +159,20 @@ class TestDiscoverTemplates:
         assert "article" in names
         assert "report" in names
 
-    def test_empty_dir(self, tmp_path: Path):
+    def test_empty_dir(self, tmp_path: Path) -> None:
         assert discover_templates(tmp_path) == []
 
-    def test_nonexistent_dir(self):
+    def test_nonexistent_dir(self) -> None:
         assert discover_templates(Path("/nonexistent")) == []
 
-    def test_skips_malformed_toml(self, tmp_path: Path):
+    def test_skips_malformed_toml(self, tmp_path: Path) -> None:
         d = tmp_path / "broken"
         d.mkdir()
         (d / "typst.toml").write_text("not valid toml [[[")
         assert discover_templates(tmp_path) == []
 
 
-# ── install_templates ──────────────────────────────────────────────────
+# ── install_templates ────────────────────────────────────────────────────────
 
 
 class TestInstallTemplates:
@@ -129,7 +194,7 @@ class TestInstallTemplates:
             (d / "lib.typ").write_text(f"// {name} lib")
         return source
 
-    def test_fresh_install(self, tmp_path: Path, monkeypatch):
+    def test_fresh_install(self, tmp_path: Path, monkeypatch) -> None:
         source = self._make_source(tmp_path)
         install_dir = tmp_path / "install"
         monkeypatch.setattr(
@@ -144,7 +209,7 @@ class TestInstallTemplates:
         # Template packages copied
         assert (install_dir / "article" / "lib.typ").is_file()
 
-    def test_skip_existing(self, tmp_path: Path, monkeypatch):
+    def test_skip_existing(self, tmp_path: Path, monkeypatch) -> None:
         source = self._make_source(tmp_path)
         install_dir = tmp_path / "install"
         monkeypatch.setattr(
@@ -155,7 +220,7 @@ class TestInstallTemplates:
         assert result.installed == []
         assert set(result.skipped) == {"article", "report"}
 
-    def test_force_overwrite(self, tmp_path: Path, monkeypatch):
+    def test_force_overwrite(self, tmp_path: Path, monkeypatch) -> None:
         source = self._make_source(tmp_path)
         install_dir = tmp_path / "install"
         monkeypatch.setattr(
@@ -165,12 +230,21 @@ class TestInstallTemplates:
         result = install_templates(source, force=True)
         assert set(result.installed) == {"article", "report"}
 
+    def test_with_fixtures(
+        self, template_source: Path, install_dir: Path
+    ) -> None:
+        result = install_templates(template_source)
+        assert set(result.installed) == {"proposal", "report"}
+        assert result.skipped == []
+        assert (install_dir / "proposal" / "typst.toml").is_file()
+        assert (install_dir / "report" / "lib.typ").is_file()
 
-# ── remove_templates ───────────────────────────────────────────────────
+
+# ── remove_templates ─────────────────────────────────────────────────────────
 
 
 class TestRemoveTemplates:
-    def test_removes_installed(self, tmp_path: Path, monkeypatch):
+    def test_removes_installed(self, tmp_path: Path, monkeypatch) -> None:
         install_dir = tmp_path / "templates"
         install_dir.mkdir()
         for name in ("article", "report"):
@@ -185,7 +259,7 @@ class TestRemoveTemplates:
         assert count == 2
         assert not (install_dir / "article").exists()
 
-    def test_empty_dir(self, tmp_path: Path, monkeypatch):
+    def test_empty_dir(self, tmp_path: Path, monkeypatch) -> None:
         install_dir = tmp_path / "templates"
         install_dir.mkdir()
         monkeypatch.setattr(
@@ -193,8 +267,32 @@ class TestRemoveTemplates:
         )
         assert remove_templates() == 0
 
-    def test_nonexistent_dir(self, tmp_path: Path, monkeypatch):
+    def test_nonexistent_dir(self, tmp_path: Path, monkeypatch) -> None:
         monkeypatch.setattr(
             "tai.core.templates.templates_install_dir", lambda: tmp_path / "nope"
         )
         assert remove_templates() == 0
+
+
+# ── install_brand ────────────────────────────────────────────────────────────
+
+
+class TestInstallBrand:
+    def test_happy_path(
+        self,
+        brand_source: Path,
+        brand_dir: Path,
+    ) -> None:
+        install_brand(brand_source)
+        assert (brand_dir / "brand.toml").is_file()
+
+    def test_overwrites_existing(
+        self,
+        brand_source: Path,
+        brand_dir: Path,
+    ) -> None:
+        brand_dir.mkdir(parents=True)
+        (brand_dir / "old_file.txt").write_text("old")
+        install_brand(brand_source)
+        assert not (brand_dir / "old_file.txt").exists()
+        assert (brand_dir / "brand.toml").is_file()
