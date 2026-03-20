@@ -17,6 +17,8 @@
   set document(title: title, author: author)
 
   // ── Global styles ──────────────────────────
+  apply-body-style()
+
   show heading: set text(font: font-title, fill: color-primary)
   set heading(numbering: "1.1.")
   show heading.where(level: 1): it => { v(space-md) + it + v(space-sm) }
@@ -68,5 +70,5 @@
   show line: none
 
   // ── Body ───────────────────────────────────
-  apply-body-style(body)
+  body
 }

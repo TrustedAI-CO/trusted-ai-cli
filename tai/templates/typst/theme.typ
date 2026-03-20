@@ -1,8 +1,6 @@
 // TrustedAI Shared Design Tokens
 // All templates import this file for consistent branding.
 
-#import "@preview/zebraw:0.6.1": *
-
 // ──────────────────────────────────────────────
 // Typography
 // ──────────────────────────────────────────────
@@ -104,25 +102,25 @@
   h(0.2em) + box(fill: tai-light, outset: 0.2em, radius: 2pt, text(font: font-mono, size: 0.75em, it)) + h(0.2em)
 }
 
-/// Apply shared text, list, and code styling to content.
-/// Must wrap body content for rules to propagate.
-#let apply-body-style(body) = {
+/// Block code formatter
+#let _code-block(it) = {
+  block(
+    fill: tai-white,
+    stroke: 1pt + tai-border,
+    inset: 1em,
+    radius: 4pt,
+    width: 100%,
+    text(font: font-mono, size: 0.75em, fill: color-text, it),
+  )
+}
+
+/// Apply shared text and list styling to the current scope
+#let apply-body-style() = {
   set text(font: font-body, size: size-body, fill: color-text)
   set par(justify: true, leading: 0.7em)
   set list(indent: 1em, marker: text(fill: tai-blue, "•"))
   set enum(indent: 1em, numbering: n => text(fill: tai-blue, numbering("1.", n)))
   show link: it => underline(text(fill: tai-blue, it))
   show raw.where(block: false): _code-inline
-  show raw.where(block: true): it => zebraw(
-    background-color: (tai-light, tai-warm),
-    highlight-color: tai-sky.lighten(80%),
-    lang: true,
-    lang-color: tai-navy.lighten(85%),
-    lang-font-args: (font: font-mono, size: size-footnote, fill: tai-navy),
-    numbering-font-args: (font: font-mono, size: size-footnote, fill: tai-muted),
-    radius: 4pt,
-    inset: (top: 0.6em, bottom: 0.6em, left: 0.4em, right: 0.8em),
-    it,
-  )
-  body
+  show raw.where(block: true): _code-block
 }
