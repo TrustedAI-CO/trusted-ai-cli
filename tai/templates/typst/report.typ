@@ -17,6 +17,8 @@
   set document(author: author, title: title)
 
   // ── Global styles ──────────────────────────
+  apply-body-style()
+
   show heading: set text(font: font-title, fill: color-primary)
   set heading(numbering: (..nums) => {
     let level = nums.pos().len()
@@ -85,5 +87,5 @@
   // ── Hide thematic breaks (---) ────────────
   show line: none
 
-  apply-body-style(body)
+  body
 }
