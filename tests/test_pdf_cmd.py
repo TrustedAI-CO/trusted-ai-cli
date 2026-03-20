@@ -7,8 +7,13 @@ from pathlib import Path
 import pytest
 
 from tai.commands.pdf import (
-    _parse_frontmatter,
+    _build_frontmatter_block,
+    _ensure_frontmatter,
     _escape_typst_string,
+    _extract_single_h1,
+    _parse_frontmatter,
+    _strip_frontmatter_body,
+    _update_file_frontmatter,
     _wrap_md_plain,
 )
 
@@ -95,6 +100,136 @@ class TestEscapeTypstString:
         assert _escape_typst_string("Cost $50") == "Cost $50"
         assert _escape_typst_string("#hashtag") == "#hashtag"
         assert _escape_typst_string("@mention") == "@mention"
+
+
+# ── _wrap_md_plain ─────────────────────────────────────────────────────
+
+
+# ── _strip_frontmatter_body ───────────────────────────────────────────
+
+
+class TestStripFrontmatterBody:
+    def test_strips_frontmatter(self):
+        md = "---\ntitle: T\n---\n\nBody text"
+        result = _strip_frontmatter_body(md)
+        assert result.strip() == "Body text"
+
+    def test_no_frontmatter_returns_all(self):
+        md = "# Heading\n\nBody"
+        assert _strip_frontmatter_body(md) == md
+
+
+# ── _extract_single_h1 ───────────────────────────────────────────────
+
+
+class TestExtractSingleH1:
+    def test_single_h1_extracted(self):
+        body = "\n# My Title\n\n## Section 1\n\nText\n\n### Subsection\n"
+        title, promoted = _extract_single_h1(body)
+        assert title == "My Title"
+        assert "# Section 1" in promoted
+        assert "## Subsection" in promoted
+        assert "# My Title" not in promoted
+
+    def test_no_h1_returns_none(self):
+        body = "## Section\n\nText"
+        title, result = _extract_single_h1(body)
+        assert title is None
+        assert result == body
+
+    def test_multiple_h1_returns_none(self):
+        body = "# First\n\n# Second\n"
+        title, result = _extract_single_h1(body)
+        assert title is None
+        assert result == body
+
+    def test_h1_inside_code_block_ignored(self):
+        body = "# Real Title\n\n```\n# Not a heading\n```\n\n## Section\n"
+        title, promoted = _extract_single_h1(body)
+        assert title == "Real Title"
+        assert "# Not a heading" in promoted  # unchanged inside code block
+        assert "# Section" in promoted  # promoted from ##
+
+    def test_heading_promotion_depth(self):
+        body = "# Title\n\n## H2\n\n### H3\n\n#### H4\n"
+        title, promoted = _extract_single_h1(body)
+        assert title == "Title"
+        assert "# H2" in promoted
+        assert "## H3" in promoted
+        assert "### H4" in promoted
+
+    def test_empty_body(self):
+        title, result = _extract_single_h1("")
+        assert title is None
+        assert result == ""
+
+
+# ── _build_frontmatter_block ─────────────────────────────────────────
+
+
+class TestBuildFrontmatterBlock:
+    def test_builds_valid_block(self):
+        result = _build_frontmatter_block({"title": "T", "author": "A"})
+        assert result == "---\ntitle: T\nauthor: A\n---\n"
+
+    def test_empty_metadata(self):
+        result = _build_frontmatter_block({})
+        assert result == "---\n---\n"
+
+
+# ── _update_file_frontmatter ─────────────────────────────────────────
+
+
+class TestUpdateFileFrontmatter:
+    def test_adds_frontmatter_to_plain_md(self, tmp_path: Path):
+        md_file = tmp_path / "test.md"
+        md_file.write_text("# Hello\n\nWorld")
+        content = md_file.read_text()
+        new_content = _update_file_frontmatter(
+            md_file, content, {"title": "Hello"}
+        )
+        assert new_content.startswith("---\ntitle: Hello\n---\n")
+        assert "# Hello" in new_content
+        assert md_file.read_text() == new_content
+
+    def test_replaces_existing_frontmatter(self, tmp_path: Path):
+        md_file = tmp_path / "test.md"
+        md_file.write_text("---\ntitle: Old\n---\n\nBody")
+        content = md_file.read_text()
+        new_content = _update_file_frontmatter(
+            md_file, content, {"title": "New", "author": "Me"}
+        )
+        assert "title: New" in new_content
+        assert "author: Me" in new_content
+        assert "title: Old" not in new_content
+        assert "\nBody" in new_content
+
+
+# ── _ensure_frontmatter ──────────────────────────────────────────────
+
+
+class TestEnsureFrontmatter:
+    def test_no_missing_fields_returns_unchanged(self, tmp_path: Path):
+        md_file = tmp_path / "test.md"
+        md_file.write_text("---\ntitle: T\nauthor: A\n---\n\nBody")
+        content = md_file.read_text()
+        fm = {"title": "T", "author": "A"}
+        new_content, new_fm = _ensure_frontmatter(
+            md_file, content, fm, "article"
+        )
+        assert new_content == content
+        assert new_fm == fm
+
+    def test_non_interactive_warns(self, tmp_path: Path, monkeypatch):
+        monkeypatch.setattr("tai.commands.pdf.is_interactive", lambda: False)
+        md_file = tmp_path / "test.md"
+        md_file.write_text("Body only")
+        content = md_file.read_text()
+        new_content, new_fm = _ensure_frontmatter(
+            md_file, content, {}, "article"
+        )
+        assert new_content == content  # unchanged
+        assert new_fm == {}
 
 
 # ── _wrap_md_plain ─────────────────────────────────────────────────────
