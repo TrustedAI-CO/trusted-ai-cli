@@ -617,7 +617,7 @@ def _wrap_md_with_template(
         f"#show: doc => template(doc, {args_str})\n"
         f"\n"
         f'#{{  import "{_CMARKER_PACKAGE}"\n'
-        f"   cmarker.render({read_expr}, smart-punctuation: true)\n"
+        f"   cmarker.render({read_expr}, smart-punctuation: true, scope: (image: (source, alt: none, format: auto) => image(source, alt: alt, format: format)))\n"
         f"}}\n"
     )
 
@@ -627,6 +627,6 @@ def _wrap_md_plain(md_file: Path) -> str:
     md_abs = md_file.resolve().as_posix()
     return (
         f'#{{  import "{_CMARKER_PACKAGE}"\n'
-        f'   cmarker.render(read("{md_abs}"), smart-punctuation: true)\n'
+        f'   cmarker.render(read("{md_abs}"), smart-punctuation: true, scope: (image: (source, alt: none, format: auto) => image(source, alt: alt, format: format)))\n'
         f"}}\n"
     )
