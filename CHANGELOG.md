@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## [0.4.2.2] - 2026-03-21
+
+### Fixed
+
+- **pdf**: Resolve inline Markdown images correctly by adding `scope` override to `cmarker.render()` — images now resolve relative to the Typst root instead of cmarker's package directory
+
+
+## [0.4.2.1] - 2026-03-21
+
 ## v0.10.0 (2026-03-20)
 
 ### Chores

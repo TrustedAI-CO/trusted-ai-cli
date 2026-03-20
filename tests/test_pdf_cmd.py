@@ -243,3 +243,10 @@ class TestWrapMdPlain:
         assert "cmarker" in result
         assert str(md_file.resolve().as_posix()) in result
         assert "smart-punctuation: true" in result
+
+    def test_includes_image_scope_override(self, tmp_path: Path):
+        md_file = tmp_path / "test.md"
+        md_file.write_text("![Chart](chart.png)")
+        result = _wrap_md_plain(md_file)
+        assert "scope:" in result
+        assert "image:" in result
