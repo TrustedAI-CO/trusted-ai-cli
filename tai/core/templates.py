@@ -1,4 +1,4 @@
-"""Template discovery, parsing, and installation to ~/.config/tai/templates/."""
+"""Template discovery, parsing, and installation to ~/.tai/templates/."""
 
 from __future__ import annotations
 
@@ -85,13 +85,13 @@ def _find_data_source(package: str, repo_subpath: str) -> Path | None:
 
 
 def find_template_source() -> Path | None:
-    """Locate bundled templates: try package data first, then repo root."""
-    return _find_data_source("tai.data.templates", "tai/data/templates")
+    """Locate bundled Typst templates."""
+    return _find_data_source("tai.templates.typst", "tai/templates/typst")
 
 
 def find_brand_source() -> Path | None:
-    """Locate bundled brand assets: try package data first, then repo root."""
-    return _find_data_source("tai.data.brand", "tai/data/brand")
+    """Locate bundled brand assets."""
+    return _find_data_source("tai.templates.typst.brand", "tai/templates/typst/brand")
 
 
 def _find_repo_root() -> Path | None:
@@ -103,23 +103,44 @@ def _find_repo_root() -> Path | None:
 
 
 def templates_install_dir() -> Path:
-    """Base directory for installed templates: ~/.config/tai/templates/."""
-    return Path.home() / ".config" / "tai" / TEMPLATES_DIR_NAME
+    """Base directory for installed templates: ~/.tai/templates/."""
+    return Path.home() / ".tai" / TEMPLATES_DIR_NAME
 
 
 def brand_install_dir() -> Path:
-    """Base directory for installed brand assets: ~/.config/tai/brand/."""
-    return Path.home() / ".config" / "tai" / BRAND_DIR_NAME
+    """Base directory for installed brand assets: ~/.tai/brand/."""
+    return Path.home() / ".tai" / BRAND_DIR_NAME
 
 
 def install_templates(source_dir: Path, *, force: bool = False) -> InstallResult:
-    """Install templates to ~/.config/tai/templates/<name>/.
+    """Install templates to ~/.tai/templates/.
+
+    Copies both shared files (theme.typ, brand/, etc.) and template
+    subdirectories (article/, report/, slides/) so that relative imports
+    like ``#import "../theme.typ"`` resolve correctly.
 
     When force=True, existing templates are overwritten.
     """
     base = templates_install_dir()
     base.mkdir(parents=True, exist_ok=True)
 
+    # Install shared files (*.typ at source root, brand/ directory)
+    for item in source_dir.iterdir():
+        if item.name == "examples":
+            continue
+        dest = base / item.name
+        if item.is_file():
+            if dest.exists() and not force:
+                continue
+            shutil.copy2(item, dest)
+        elif item.is_dir() and not (item / "typst.toml").is_file():
+            # Non-template directory (e.g. brand/)
+            if dest.exists() and force:
+                shutil.rmtree(dest)
+            if not dest.exists():
+                shutil.copytree(item, dest)
+
+    # Install template packages (subdirectories with typst.toml)
     templates = discover_templates(source_dir)
     installed: list[str] = []
     skipped: list[str] = []
@@ -144,7 +165,7 @@ def install_templates(source_dir: Path, *, force: bool = False) -> InstallResult
 
 
 def install_brand(source_dir: Path) -> None:
-    """Install brand assets to ~/.config/tai/brand/."""
+    """Install brand assets to ~/.tai/brand/."""
     dest = brand_install_dir()
     if dest.exists():
         shutil.rmtree(dest)
@@ -162,5 +183,3 @@ def remove_templates() -> int:
             shutil.rmtree(child)
             count += 1
     return count
-
-

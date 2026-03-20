@@ -1,0 +1,4 @@
+[package]
+name = "slides"
+version = "0.1.0"
+description = "Presentation slides in 16:9 format with section dividers."

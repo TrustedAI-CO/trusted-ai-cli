@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import tempfile
 import tomllib
@@ -219,7 +220,9 @@ def compile_cmd(
         output_path = output or file.with_suffix(".pdf")
 
         if suffix == ".typ":
-            result = typst_mod.compile_document(typst_bin, file, output_path)
+            result = typst_mod.compile_document(
+                typst_bin, file.resolve(), output_path, root=Path("/"),
+            )
             console.print(f"[green]\u2713[/green] {result.output_path}")
             return
 
@@ -333,13 +336,48 @@ def _compile_markdown(
 
 
 def _escape_typst_string(value: str) -> str:
-    """Escape a string for safe inclusion in Typst source code."""
+    """Escape a string for safe inclusion in a Typst string literal.
+
+    Inside Typst "..." strings, only backslash and double-quote need
+    escaping.  Other Typst markup characters (#, $, @, <, >) are NOT
+    interpreted inside string literals, so they are safe as-is.
+    """
     return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+_FRONTMATTER_RE = re.compile(r"\A---\s*\n(.+?)\n---\s*\n", re.DOTALL)
+
+
+def _parse_frontmatter(md_content: str) -> dict[str, str]:
+    """Extract YAML-like frontmatter from markdown content.
+
+    Supports simple key: value pairs (no nested YAML).
+    Returns a dict of string keys to string values.
+    """
+    match = _FRONTMATTER_RE.match(md_content)
+    if not match:
+        return {}
+
+    metadata: dict[str, str] = {}
+    for line in match.group(1).splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        sep = line.find(":")
+        if sep == -1:
+            continue
+        key = line[:sep].strip().lower()
+        value = line[sep + 1 :].strip().strip("\"'")
+        if key and value:
+            metadata[key] = value
+    return metadata
 
 
 def _wrap_md_with_template(md_file: Path, template_dir: Path) -> str:
     """Generate a .typ file that imports the template and renders markdown."""
     md_abs = md_file.resolve().as_posix()
+    md_content = md_file.read_text(encoding="utf-8")
+    frontmatter = _parse_frontmatter(md_content)
     brand_dir = brand_install_dir()
     brand_toml = brand_dir / "brand.toml"
 
@@ -378,15 +416,51 @@ def _wrap_md_with_template(md_file: Path, template_dir: Path) -> str:
 
     lib_path = (template_dir / "lib.typ").as_posix()
 
+    # Build template() call with frontmatter metadata
+    template_args = ["company-name: company-name", "logo: company-logo"]
+    for key in ("title", "subtitle", "author", "organization", "date", "version"):
+        if key in frontmatter:
+            template_args.append(
+                f'{key}: "{_escape_typst_string(frontmatter[key])}"'
+            )
+    args_str = ", ".join(template_args)
+
+    # Strip frontmatter so cmarker doesn't render it as content
+    strip_fm = ""
+    if frontmatter:
+        strip_fm = (
+            '#let _strip-frontmatter(s) = {\n'
+            '  let m = s.match(regex("(?s)\\\\A---\\\\s*\\\\n.+?\\\\n---\\\\s*\\\\n"))\n'
+            '  if m != none { s.slice(m.end) } else { s }\n'
+            '}\n'
+        )
+        read_expr = f'_strip-frontmatter(read("{md_abs}"))'
+    else:
+        read_expr = f'read("{md_abs}")'
+
+    # Slides template uses render-slides() instead of show/cmarker pattern
+    is_slides = template_dir.name == "slides"
+
+    if is_slides:
+        return (
+            f'#import "{lib_path}": *\n'
+            f"\n"
+            f"{brand_vars}"
+            f"{strip_fm}"
+            f"\n"
+            f"#render-slides({read_expr}, {args_str})\n"
+        )
+
     return (
         f'#import "{lib_path}": *\n'
         f"\n"
         f"{brand_vars}"
+        f"{strip_fm}"
         f"\n"
-        f"#show: doc => template(doc, company-name: company-name, logo: company-logo)\n"
+        f"#show: doc => template(doc, {args_str})\n"
         f"\n"
         f'#{{  import "{_CMARKER_PACKAGE}"\n'
-        f'   cmarker.render(read("{md_abs}"), smart-punctuation: true)\n'
+        f"   cmarker.render({read_expr}, smart-punctuation: true)\n"
         f"}}\n"
     )
 
