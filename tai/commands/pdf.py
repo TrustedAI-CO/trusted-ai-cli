@@ -190,7 +190,9 @@ def compile_cmd(
         output_path = output or file.with_suffix(".pdf")
 
         if suffix == ".typ":
-            result = typst_mod.compile_document(typst_bin, file, output_path)
+            result = typst_mod.compile_document(
+                typst_bin, file.resolve(), output_path, root=Path("/"),
+            )
             console.print(f"[green]\u2713[/green] {result.output_path}")
             return
 
@@ -268,7 +270,12 @@ def _compile_markdown(
 
 
 def _escape_typst_string(value: str) -> str:
-    """Escape a string for safe inclusion in Typst source code."""
+    """Escape a string for safe inclusion in a Typst string literal.
+
+    Inside Typst "..." strings, only backslash and double-quote need
+    escaping.  Other Typst markup characters (#, $, @, <, >) are NOT
+    interpreted inside string literals, so they are safe as-is.
+    """
     return value.replace("\\", "\\\\").replace('"', '\\"')
 
 
