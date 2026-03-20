@@ -7,17 +7,43 @@
 
 - **generate-pdf skill**: Add best-practice guidance for diagrams and charts — use Mermaid for flowcharts only, use Python (matplotlib/seaborn) with company color palette for data-heavy plots
 
+### Fixed
+
+- **pdf**: Resolve inline Markdown images correctly by adding `scope` override to `cmarker.render()` — images now resolve relative to the Typst root instead of cmarker's package directory
+
 
 ## [0.4.2.1] - 2026-03-21
 
-### Fixed
+## v0.10.0 (2026-03-20)
 
-- **tests**: Add missing `shutil.which` mocks to `test_single_block_cache_hit` and `test_cache_dir_permission_error` so mermaid tests pass in CI environments without mmdc installed
+### Chores
 
+- Resolve CHANGELOG merge conflict (develop ← main)
+  ([`12d36ff`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/12d36fff980cf8c1caeb4b527564cc8b61c44969))
 
-## [0.4.2.0] - 2026-03-21
 
 ## v0.9.0 (2026-03-20)
+
+### Bug Fixes
+
+- **tests**: Add missing mocks to mermaid CI tests
+  ([#53](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/53),
+  [`2d08488`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2d084880f5384f3791be3a511d597900e9cab5f9))
+
+* fix(tests): add missing shutil.which mocks to mermaid CI tests
+
+Two tests called preprocess() without mocking shutil.which, causing _find_mmdc() to fail in CI where
+  mmdc is not installed.
+
+* chore: bump version and changelog (v0.4.2.1)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
 ### Chores
 
@@ -28,6 +54,22 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 - Resolve CHANGELOG merge conflict (develop ← main)
   ([`c1d8101`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c1d810191c01a10aa838ac60888e802f1059c5dd))
+
+### Features
+
+- **mermaid**: Replace mermaid.ink API with local mmdc CLI rendering
+  ([#51](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/51),
+  [`90e0726`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/90e0726ea244ea77fccc5021dec856c8b61f6b3a))
+
+Mermaid.ink is frequently down, causing PDF compilation failures. Switch to local rendering via the
+  mermaid CLI (mmdc) for reliability.
+
+- Replace httpx calls with subprocess.run to mmdc - Add _find_mmdc() and _build_mmdc_config()
+  helpers - Remove _fix_foreign_objects and SVG post-processing (mmdc produces clean SVG) - Fail
+  with clear install instructions when mmdc is missing - Update all tests to mock subprocess.run
+  instead of httpx.get
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
 
 
 ## v0.8.0 (2026-03-20)
