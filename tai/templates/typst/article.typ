@@ -10,7 +10,7 @@
   subtitle: none,
   author: "",
   date: datetime.today().display("[month repr:long] [day], [year]"),
-  icon: none,
+  logo: "brand/logo.png",
   show-page-numbers: true,
   body,
 ) = {
@@ -31,8 +31,13 @@
     header: none,
   )
 
+  // ── Logo ──────────────────────────────────
+  if logo != none {
+    image(logo, width: 4cm)
+    v(space-md)
+  }
+
   // ── Title block ────────────────────────────
-  v(space-lg)
   text(font: font-title, size: size-h1, weight: "bold", fill: color-primary, title)
   if subtitle != none {
     linebreak()

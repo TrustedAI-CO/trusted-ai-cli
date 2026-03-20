@@ -1,5 +1,5 @@
 // Example: TrustedAI Article
-#import "../letter.typ": *
+#import "../article.typ": *
 #import "../theme.typ": blockquote, tag, highlight-text
 
 #show: article.with(

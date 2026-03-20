@@ -3,14 +3,12 @@
 // Exposes `template(body, ..)` for the markdown wrapper.
 
 #import "../theme.typ": *
-#import "../letter.typ": article as _article
+#import "../article.typ": article as _article
 
 #let template(
   body,
   company-name: "TrustedAI",
-  icon: none,
   logo: none,
-  banner: none,
   title: none,
   subtitle: none,
   author: none,
@@ -21,7 +19,7 @@
     subtitle: subtitle,
     author: if author != none { author } else { "" },
     date: date,
-    icon: icon,
+    logo: if logo != none { logo } else { "brand/logo.png" },
     body,
   )
 }
