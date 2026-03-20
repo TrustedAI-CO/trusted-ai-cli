@@ -1,29 +1,20 @@
 # CHANGELOG
 
 
-## [0.4.2.0] - 2026-03-21
+## v0.9.0 (2026-03-20)
 
-### Added
+### Chores
 
-- **pdf**: Mermaid diagram rendering — detect ```mermaid code blocks in markdown, render to SVG via mermaid.ink API, cache by content hash, and embed in PDF output
-- **pdf**: Caption support for mermaid diagrams via `%% caption:` comment syntax
-- **pdf**: Brand color theming for mermaid diagrams from brand.toml
-- **pdf**: SVG post-processing to convert foreignObject HTML to native text for Typst compatibility
-- **config**: `BrandColors` dataclass and `load_brand_colors()` shared helper
+- Bump version and changelog (v0.4.2.0)
+  ([`96da666`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/96da666b4ce5c79c613bb3e11a3026baa6a3bde2))
 
-### Changed
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
-- **pdf**: Refactored brand.toml loading in `_wrap_md_with_template()` to use shared `load_brand_colors()`
+- Resolve CHANGELOG merge conflict (develop ← main)
+  ([`c1d8101`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c1d810191c01a10aa838ac60888e802f1059c5dd))
 
 
-## [0.4.1.4] - 2026-03-21
-
-### Removed
-
-- **templates**: Revert zebraw integration — restore original code block styling with border, uniform background, and mono font
-
-
-## v0.8.0 (2026-03-20) origin/main
+## v0.8.0 (2026-03-20)
 
 ### Chores
 
@@ -32,10 +23,22 @@
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
+- Bump version and changelog (v0.4.1.4)
+  ([`582d499`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/582d499d7c772314022a1da843aa6f9e3b31362e))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
 - Resolve CHANGELOG merge conflict (develop ← main)
   ([`5f426b2`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5f426b29ccfef50877647d91fb40fd9f2318e830))
 
 ### Features
+
+- **pdf**: Add mermaid diagram rendering for PDF compilation
+  ([`ed7a63e`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ed7a63e13f5f3949fabcba36db2fa2fc941db1d4))
+
+Detect ```mermaid code blocks in markdown, render via mermaid.ink API to SVG, cache by content hash,
+  and replace with Typst show rules. Includes foreignObject-to-text SVG post-processing for Typst
+  compat, brand color theming, parallel rendering, and caption support.
 
 - **templates**: Integrate zebraw for enhanced code blocks
   ([`1b40825`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1b408258815fcd3ae3485012430fd233dfecbf76))
