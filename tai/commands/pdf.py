@@ -292,31 +292,64 @@ def _compile_markdown(
     if resolved_template is None:
         resolved_template = _pick_template()
 
-    if resolved_template is not None:
-        if not validate_template_name(resolved_template):
-            raise TemplateError(
-                f"Invalid template name: {resolved_template}",
-                hint="Template names may only contain letters, numbers, hyphens, and underscores.",
-            )
-
-        template_dir = templates_install_dir() / resolved_template
-        if not template_dir.is_dir():
-            raise TemplateNotFoundError(resolved_template)
-
-        typ_content = _wrap_md_with_template(md_file, template_dir)
-    else:
-        err_console.print(
-            "[yellow]Warning:[/yellow] No --template specified. "
-            "Compiling plain markdown without branding."
-        )
-        typ_content = _wrap_md_plain(md_file)
-
     tmp_dir = None
     try:
+        compile_md_file = md_file
+        frontmatter: dict[str, str] | None = None
+
+        if resolved_template is not None:
+            if not validate_template_name(resolved_template):
+                raise TemplateError(
+                    f"Invalid template name: {resolved_template}",
+                    hint="Template names may only contain letters, numbers, hyphens, and underscores.",
+                )
+
+            template_dir = templates_install_dir() / resolved_template
+            if not template_dir.is_dir():
+                raise TemplateNotFoundError(resolved_template)
+
+            frontmatter = _parse_frontmatter(md_content)
+
+            # Article: extract single H1 as title, promote headings
+            promoted_body: str | None = None
+            if resolved_template == "article":
+                body = _strip_frontmatter_body(md_content)
+                h1_title, promoted = _extract_single_h1(body)
+                if h1_title is not None:
+                    if "title" not in frontmatter:
+                        frontmatter["title"] = h1_title
+                    promoted_body = promoted
+
+            # Prompt for missing frontmatter and update source file
+            md_content, frontmatter = _ensure_frontmatter(
+                md_file, md_content, frontmatter, resolved_template
+            )
+
+            # Write temp .md with promoted headings for rendering
+            if promoted_body is not None:
+                tmp_dir = tempfile.mkdtemp(prefix="tai-pdf-")
+                tmp_md = Path(tmp_dir) / md_file.name
+                fm_text = (
+                    _build_frontmatter_block(frontmatter) if frontmatter else ""
+                )
+                tmp_md.write_text(fm_text + promoted_body, encoding="utf-8")
+                compile_md_file = tmp_md
+
+            typ_content = _wrap_md_with_template(
+                compile_md_file, template_dir, frontmatter=frontmatter
+            )
+        else:
+            err_console.print(
+                "[yellow]Warning:[/yellow] No --template specified. "
+                "Compiling plain markdown without branding."
+            )
+            typ_content = _wrap_md_plain(md_file)
+
         if debug:
             typ_path = output_path.with_suffix(".typ")
         else:
-            tmp_dir = tempfile.mkdtemp(prefix="tai-pdf-")
+            if tmp_dir is None:
+                tmp_dir = tempfile.mkdtemp(prefix="tai-pdf-")
             typ_path = Path(tmp_dir) / "document.typ"
 
         typ_path.write_text(typ_content, encoding="utf-8")
@@ -347,6 +380,12 @@ def _escape_typst_string(value: str) -> str:
 
 _FRONTMATTER_RE = re.compile(r"\A---\s*\n(.+?)\n---\s*\n", re.DOTALL)
 
+_TEMPLATE_REQUIRED_FIELDS: dict[str, tuple[str, ...]] = {
+    "article": ("title", "author"),
+    "report": ("title", "author"),
+}
+_DEFAULT_REQUIRED_FIELDS: tuple[str, ...] = ("title",)
+
 
 def _parse_frontmatter(md_content: str) -> dict[str, str]:
     """Extract YAML-like frontmatter from markdown content.
@@ -373,11 +412,126 @@ def _parse_frontmatter(md_content: str) -> dict[str, str]:
     return metadata
 
 
-def _wrap_md_with_template(md_file: Path, template_dir: Path) -> str:
+def _strip_frontmatter_body(md_content: str) -> str:
+    """Return the body portion of markdown content, stripping any frontmatter."""
+    match = _FRONTMATTER_RE.match(md_content)
+    return md_content[match.end() :] if match else md_content
+
+
+def _extract_single_h1(body: str) -> tuple[str | None, str]:
+    """Extract title from a single H1 heading and promote remaining headings.
+
+    When exactly one H1 exists (outside code blocks), removes it and reduces
+    all other heading levels by one (## -> #, ### -> ##, etc.).
+    Returns (extracted_title, modified_body).
+    """
+    lines = body.split("\n")
+    h1_indices: list[int] = []
+    in_code_block = False
+
+    for i, line in enumerate(lines):
+        if line.strip().startswith("```"):
+            in_code_block = not in_code_block
+            continue
+        if not in_code_block and re.match(r"^# (?!#)", line):
+            h1_indices.append(i)
+
+    if len(h1_indices) != 1:
+        return None, body
+
+    title = re.sub(r"^# +", "", lines[h1_indices[0]]).strip()
+
+    result: list[str] = []
+    in_code_block = False
+    for i, line in enumerate(lines):
+        if i == h1_indices[0]:
+            continue
+        if line.strip().startswith("```"):
+            in_code_block = not in_code_block
+        if not in_code_block and re.match(r"^#{2,} ", line):
+            line = line[1:]  # remove one '#' to promote
+        result.append(line)
+
+    return title, "\n".join(result)
+
+
+def _build_frontmatter_block(metadata: dict[str, str]) -> str:
+    """Build a YAML frontmatter block string from a metadata dict."""
+    lines = ["---"]
+    for key, value in metadata.items():
+        lines.append(f"{key}: {value}")
+    lines.append("---")
+    return "\n".join(lines) + "\n"
+
+
+def _update_file_frontmatter(
+    md_file: Path, md_content: str, metadata: dict[str, str]
+) -> str:
+    """Write updated frontmatter to the source file. Returns new file content."""
+    match = _FRONTMATTER_RE.match(md_content)
+    fm_block = _build_frontmatter_block(metadata)
+    if match:
+        new_content = fm_block + md_content[match.end() :]
+    else:
+        new_content = fm_block + "\n" + md_content
+    md_file.write_text(new_content, encoding="utf-8")
+    return new_content
+
+
+def _ensure_frontmatter(
+    md_file: Path,
+    md_content: str,
+    frontmatter: dict[str, str],
+    template_name: str,
+) -> tuple[str, dict[str, str]]:
+    """Prompt for missing required frontmatter fields and update the source file.
+
+    Returns (updated_content, updated_frontmatter).
+    """
+    from rich.prompt import Prompt
+
+    required = _TEMPLATE_REQUIRED_FIELDS.get(
+        template_name, _DEFAULT_REQUIRED_FIELDS
+    )
+    missing = [f for f in required if f not in frontmatter]
+
+    if not missing:
+        return md_content, frontmatter
+
+    if not is_interactive():
+        names = ", ".join(missing)
+        err_console.print(
+            f"[yellow]Warning:[/yellow] Missing frontmatter: {names}. "
+            "Run interactively to be prompted, or add to file."
+        )
+        return md_content, frontmatter
+
+    err_console.print(
+        f"[yellow]Missing frontmatter for {template_name}:[/yellow] "
+        + ", ".join(missing)
+    )
+
+    updated = dict(frontmatter)
+    for field in missing:
+        value = Prompt.ask(f"  {field.capitalize()}", console=err_console)
+        if value.strip():
+            updated[field] = value.strip()
+
+    new_content = _update_file_frontmatter(md_file, md_content, updated)
+    return new_content, updated
+
+
+def _wrap_md_with_template(
+    md_file: Path,
+    template_dir: Path,
+    *,
+    frontmatter: dict[str, str] | None = None,
+) -> str:
     """Generate a .typ file that imports the template and renders markdown."""
     md_abs = md_file.resolve().as_posix()
-    md_content = md_file.read_text(encoding="utf-8")
-    frontmatter = _parse_frontmatter(md_content)
+    if frontmatter is None:
+        md_content = md_file.read_text(encoding="utf-8")
+        frontmatter = _parse_frontmatter(md_content)
     brand_dir = brand_install_dir()
     brand_toml = brand_dir / "brand.toml"
 

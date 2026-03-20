@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## [0.4.1.0] - 2026-03-20
+
+### Added
+- Auto-extract single H1 heading as article title with heading promotion (## → #, ### → ##)
+- Prompt for missing frontmatter fields (title, author) when compiling with article/report templates
+- Write prompted frontmatter back to the source markdown file
+- Non-interactive mode warns about missing frontmatter instead of prompting
+
+### Changed
+- `_wrap_md_with_template` accepts optional pre-parsed `frontmatter` parameter
+- `_compile_markdown` restructured to support markdown preprocessing pipeline
+
+
 ## v0.5.4 (2026-03-20)
 
 ### Chores
