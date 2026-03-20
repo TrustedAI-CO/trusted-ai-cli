@@ -1,10 +1,10 @@
 ---
-name: plan-ceo-light
+name: plan-biz-light
 version: 1.0.0
 description: |
-  [TAI] Fast CEO-mode plan scan. Premise challenge, dream state mapping, and top 3
+  [TAI] Fast Biz-mode plan scan. Premise challenge, dream state mapping, and top 3
   risks — no 10-section walkthrough, no interactive stops, no expansion ceremonies.
-  For the full mega plan review, use /plan-ceo instead.
+  For the full mega plan review, use /plan-biz instead.
 allowed-tools:
   - Read
   - Grep
@@ -12,7 +12,7 @@ allowed-tools:
   - Bash
 ---
 
-# /plan-ceo-light: Fast CEO Plan Scan
+# /plan-biz-light: Fast Biz Plan Scan
 
 ## Language
 
@@ -26,7 +26,7 @@ Keep these in English regardless of language:
 - Technical terms: SQL, CSRF, API, LLM, XSS, etc.
 Translate all prose, explanations, recommendations, and AskUserQuestion text.
 
-This is the light version of `/plan-ceo`. Quick strategic sanity check — not a full review.
+This is the light version of `/plan-biz`. Quick strategic sanity check — not a full review.
 
 ## Step 0: Detect base branch
 
@@ -89,7 +89,7 @@ One of:
 Format the entire output as a single document:
 
 ```
-## /plan-ceo-light: {Plan/Feature Name}
+## /plan-biz-light: {Plan/Feature Name}
 
 ### Premise
 {premise challenge answers}
@@ -104,13 +104,13 @@ Format the entire output as a single document:
 {One paragraph explanation}
 ```
 
-Skip these (they belong to the full `/plan-ceo`):
+Skip these (they belong to the full `/plan-biz`):
 - System audit
 - Mode selection (expansion/hold/reduction)
 - All 10 review sections (architecture, errors, security, data, quality, tests, perf, observability, deploy, long-term)
 - Design review section
 - Expansion opt-in / cherry-pick ceremonies
-- CEO plan persistence to disk
+- Biz plan persistence to disk
 - Review readiness dashboard
 - TODOS.md updates
 - Failure modes registry
@@ -122,7 +122,7 @@ Skip these (they belong to the full `/plan-ceo`):
 _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
 _BRANCH_SAFE=$(git branch --show-current | tr '/' '-')
 mkdir -p "$HOME/.tai-skills/projects/$_SLUG"
-echo '{"skill":"plan-ceo","variant":"light","timestamp":"TIMESTAMP","status":"STATUS","verdict":"VERDICT"}' >> "$HOME/.tai-skills/projects/$_SLUG/${_BRANCH_SAFE}-reviews.jsonl"
+echo '{"skill":"plan-biz","variant":"light","timestamp":"TIMESTAMP","status":"STATUS","verdict":"VERDICT"}' >> "$HOME/.tai-skills/projects/$_SLUG/${_BRANCH_SAFE}-reviews.jsonl"
 ```
 
 Substitute: TIMESTAMP = ISO 8601 datetime, STATUS = "clean" if verdict is "ship it" else "issues_found", VERDICT = the verdict string.
@@ -132,5 +132,5 @@ Substitute: TIMESTAMP = ISO 8601 datetime, STATUS = "clean" if verdict is "ship 
 - **Be fast.** The whole scan should take under 2 minutes.
 - **No interaction.** Output the document and stop. No AskUserQuestion calls.
 - **Strategic only.** Don't review code, architecture details, tests, or performance — those are other skills' jobs.
-- **Be direct.** CEO mode means no hedging. State your opinion.
+- **Be direct.** Biz mode means no hedging. State your opinion.
 - **Founder perspective.** Think about whether this is worth the team's time, not whether the code is clean.

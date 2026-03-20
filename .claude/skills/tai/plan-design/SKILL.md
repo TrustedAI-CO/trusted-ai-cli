@@ -2,7 +2,7 @@
 name: plan-design
 version: 2.0.0
 description: |
-  [TAI] Designer's eye plan review — interactive, like CEO and Eng review.
+  [TAI] Designer's eye plan review — interactive, like Biz and Eng review.
   Rates each design dimension 0-10, explains what would make it a 10,
   then fixes the plan to get there. Works in plan mode. For live site
   visual audits, use /design-review. Use when asked to "review the design plan"
@@ -378,7 +378,7 @@ echo "---CONFIG---"
 echo "false"
 ```
 
-Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng, plan-design, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
+Parse the output. Find the most recent entry for each skill (plan-biz, plan-eng, plan-design, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
 
 ```
 +====================================================================+
@@ -387,7 +387,7 @@ Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng,
 | Review          | Runs | Last Run            | Status    | Required |
 |-----------------|------|---------------------|-----------|----------|
 | Eng Review      |  1   | 2026-03-16 15:00    | CLEAR     | YES      |
-| CEO Review      |  0   | —                   | —         | no       |
+| Biz Review      |  0   | —                   | —         | no       |
 | Design Review   |  0   | —                   | —         | no       |
 +--------------------------------------------------------------------+
 | VERDICT: CLEARED — Eng Review passed                                |
@@ -396,13 +396,13 @@ Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng,
 
 **Review tiers:**
 - **Eng Review (required by default):** The only review that gates shipping. Covers architecture, code quality, tests, performance. Can be disabled globally with setting \`TAI_SKIP_ENG_REVIEW=true\` env var (the "don't bother me" setting).
-- **CEO Review (optional):** Use your judgment. Recommend it for big product/business changes, new user-facing features, or scope decisions. Skip for bug fixes, refactors, infra, and cleanup.
+- **Biz Review (optional):** Use your judgment. Recommend it for big product/business changes, new user-facing features, or scope decisions. Skip for bug fixes, refactors, infra, and cleanup.
 - **Design Review (optional):** Use your judgment. Recommend it for UI/UX changes. Skip for backend-only, infra, or prompt-only changes.
 
 **Verdict logic:**
 - **CLEARED**: Eng Review has >= 1 entry within 7 days with status "clean" (or \`skip_eng_review\` is \`true\`)
 - **NOT CLEARED**: Eng Review missing, stale (>7 days), or has open issues
-- CEO and Design reviews are shown for context but never block shipping
+- Biz and Design reviews are shown for context but never block shipping
 - If \`skip_eng_review\` config is \`true\`, Eng Review shows "SKIPPED (global)" and verdict is CLEARED
 
 ## Formatting Rules
