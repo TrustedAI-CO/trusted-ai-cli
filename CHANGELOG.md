@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.5.2 (2026-03-20)
+
+### Bug Fixes
+
+- **pdf**: Resolve template discovery and add setup-templates to post-update
+  ([`0b94d86`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0b94d86a4fc99089f811f9602c624fcabf35285a))
+
+Template discovery failed when running tai from outside the repo because it relied on importlib or
+  git-root lookups. Add __file__-relative path resolution and include tai/templates/typst in the
+  wheel build.
+
+Also wire setup-templates into post-update and post-setup flows so templates are refreshed alongside
+  skills and hooks.
+
+
 ## v0.5.1 (2026-03-20)
 
 ### Bug Fixes
