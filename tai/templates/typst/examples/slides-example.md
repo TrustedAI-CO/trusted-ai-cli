@@ -1,7 +1,7 @@
 ---
 title: TrustedAI CLI
 subtitle: Ship Safer Software, Faster
-author: Thien Nguyen
+author: Tran Thien
 date: March 19, 2026
 institution: TrustedAI Co., Ltd.
 ---

@@ -1,7 +1,7 @@
 ---
 title: Partnership Proposal
 subtitle: AI Safety Collaboration
-author: Thien Nguyen
+author: Tran Thien
 date: March 19, 2026
 ---
 

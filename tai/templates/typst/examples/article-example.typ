@@ -5,7 +5,7 @@
 #show: article.with(
   title: "Partnership Proposal",
   subtitle: "AI Safety Collaboration",
-  author: "Thien Nguyen",
+  author: "Tran Thien",
   organization: "TrustedAI Co., Ltd.",
   date: "March 19, 2026",
   version: "1.0",

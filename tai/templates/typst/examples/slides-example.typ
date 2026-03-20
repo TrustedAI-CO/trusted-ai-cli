@@ -7,7 +7,7 @@
 #title-slide(
   title: "TrustedAI CLI",
   subtitle: "Ship Safer Software, Faster",
-  author: "Thien Nguyen",
+  author: "Tran Thien",
   organization: "TrustedAI Co., Ltd.",
   date: "March 19, 2026",
   version: "0.1",
