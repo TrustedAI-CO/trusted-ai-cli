@@ -1,0 +1,4 @@
+[package]
+name = "article"
+version = "0.1.0"
+description = "Warm, minimal single-page documents — articles, briefs, memos."

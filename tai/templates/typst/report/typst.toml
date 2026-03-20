@@ -1,0 +1,4 @@
+[package]
+name = "report"
+version = "0.1.0"
+description = "Full report with cover page, abstract, TOC, and numbered sections."
