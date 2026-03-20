@@ -87,7 +87,7 @@ def test_update_full_flow(runner, ctx_obj, tmp_path):
          patch("tai.commands.update.download_wheel", return_value=wheel_path), \
          patch("tai.commands.update.install_wheel"), \
          patch("tai.commands.update.clear_update_cache"), \
-         patch("tai.commands.update.run_post_update", return_value=(True, True)):
+         patch("tai.commands.update.run_post_update", return_value=(True, True, True)):
         from tai.core.updater import Installer
         mock_detect.return_value = Installer.PIP
         result = runner.invoke(app, ["update"], obj=ctx_obj)
@@ -96,6 +96,7 @@ def test_update_full_flow(runner, ctx_obj, tmp_path):
     assert "0.3.0" in result.output
     assert "Skills refreshed" in result.output
     assert "Hooks refreshed" in result.output
+    assert "Templates refreshed" in result.output
 
 
 def test_update_download_fails(runner, ctx_obj):
@@ -134,13 +135,14 @@ def test_update_post_setup_partial_failure(runner, ctx_obj, tmp_path):
          patch("tai.commands.update.download_wheel", return_value=wheel_path), \
          patch("tai.commands.update.install_wheel"), \
          patch("tai.commands.update.clear_update_cache"), \
-         patch("tai.commands.update.run_post_update", return_value=(True, False)):
+         patch("tai.commands.update.run_post_update", return_value=(True, False, True)):
         from tai.core.updater import Installer
         mock_detect.return_value = Installer.PIP
         result = runner.invoke(app, ["update"], obj=ctx_obj)
 
     assert result.exit_code == 0
     assert "Skills refreshed" in result.output
+    assert "Templates refreshed" in result.output
 
 
 def test_update_check_error(runner, ctx_obj):

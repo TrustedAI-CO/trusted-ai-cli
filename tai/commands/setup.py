@@ -8,6 +8,7 @@ from rich.console import Console
 from tai.core.config import ProfileConfig, load_config, save_config
 from tai.core.context import get_ctx
 from tai.core.prompt import is_interactive
+from tai.core.updater import run_post_update
 
 console = Console()
 err_console = Console(stderr=True)
@@ -77,6 +78,24 @@ def setup(ctx: typer.Context) -> None:
     save_config(config)
 
     console.print(f"\n[green]Saved {len(updates)} change(s) to profile [bold]{profile_name}[/bold].[/green]")
+
+    console.print("\nInstalling skills, hooks, and templates...")
+    skills_ok, hooks_ok, templates_ok = run_post_update()
+
+    if skills_ok:
+        console.print("  [green]Skills installed[/green]")
+    else:
+        err_console.print("  [yellow]Warning: skills install failed. Run 'tai claude setup-skills' manually.[/yellow]")
+
+    if hooks_ok:
+        console.print("  [green]Hooks installed[/green]")
+    else:
+        err_console.print("  [yellow]Warning: hooks install failed. Run 'tai claude setup-hooks' manually.[/yellow]")
+
+    if templates_ok:
+        console.print("  [green]Templates installed[/green]")
+    else:
+        err_console.print("  [yellow]Warning: templates install failed. Run 'tai pdf setup-templates' manually.[/yellow]")
 
 
 def _coerce(raw: str, target_type: type) -> object:
