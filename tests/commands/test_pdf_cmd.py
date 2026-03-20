@@ -174,6 +174,7 @@ class TestCompile:
         assert result.exit_code == 0
 
     def test_compile_md_no_template_warning(self, tmp_path: Path) -> None:
+        """When picker returns None, compiles plain markdown with warning."""
         md_file = tmp_path / "doc.md"
         md_file.write_text("# Hello")
 
@@ -183,6 +184,7 @@ class TestCompile:
         with (
             patch("shutil.which", return_value="/usr/bin/typst"),
             patch("subprocess.run", side_effect=[version_result, compile_result]),
+            patch("tai.commands.pdf._pick_template", return_value=None),
         ):
             result = runner.invoke(app, ["compile", str(md_file)])
         assert result.exit_code == 0
@@ -234,6 +236,7 @@ class TestCompile:
         with (
             patch("shutil.which", return_value="/usr/bin/typst"),
             patch("subprocess.run", side_effect=[version_result, compile_result]),
+            patch("tai.commands.pdf._pick_template", return_value=None),
         ):
             result = runner.invoke(app, ["compile", str(md_file)])
         assert "empty" in result.output
@@ -266,3 +269,80 @@ class TestCompile:
             result = runner.invoke(app, ["compile", str(typ_file)])
         assert result.exit_code == 1
         assert "failed" in result.output
+
+    def test_compile_md_no_template_non_interactive_errors(self, tmp_path: Path) -> None:
+        """Non-interactive terminal without --template should error with hint."""
+        md_file = tmp_path / "doc.md"
+        md_file.write_text("# Hello")
+
+        # Install a template so the error is about interactivity, not missing templates
+        tpl_dir = tmp_path / "installed" / "proposal"
+        tpl_dir.mkdir(parents=True)
+        (tpl_dir / "typst.toml").write_text(
+            '[package]\nname = "proposal"\nversion = "0.1.0"\ndescription = "A proposal."\n'
+        )
+
+        version_result = MagicMock(stdout="typst 0.13.0")
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/typst"),
+            patch("subprocess.run", return_value=version_result),
+            patch("tai.commands.pdf.templates_install_dir", return_value=tmp_path / "installed"),
+            patch("tai.commands.pdf.is_interactive", return_value=False),
+        ):
+            result = runner.invoke(app, ["compile", str(md_file)])
+        assert result.exit_code == 1
+        assert "not interactive" in result.output
+        assert "proposal" in result.output
+
+    def test_compile_md_no_template_no_installed_errors(self, tmp_path: Path) -> None:
+        """No --template and no installed templates should error with setup hint."""
+        md_file = tmp_path / "doc.md"
+        md_file.write_text("# Hello")
+
+        version_result = MagicMock(stdout="typst 0.13.0")
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/typst"),
+            patch("subprocess.run", return_value=version_result),
+            patch("tai.commands.pdf.templates_install_dir", return_value=tmp_path / "empty"),
+        ):
+            result = runner.invoke(app, ["compile", str(md_file)])
+        assert result.exit_code == 1
+        assert "No templates installed" in result.output
+        assert "setup-templates" in result.output
+
+
+# ── templates command tests ──────────────────────────────────────────────────
+
+
+class TestTemplatesCmd:
+    def test_list_installed(self, patch_dirs, install_dir: Path) -> None:
+        """After setup, 'tai pdf templates' shows installed templates."""
+        runner.invoke(app, ["setup-templates"])
+        result = runner.invoke(app, ["templates"])
+        assert result.exit_code == 0
+        assert "proposal" in result.output
+
+    def test_list_empty(self, tmp_path: Path) -> None:
+        """No installed templates shows hint."""
+        with patch("tai.commands.pdf.templates_install_dir", return_value=tmp_path / "empty"):
+            result = runner.invoke(app, ["templates"])
+        assert result.exit_code == 0
+        assert "No templates installed" in result.output
+        assert "setup-templates" in result.output
+
+    def test_list_json(self, patch_dirs, install_dir: Path) -> None:
+        runner.invoke(app, ["setup-templates"])
+        result = runner.invoke(app, ["templates", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        names = [t["name"] for t in data["templates"]]
+        assert "proposal" in names
+
+    def test_list_json_empty(self, tmp_path: Path) -> None:
+        with patch("tai.commands.pdf.templates_install_dir", return_value=tmp_path / "empty"):
+            result = runner.invoke(app, ["templates", "--json"])
+        assert result.exit_code == 0
+        data = json.loads(result.output)
+        assert data["templates"] == []
