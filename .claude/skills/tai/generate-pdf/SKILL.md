@@ -92,6 +92,49 @@ Brand assets (logo, colors, company name) are installed alongside templates
 at `~/.config/tai/brand/`. Templates automatically use these for consistent
 branding across all document types.
 
+## Diagrams and charts
+
+### Mermaid — flowcharts only
+
+Use Mermaid diagrams **only for flowcharts** (process flows, decision trees, sequence diagrams, state diagrams). Mermaid excels at structural/relational visuals but is not suited for data-heavy plots.
+
+```markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action]
+    B -->|No| D[End]
+```
+```
+
+### Python — data-heavy plots
+
+For bar charts, line graphs, scatter plots, histograms, heatmaps, and any visualization driven by numerical data, generate the chart as a PNG using Python (matplotlib/seaborn) and embed it in the Markdown.
+
+**Use the company color palette:**
+
+```python
+# Company color palette — use these for all data visualizations
+COMPANY_COLORS = {
+    "primary": "#2563EB",    # Blue — main data series, primary bars
+    "secondary": "#7C3AED",  # Purple — secondary data series
+    "accent": "#06B6D4",     # Cyan — highlights, callouts
+    "success": "#10B981",    # Green — positive metrics
+    "warning": "#F59E0B",    # Amber — caution, thresholds
+    "danger": "#EF4444",     # Red — negative metrics, alerts
+    "neutral": "#6B7280",    # Gray — baselines, gridlines
+}
+
+# Ordered list for cycling through multi-series charts
+PALETTE = ["#2563EB", "#7C3AED", "#06B6D4", "#10B981", "#F59E0B", "#EF4444"]
+```
+
+**Workflow:**
+1. Write a Python script that generates the chart as a `.png` file
+2. Run the script with `python script.py`
+3. Reference the image in Markdown: `![Chart title](chart.png)`
+4. Compile the document with `tai pdf compile`
+
 ## Troubleshooting
 
 - **"Typst not found"** — Install Typst: `brew install typst`
