@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.5.3 (2026-03-20)
+
+### Bug Fixes
+
+- **skills**: Resolve skill discovery for pip/uv-tool installs
+  ([`9a5b871`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/9a5b87144a4863463d4cebdb42dcf36c832c3a64))
+
+Same issue as templates — skills weren't findable outside the repo. Add __file__-relative path
+  lookup and include .claude/skills/tai in the wheel as tai/data/skills via force-include.
+
+
 ## v0.5.2 (2026-03-20)
 
 ### Bug Fixes
