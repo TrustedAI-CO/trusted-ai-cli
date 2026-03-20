@@ -8,11 +8,33 @@
 - **skills**: Rename plan-ceo/plan-ceo-light to plan-biz/plan-biz-light across all skill definitions, cross-references, README, and CHANGELOG
 
 
-## [0.4.1.1] - 2026-03-20
+## v0.7.0 (2026-03-20)
 
-### Changed
+### Chores
 
-- **pdf**: Extract single H1 as title for all templates (not just article) and persist to source file
+- Bump version and changelog (v0.4.1.1)
+  ([`38bc125`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/38bc125afc334f4516835fbd8b08894c012d2c57))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+
+## v0.6.0 (2026-03-20)
+
+### Chores
+
+- Bump version and changelog (v0.4.1.0)
+  ([`e322684`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/e3226841543e5d955922ad94597bac8a86cee9a0))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+### Features
+
+- **pdf**: Extract single H1 as title for all templates and persist to file
+  ([`4b7df90`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4b7df90d107790ff206c31bac15e4755e8c47908))
+
+H1 → title promotion was article-only. Now works for report, slides, and any future template. When
+  an H1 is extracted, the title is written back to the source file's frontmatter so subsequent runs
+  don't re-prompt.
 
 
 ## v0.5.4 (2026-03-20)
