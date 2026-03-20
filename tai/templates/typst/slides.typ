@@ -162,7 +162,17 @@
   show heading: it => { it + v(0.4em) }
   show link: it => underline(text(fill: tai-blue, it))
   show raw.where(block: false): _code-inline
-  show raw.where(block: true): _code-block
+  show raw.where(block: true): it => zebraw(
+    background-color: (tai-light, tai-warm),
+    highlight-color: tai-sky.lighten(80%),
+    lang: true,
+    lang-color: tai-navy.lighten(85%),
+    lang-font-args: (font: font-mono, size: 10pt, fill: tai-navy),
+    numbering-font-args: (font: font-mono, size: 10pt, fill: tai-muted),
+    radius: 4pt,
+    inset: (top: 0.4em, bottom: 0.4em, left: 0.3em, right: 0.6em),
+    it,
+  )
 
   body
 }
