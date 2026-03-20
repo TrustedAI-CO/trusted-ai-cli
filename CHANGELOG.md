@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.3.1 (2026-03-20)
+
+### Added
+
+- **pdf**: `tai pdf templates` subcommand to list installed templates with `--json` support
+- **pdf**: Interactive template picker when `--template` is omitted on `.md` files in TTY terminals
+
+### Changed
+
+- **pdf**: Non-interactive terminals now error with available template names instead of silently compiling without branding
+- **pdf**: Missing templates now error with `tai pdf setup-templates` hint instead of silently proceeding
+
 ## v0.3.0 (2026-03-19)
 
 ### Documentation
