@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## [0.4.1.4] - 2026-03-21
+
+### Removed
+
+- **templates**: Revert zebraw integration — restore original code block styling with border, uniform background, and mono font
+
+
 ## [0.4.1.3] - 2026-03-21
 
 ### Added
