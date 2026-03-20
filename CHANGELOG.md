@@ -3,10 +3,26 @@
 
 ## v0.4.0 (2026-03-20)
 
-### Chores
+### Added
 
-- Resolve merge conflict in CHANGELOG.md (develop → main)
-  ([`463c0df`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/463c0df3d1c725d05eff92b5a442dde7a9f98671))
+- Typst PDF template system with article, report, and slides templates
+- Shared design tokens via `theme.typ` (colors, fonts, spacing, components)
+- Brand identity support via `brand.toml` configuration
+- `tai pdf compile` command for `.md` and `.typ` files
+- `tai pdf setup-templates` for template installation to `~/.tai/templates/`
+- `tai pdf templates` to list installed templates
+- Frontmatter parsing for markdown metadata (title, author, date, etc.)
+- Interactive template picker when `--template` is omitted
+- Core `tai.core.typst` module (binary detection, version checking, compilation)
+- Core `tai.core.templates` module (discovery, parsing, installation)
+- Typst error hierarchy (`TypstNotFoundError`, `TypstVersionError`, `TypstCompileError`)
+- Template error hierarchy (`TemplateError`, `TemplateNotFoundError`)
+- Example files for all templates (article/report/slides × md/typ)
+
+### Changed
+
+- Templates install shared files (theme.typ, brand/) alongside template subdirectories
+  so relative imports resolve correctly
 
 
 ## v0.3.1 (2026-03-19)
