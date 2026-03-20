@@ -1,17 +1,14 @@
 # CHANGELOG
 
 
-## [0.4.1.0] - 2026-03-20
+## v0.6.0 (2026-03-20)
 
-### Added
-- Auto-extract single H1 heading as article title with heading promotion (## → #, ### → ##)
-- Prompt for missing frontmatter fields (title, author) when compiling with article/report templates
-- Write prompted frontmatter back to the source markdown file
-- Non-interactive mode warns about missing frontmatter instead of prompting
+### Chores
 
-### Changed
-- `_wrap_md_with_template` accepts optional pre-parsed `frontmatter` parameter
-- `_compile_markdown` restructured to support markdown preprocessing pipeline
+- Bump version and changelog (v0.4.1.0)
+  ([`e322684`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/e3226841543e5d955922ad94597bac8a86cee9a0))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 
 ## v0.5.4 (2026-03-20)
@@ -25,6 +22,18 @@
 
 - Add style to semantic-release allowed and patch tags
   ([`aa7c9b9`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/aa7c9b9b2e341e8a70fa0a61548d274d75cf15ef))
+
+### Features
+
+- **pdf**: Auto-extract single H1 as article title and prompt for missing frontmatter
+  ([`38202e5`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/38202e522ab026d34655788ab27248576b858e79))
+
+For article template, when exactly one H1 heading exists in the markdown: - Extract it as the
+  document title (used by template title block) - Remove the H1 from body content - Promote all
+  remaining headings by one level (## → #, ### → ##)
+
+When required frontmatter fields are missing (title/author for article/report): - Prompt the user
+  interactively - Write the frontmatter back to the source file - Warn in non-interactive mode
 
 
 ## v0.5.3 (2026-03-20)
