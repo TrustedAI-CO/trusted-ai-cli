@@ -63,8 +63,8 @@ Every command supports `--json` for machine-readable output.
 
 | Skill | Speed | What it does |
 |-------|-------|-------------|
-| `/plan-ceo` | Full | CEO-mode plan review with 4 expansion modes |
-| `/plan-ceo-light` | Fast | Premise challenge + dream state + top 3 risks |
+| `/plan-biz` | Full | CEO-mode plan review with 4 expansion modes |
+| `/plan-biz-light` | Fast | Premise challenge + dream state + top 3 risks |
 | `/plan-eng` | Full | Architecture, data flow, edge cases, test plan |
 | `/plan-eng-light` | Fast | Scope challenge + architecture diagram + top concerns |
 | `/plan-design` | Full | Designer's eye review, rates each dimension 0-10 |
