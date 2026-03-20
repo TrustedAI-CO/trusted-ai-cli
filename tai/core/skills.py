@@ -72,7 +72,14 @@ def discover_skills(source_dir: Path) -> list[SkillInfo]:
 
 
 def find_skill_source() -> Path | None:
-    """Locate bundled skills: try package data first, then repo root."""
+    """Locate bundled skills: try package-relative path, importlib, then repo root."""
+    # 1. Resolve relative to the tai package directory (works for pip/uv-tool installs)
+    tai_pkg_dir = Path(__file__).resolve().parent.parent  # tai/core/skills.py -> tai/
+    candidate = tai_pkg_dir / "data" / "skills"
+    if candidate.is_dir() and any(candidate.iterdir()):
+        return candidate
+
+    # 2. Try importlib.resources
     try:
         from importlib.resources import files
         pkg_path = files("tai.data.skills")
@@ -82,6 +89,7 @@ def find_skill_source() -> Path | None:
     except (ImportError, ModuleNotFoundError, TypeError):
         pass
 
+    # 3. Fall back to git repo root (dev mode — skills live in .claude/skills/tai/)
     repo_root = _find_repo_root()
     if repo_root:
         candidate = repo_root / ".claude" / "skills" / "tai"

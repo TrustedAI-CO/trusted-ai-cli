@@ -48,6 +48,7 @@ packages = ["tai"]
 "tai/data/templates" = "tai/data/templates"
 "tai/data/brand" = "tai/data/brand"
 "tai/templates/typst" = "tai/templates/typst"
+".claude/skills/tai" = "tai/data/skills"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
