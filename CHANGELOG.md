@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## [0.4.0.1] - 2026-03-20
+
+### Changed
+- Article template: add heading numbering, figure caption settings, hide thematic breaks
+- Article template: revert to no page header and single-number page numbering
+- Report template: hide thematic breaks (---) from rendering in PDF
+
+
 ## v0.5.3 (2026-03-20)
 
 ### Bug Fixes
