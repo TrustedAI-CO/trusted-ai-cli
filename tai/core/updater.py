@@ -250,10 +250,10 @@ def _build_install_cmd(installer: Installer, wheel_path: Path) -> list[str]:
             raise UpdateError(f"Unsupported installer: {installer!r}")
 
 
-def run_post_update() -> tuple[bool, bool]:
-    """Run setup-skills and setup-hooks via subprocess (uses new code).
+def run_post_update() -> tuple[bool, bool, bool]:
+    """Run setup-skills, setup-hooks, and setup-templates via subprocess.
 
-    Returns (skills_ok, hooks_ok).
+    Returns (skills_ok, hooks_ok, templates_ok).
     """
     tai_bin = shutil.which("tai") or "tai"
 
@@ -279,7 +279,18 @@ def run_post_update() -> tuple[bool, bool]:
         _log.debug("Post-update setup-hooks failed: %s", exc)
         hooks_ok = False
 
-    return skills_ok, hooks_ok
+    try:
+        templates_result = subprocess.run(
+            [tai_bin, "pdf", "setup-templates", "--force"],
+            capture_output=True,
+            text=True,
+        )
+        templates_ok = templates_result.returncode == 0
+    except OSError as exc:
+        _log.debug("Post-update setup-templates failed: %s", exc)
+        templates_ok = False
+
+    return skills_ok, hooks_ok, templates_ok
 
 
 # ── Startup update-check cache ───────────────────────────────────────────────

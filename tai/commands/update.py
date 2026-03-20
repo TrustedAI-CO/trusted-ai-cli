@@ -111,12 +111,12 @@ def _run_update(info: UpdateCheck, use_json: bool) -> None:
 
     if not use_json:
         console.print(f"[green]Updated to {info.latest}[/green]")
-        console.print("\nRefreshing skills and hooks...")
+        console.print("\nRefreshing skills, hooks, and templates...")
 
-    skills_ok, hooks_ok = run_post_update()
+    skills_ok, hooks_ok, templates_ok = run_post_update()
 
     if not use_json:
-        _print_post_update(skills_ok, hooks_ok)
+        _print_post_update(skills_ok, hooks_ok, templates_ok)
     else:
         console.print_json(json.dumps({
             "current": info.current,
@@ -124,10 +124,11 @@ def _run_update(info: UpdateCheck, use_json: bool) -> None:
             "updated": True,
             "skills_refreshed": skills_ok,
             "hooks_refreshed": hooks_ok,
+            "templates_refreshed": templates_ok,
         }))
 
 
-def _print_post_update(skills_ok: bool, hooks_ok: bool) -> None:
+def _print_post_update(skills_ok: bool, hooks_ok: bool, templates_ok: bool) -> None:
     if skills_ok:
         console.print("  [green]Skills refreshed[/green]")
     else:
@@ -137,6 +138,11 @@ def _print_post_update(skills_ok: bool, hooks_ok: bool) -> None:
         console.print("  [green]Hooks refreshed[/green]")
     else:
         err_console.print("  [yellow]Warning: hooks refresh failed. Run 'tai claude setup-hooks' manually.[/yellow]")
+
+    if templates_ok:
+        console.print("  [green]Templates refreshed[/green]")
+    else:
+        err_console.print("  [yellow]Warning: templates refresh failed. Run 'tai pdf setup-templates' manually.[/yellow]")
 
 
 def _print_error(exc: UpdateError, use_json: bool) -> None:

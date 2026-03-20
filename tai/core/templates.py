@@ -65,7 +65,14 @@ def discover_templates(source_dir: Path) -> list[TemplateInfo]:
 
 
 def _find_data_source(package: str, repo_subpath: str) -> Path | None:
-    """Locate bundled data: try package data first, then repo root."""
+    """Locate bundled data: try package-relative path, importlib, then repo root."""
+    # 1. Resolve relative to the tai package directory (works for pip-installed builds)
+    tai_pkg_dir = Path(__file__).resolve().parent.parent  # tai/core/templates.py -> tai/
+    candidate = tai_pkg_dir / repo_subpath.removeprefix("tai/")
+    if candidate.is_dir() and any(candidate.iterdir()):
+        return candidate
+
+    # 2. Try importlib.resources (works when __init__.py exists)
     try:
         from importlib.resources import files
 
@@ -76,6 +83,7 @@ def _find_data_source(package: str, repo_subpath: str) -> Path | None:
     except (ImportError, ModuleNotFoundError, TypeError):
         pass
 
+    # 3. Fall back to git repo root (dev mode)
     repo_root = _find_repo_root()
     if repo_root:
         candidate = repo_root / repo_subpath
