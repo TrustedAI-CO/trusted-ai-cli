@@ -1,12 +1,17 @@
 # CHANGELOG
 
 
-## [0.4.0.1] - 2026-03-20
+## v0.5.4 (2026-03-20)
 
-### Changed
-- Article template: add heading numbering, figure caption settings, hide thematic breaks
-- Article template: revert to no page header and single-number page numbering
-- Report template: hide thematic breaks (---) from rendering in PDF
+### Chores
+
+- Resolve merge conflict in CHANGELOG.md (main → develop)
+  ([`6f17b35`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/6f17b3505ae4dfd98cbf00559987381b4dda48d2))
+
+### Continuous Integration
+
+- Add style to semantic-release allowed and patch tags
+  ([`aa7c9b9`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/aa7c9b9b2e341e8a70fa0a61548d274d75cf15ef))
 
 
 ## v0.5.3 (2026-03-20)
@@ -18,6 +23,21 @@
 
 Same issue as templates — skills weren't findable outside the repo. Add __file__-relative path
   lookup and include .claude/skills/tai in the wheel as tai/data/skills via force-include.
+
+### Chores
+
+- Bump version and changelog (v0.4.0.1)
+  ([`92752de`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/92752def403b27da55387ece7a15aaf74982827f))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+### Code Style
+
+- **templates**: Update article and report Typst templates
+  ([`b9288b9`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/b9288b925d3a92e720a4d801f028a3d5146a57e0))
+
+Article: add heading numbering (1.1.), figure captions, revert to no page header with single-number
+  page numbering. Both: hide thematic breaks (---) from rendering in PDF output.
 
 
 ## v0.5.2 (2026-03-20)
