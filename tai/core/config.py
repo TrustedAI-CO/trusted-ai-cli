@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import tomllib
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -88,6 +89,42 @@ def load_config(profile_override: str | None = None) -> TaiConfig:
         config.current_profile = profile_override
 
     return config
+
+
+@dataclass(frozen=True)
+class BrandColors:
+    """Brand color values loaded from brand.toml."""
+
+    company_name: str = "TrustedAI"
+    company_tagline: str | None = None
+    primary: str | None = None
+    secondary: str | None = None
+    accent: str | None = None
+
+
+def load_brand_colors(brand_toml: Path) -> BrandColors:
+    """Load brand colors from a brand.toml file.
+
+    Returns defaults if the file is missing or malformed.
+    """
+    if not brand_toml.is_file():
+        return BrandColors()
+
+    try:
+        data = _load_toml(brand_toml)
+    except Exception:
+        return BrandColors()
+
+    company = data.get("company", {})
+    colors = data.get("colors", {})
+
+    return BrandColors(
+        company_name=company.get("name", "TrustedAI") or "TrustedAI",
+        company_tagline=company.get("tagline") or None,
+        primary=colors.get("primary") or None,
+        secondary=colors.get("secondary") or None,
+        accent=colors.get("accent") or None,
+    )
 
 
 def save_config(config: TaiConfig) -> None:

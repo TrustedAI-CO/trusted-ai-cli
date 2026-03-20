@@ -95,6 +95,10 @@ class TypstCompileError(TypstError):
         super().__init__("Typst compilation failed", hint=stderr)
 
 
+class MermaidError(TaiError):
+    """Mermaid diagram rendering failed."""
+
+
 class TemplateError(TaiError):
     """Template installation or resolution failed."""
 

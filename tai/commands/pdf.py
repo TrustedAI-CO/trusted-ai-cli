@@ -6,14 +6,15 @@ import json
 import re
 import shutil
 import tempfile
-import tomllib
 from pathlib import Path
 
 import typer
 from rich.console import Console
 
 from tai.core.context import get_ctx
+from tai.core.config import load_brand_colors
 from tai.core.errors import (
+    MermaidError,
     TaiError,
     TemplateError,
     TemplateNotFoundError,
@@ -236,7 +237,7 @@ def compile_cmd(
             typst_bin, file, output_path, template_name=template, debug=debug
         )
 
-    except (TypstError, TemplateError) as exc:
+    except (TypstError, TemplateError, MermaidError) as exc:
         handle_error(exc)
 
 
@@ -283,6 +284,8 @@ def _compile_markdown(
     """Convert markdown to PDF, optionally applying a template."""
     from tai.core import typst as typst_mod
 
+    from tai.core import mermaid as mermaid_mod
+
     md_content = md_file.read_text(encoding="utf-8")
 
     if not md_content.strip():
@@ -296,6 +299,13 @@ def _compile_markdown(
     try:
         compile_md_file = md_file
         frontmatter: dict[str, str] | None = None
+
+        # Render mermaid diagrams to SVG and replace with placeholders
+        brand_toml = brand_install_dir() / "brand.toml"
+        brand = load_brand_colors(brand_toml)
+        mermaid_result = mermaid_mod.preprocess(md_content, brand=brand)
+        md_content = mermaid_result.content
+        has_mermaid = mermaid_result.has_diagrams
 
         if resolved_template is not None:
             if not validate_template_name(resolved_template):
@@ -327,25 +337,40 @@ def _compile_markdown(
                 md_file, md_content, frontmatter, resolved_template
             )
 
-            # Write temp .md with promoted headings for rendering
-            if promoted_body is not None:
+            # Write temp .md when content was modified (headings or mermaid)
+            needs_temp = promoted_body is not None or has_mermaid
+            if needs_temp:
                 tmp_dir = tempfile.mkdtemp(prefix="tai-pdf-")
                 tmp_md = Path(tmp_dir) / md_file.name
-                fm_text = (
-                    _build_frontmatter_block(frontmatter) if frontmatter else ""
-                )
-                tmp_md.write_text(fm_text + promoted_body, encoding="utf-8")
+                if promoted_body is not None:
+                    fm_text = (
+                        _build_frontmatter_block(frontmatter) if frontmatter else ""
+                    )
+                    tmp_md.write_text(fm_text + promoted_body, encoding="utf-8")
+                else:
+                    tmp_md.write_text(md_content, encoding="utf-8")
                 compile_md_file = tmp_md
 
             typ_content = _wrap_md_with_template(
                 compile_md_file, template_dir, frontmatter=frontmatter
             )
         else:
+            # No template — write temp file if mermaid changed content
+            if has_mermaid:
+                tmp_dir = tempfile.mkdtemp(prefix="tai-pdf-")
+                tmp_md = Path(tmp_dir) / md_file.name
+                tmp_md.write_text(md_content, encoding="utf-8")
+                compile_md_file = tmp_md
+
             err_console.print(
                 "[yellow]Warning:[/yellow] No --template specified. "
                 "Compiling plain markdown without branding."
             )
-            typ_content = _wrap_md_plain(md_file)
+            typ_content = _wrap_md_plain(compile_md_file)
+
+        # Inject mermaid show rules before the content
+        if has_mermaid:
+            typ_content = mermaid_result.typst_show_rules() + typ_content
 
         if debug:
             typ_path = output_path.with_suffix(".typ")
@@ -534,36 +559,17 @@ def _wrap_md_with_template(
     if frontmatter is None:
         md_content = md_file.read_text(encoding="utf-8")
         frontmatter = _parse_frontmatter(md_content)
-    brand_dir = brand_install_dir()
-    brand_toml = brand_dir / "brand.toml"
 
-    # Always define defaults so the template show rule works regardless of brand config
-    company_name = "TrustedAI"
-    company_tagline = None
-    primary_color = None
-    secondary_color = None
+    brand_toml = brand_install_dir() / "brand.toml"
+    brand = load_brand_colors(brand_toml)
 
-    if brand_toml.is_file():
-        with brand_toml.open("rb") as f:
-            brand = tomllib.load(f)
-        company = brand.get("company", {})
-        if company.get("name"):
-            company_name = company["name"]
-        if company.get("tagline"):
-            company_tagline = company["tagline"]
-        colors = brand.get("colors", {})
-        if colors.get("primary"):
-            primary_color = colors["primary"]
-        if colors.get("secondary"):
-            secondary_color = colors["secondary"]
-
-    brand_vars = f'#let company-name = "{_escape_typst_string(company_name)}"\n'
-    if company_tagline:
-        brand_vars += f'#let company-tagline = "{_escape_typst_string(company_tagline)}"\n'
-    if primary_color:
-        brand_vars += f'#let primary-color = rgb("{_escape_typst_string(primary_color)}")\n'
-    if secondary_color:
-        brand_vars += f'#let secondary-color = rgb("{_escape_typst_string(secondary_color)}")\n'
+    brand_vars = f'#let company-name = "{_escape_typst_string(brand.company_name)}"\n'
+    if brand.company_tagline:
+        brand_vars += f'#let company-tagline = "{_escape_typst_string(brand.company_tagline)}"\n'
+    if brand.primary:
+        brand_vars += f'#let primary-color = rgb("{_escape_typst_string(brand.primary)}")\n'
+    if brand.secondary:
+        brand_vars += f'#let secondary-color = rgb("{_escape_typst_string(brand.secondary)}")\n'
 
     lib_path = (template_dir / "lib.typ").as_posix()
 

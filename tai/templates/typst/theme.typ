@@ -114,6 +114,18 @@
   )
 }
 
+/// Diagram figure with consistent sizing and caption style
+#let diagram-figure(path, caption: none, width: 90%) = {
+  if caption != none {
+    figure(
+      image(path, width: width),
+      caption: text(size: size-small, fill: color-text-muted, caption),
+    )
+  } else {
+    image(path, width: width)
+  }
+}
+
 /// Apply shared text and list styling to the current scope
 #let apply-body-style() = {
   set text(font: font-body, size: size-body, fill: color-text)
