@@ -65,6 +65,6 @@ build_command = "pip install build && python -m build --wheel"
 upload_to_vcs_release = true
 
 [tool.semantic_release.commit_parser_options]
-allowed_tags = ["feat", "fix", "perf", "refactor", "chore", "docs", "test", "ci", "build"]
+allowed_tags = ["feat", "fix", "perf", "refactor", "chore", "docs", "style", "test", "ci", "build"]
 minor_tags = ["feat"]
-patch_tags = ["fix", "perf"]
+patch_tags = ["fix", "perf", "style"]
