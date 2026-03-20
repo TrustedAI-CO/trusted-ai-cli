@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## [0.4.1.2] - 2026-03-20
+
+### Changed
+
+- **skills**: Rename plan-ceo/plan-ceo-light to plan-biz/plan-biz-light across all skill definitions, cross-references, README, and CHANGELOG
+
+
 ## [0.4.1.1] - 2026-03-20
 
 ### Changed
