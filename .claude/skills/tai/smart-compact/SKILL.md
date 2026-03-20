@@ -3,7 +3,7 @@ name: smart-compact
 version: 1.0.0
 description: |
   [TAI] Smart context compaction guide. Suggests when and how to compact
-  based on tai workflow phases (/plan-ceo → /plan-eng → implement → /review → /ship).
+  based on tai workflow phases (/plan-biz → /plan-eng → implement → /review → /ship).
   Use when sessions are long, context is stale, or transitioning between phases.
 allowed-tools:
   - Bash
@@ -20,7 +20,7 @@ Suggests manual `/compact` at smart points in your workflow rather than relying 
 
 | Transition | Compact? | Why |
 |---|---|---|
-| After `/plan-ceo` → before `/plan-eng` | **Yes** | CEO vision is persisted to disk (`~/.tai-skills/projects/`). Free context for engineering details. |
+| After `/plan-biz` → before `/plan-eng` | **Yes** | Biz vision is persisted to disk (`~/.tai-skills/projects/`). Free context for engineering details. |
 | After `/plan-eng` → before implementation | **Yes** | Plan is captured in tasks/TodoWrite. Free context for code. |
 | After implementation → before `/review` | **Maybe** | Keep if review needs implementation context. Compact if the diff speaks for itself. |
 | After `/review` → before `/ship` | **Yes** | Review findings are in PR comments and code. Ship needs a clean slate. |

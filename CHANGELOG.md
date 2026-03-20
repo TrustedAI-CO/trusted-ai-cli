@@ -513,10 +513,10 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
-- **skills**: Add light versions of plan-ceo, plan-eng, and review skills
+- **skills**: Add light versions of plan-biz, plan-eng, and review skills
   ([`39a0efa`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/39a0efa018e397b984c476dc3fd680a229c0c155))
 
-Speed-optimized variants that trade thoroughness for fast feedback: - plan-ceo-light: premise
+Speed-optimized variants that trade thoroughness for fast feedback: - plan-biz-light: premise
   challenge + dream state + top 3 risks (no 10-section walkthrough) - plan-eng-light: scope
   challenge + architecture diagram + top concerns (no interactive stops) - review-light:
   CRITICAL-only single-pass review (SQL, race conditions, LLM trust, enums)
@@ -554,7 +554,7 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
   ([`7bb7e28`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/7bb7e28824697211674417cc9219192257f3bb0c))
 
 tai-workflow-aware compaction guide that teaches Claude when and how to compact based on phase
-  transitions (/plan-ceo → /plan-eng → implement → /review → /ship). Documents what survives
+  transitions (/plan-biz → /plan-eng → implement → /review → /ship). Documents what survives
   compaction, hook behavior, and best practices.
 
 - **skills**: Add tai skills setup/update commands with bundled Claude Code skills
@@ -590,7 +590,7 @@ Show session tool-call count, compaction history, and suggestions for when to ru
 * feat(skills): add strategic compact skill for Claude Code
 
 tai-workflow-aware compaction guide that teaches Claude when and how to compact based on phase
-  transitions (/plan-ceo → /plan-eng → implement → /review → /ship). Documents what survives
+  transitions (/plan-biz → /plan-eng → implement → /review → /ship). Documents what survives
   compaction, hook behavior, and best practices.
 
 * chore: bump version and changelog (v0.1.1)
@@ -774,7 +774,7 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
 * feat(skills): upgrade tech-research skill to v2.0 with depth framework
 
-Transplant plan-ceo's proven depth patterns into tech-research: - Research Prime Directives and
+Transplant plan-biz's proven depth patterns into tech-research: - Research Prime Directives and
   Thinking Instincts for structured analysis - Depth modes (Quick/Standard/Deep) with user selection
   - Multi-source triangulation protocol for claim verification - Adversarial red team section with
   confidence calibration - Interactive checkpoints for mid-research steering - Forcing questions per
@@ -827,7 +827,7 @@ Consolidate setup/update into a single `tai claude setup-skills` command. Skips 
 - **skills**: Rename plan-xxx-review to plan-xxx
   ([`bc7c783`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bc7c783cbe4f471d9391a82f26f902b406544539))
 
-Shorter, cleaner skill names: - plan-ceo-review → plan-ceo - plan-design-review → plan-design -
+Shorter, cleaner skill names: - plan-biz-review → plan-biz - plan-design-review → plan-design -
   plan-eng-review → plan-eng
 
 Updated all cross-references across skill files.
