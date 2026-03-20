@@ -1,18 +1,31 @@
 # CHANGELOG
 
 
-## [0.4.2.2] - 2026-03-21
+## v0.10.1 (2026-03-20)
 
-### Fixed
+### Chores
 
-- **pdf**: Resolve inline Markdown images correctly by adding `scope` override to `cmarker.render()` — images now resolve relative to the Typst root instead of cmarker's package directory
+- Resolve CHANGELOG merge conflict (develop ← main)
+  ([`fc4728f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/fc4728fa449676151f7cacc8271e6d3d59f8b75e))
 
-
-## [0.4.2.1] - 2026-03-21
 
 ## v0.10.0 (2026-03-20)
 
+### Bug Fixes
+
+- **pdf**: Resolve inline Markdown image paths in cmarker.render()
+  ([`98baaea`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/98baaea15d80e11ebdac9399f57d52b2327efe7d))
+
+Add scope override to cmarker.render() so images resolve relative to the Typst root instead of
+  cmarker's package directory. Fixes "file not found" errors when Markdown contains image references
+  like ![alt](path).
+
 ### Chores
+
+- Bump version and changelog (v0.4.2.2)
+  ([`608d5af`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/608d5af9974a70e98436a68904dd450b6572e063))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 - Resolve CHANGELOG merge conflict (develop ← main)
   ([`12d36ff`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/12d36fff980cf8c1caeb4b527564cc8b61c44969))
