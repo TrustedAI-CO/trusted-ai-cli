@@ -1,28 +1,22 @@
 # CHANGELOG
 
 
+## v0.5.0 (2026-03-20)
+
+### Chores
+
+- Bump version to v0.4.0 and update changelog
+  ([`2c5dcc4`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2c5dcc46f63307faebc6d85e930c05fec99be3fd))
+
+Add comprehensive changelog entry for the Typst PDF template system.
+
+
 ## v0.4.0 (2026-03-20)
 
-### Added
+### Chores
 
-- Typst PDF template system with article, report, and slides templates
-- Shared design tokens via `theme.typ` (colors, fonts, spacing, components)
-- Brand identity support via `brand.toml` configuration
-- `tai pdf compile` command for `.md` and `.typ` files
-- `tai pdf setup-templates` for template installation to `~/.tai/templates/`
-- `tai pdf templates` to list installed templates
-- Frontmatter parsing for markdown metadata (title, author, date, etc.)
-- Interactive template picker when `--template` is omitted
-- Core `tai.core.typst` module (binary detection, version checking, compilation)
-- Core `tai.core.templates` module (discovery, parsing, installation)
-- Typst error hierarchy (`TypstNotFoundError`, `TypstVersionError`, `TypstCompileError`)
-- Template error hierarchy (`TemplateError`, `TemplateNotFoundError`)
-- Example files for all templates (article/report/slides × md/typ)
-
-### Changed
-
-- Templates install shared files (theme.typ, brand/) alongside template subdirectories
-  so relative imports resolve correctly
+- Resolve merge conflict in CHANGELOG.md (develop → main)
+  ([`463c0df`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/463c0df3d1c725d05eff92b5a442dde7a9f98671))
 
 
 ## v0.3.1 (2026-03-19)
@@ -88,6 +82,9 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
 ### Bug Fixes
 
+- **templates**: Correct author name in examples
+  ([`5dcba98`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5dcba98de166cb7489697691e4d5af7c25c4c28f))
+
 - **updater**: Detect uv tool installs and use correct update command
   ([#27](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/27),
   [`a880182`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a880182b99e5d58c822df98531421df05a327a2d))
@@ -103,6 +100,12 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 - Resolve merge conflict in CHANGELOG.md
   ([`d27ebd5`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d27ebd5bc61a8245bb3c01f5f7dd82b2c8321b2b))
 
+- **templates**: Align example naming and add report-example.md
+  ([`d419df0`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d419df07caa817a23448a5a40439fbb886f4d338))
+
+Rename examples to consistent {type}-example.{ext} pattern. Add report-example.md with frontmatter
+  for markdown-to-report testing. Remove letter-example.typ (renamed to article-example.typ).
+
 ### Documentation
 
 - Update install instructions and mark upcoming features
@@ -110,6 +113,59 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
 Fix install commands to use git+https source since the package is not yet on PyPI. Mark tai ai, tai
   api, and tai secret as coming soon.
+
+### Features
+
+- Add Typst PDF templates with brand assets
+  ([`f2b5aad`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/f2b5aad9f5000f5715fc96c6f99fb08d86ad83eb))
+
+Add article, report, and slides templates for `tai pdf compile` with TrustedAI branding (icon, logo,
+  banner). Includes shared theme tokens, markdown frontmatter parsing, and markdown-to-slides
+  support with `---` as slide separator.
+
+- **article**: Add logo above title, rename letter.typ to article.typ
+  ([`3afa9de`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3afa9de1d027b8cb47d3247e4027dc5989c6a69b))
+
+Add logo on first page above the title block. Rename letter.typ to article.typ for clarity. Remove
+  unused icon/banner parameters, use single logo asset with default path to brand/logo.png.
+
+- **pdf**: Add core modules for Typst binary detection and template management
+  ([`d0cf7f5`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d0cf7f58a9d6b490684a80302f20c063be66f2b4))
+
+- tai/core/typst.py: find binary, check version, compile documents - tai/core/templates.py:
+  discover, install, validate, remove templates - tai/core/errors.py: add TypstError, TemplateError
+  hierarchies - tai/commands/pdf.py: fix .typ root path, document escape function - tai/main.py:
+  register pdf command group - tests: 50 new tests for typst, templates, and pdf command
+
+### Refactoring
+
+- **slides**: Fix heading hierarchy, simplify footer, embed logo
+  ([`210a5c4`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/210a5c4847cac81415fa1b95ef9785128c817752))
+
+Heading sizes now properly cascade: h1 22pt > h2 20pt > h3 17pt > body 18pt. Simplified footer to
+  page number only (removed logo and text). Title slide shows logo above title. Cleaned up redundant
+  parameters (icon, banner, footer-logo). Markdown heading extraction uses proper regex for slide
+  title parsing.
+
+- **templates**: Unify metadata, brand assets, and code styling
+  ([`f304cd3`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/f304cd3791c508cc0b5d0042d6dbdcf9617bd421))
+
+Standardize metadata across all templates to: title, subtitle, author, organization, date, version.
+  Remove per-template params (logo, show-page-numbers, institution, affiliation, extra,
+  footer-text).
+
+Embed logo (brand/logo.png) directly in templates — no longer passed as a parameter. Remove unused
+  banner.png and icon.png assets. Update logo to current brand.
+
+Shared code styling via _code-inline/_code-block in theme.typ: light background with subtle border,
+  consistent across article, report, and slides. Fix tag() baseline alignment with outset.
+
+Report: remove decorative circles, add logo on cover, show author in
+
+header. Slides: right-align page number, remove footer text/logo. Consistent author · organization /
+  date · version layout everywhere.
+
+Remove test-md-*.typ wrapper files (not needed for testing).
 
 
 ## v0.2.0 (2026-03-19)
