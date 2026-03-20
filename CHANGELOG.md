@@ -1,14 +1,11 @@
 # CHANGELOG
 
 
-## v0.6.0 (2026-03-20)
+## [0.4.1.1] - 2026-03-20
 
-### Chores
+### Changed
 
-- Bump version and changelog (v0.4.1.0)
-  ([`e322684`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/e3226841543e5d955922ad94597bac8a86cee9a0))
-
-Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+- **pdf**: Extract single H1 as title for all templates (not just article) and persist to source file
 
 
 ## v0.5.4 (2026-03-20)
