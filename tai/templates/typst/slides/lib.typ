@@ -10,18 +10,15 @@
 #let template(
   body,
   company-name: "TrustedAI",
-  logo: none,
   title: none,
   subtitle: none,
   author: none,
+  organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
-  institution: none,
+  version: none,
 ) = {
-  let resolved-logo = if logo != none { logo } else { "brand/logo.png" }
   content-slide(
     title: if title != none { title } else { company-name },
-    footer-text: company-name,
-    logo: resolved-logo,
   )[
     #set text(font: font-body, size: 18pt, fill: color-text)
     #set par(leading: 0.7em)
@@ -36,24 +33,23 @@
 #let render-slides(
   md-string,
   company-name: "TrustedAI",
-  logo: none,
   title: none,
   subtitle: none,
   author: none,
+  organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
-  institution: none,
+  version: none,
 ) = {
   import "@preview/cmarker:0.1.8"
-
-  let resolved-logo = if logo != none { logo } else { "brand/logo.png" }
 
   // Title slide from frontmatter params
   title-slide(
     title: if title != none { title } else { company-name },
     subtitle: subtitle,
     author: if author != none { author } else { "" },
+    organization: organization,
     date: date,
-    institution: institution,
+    version: version,
   )
 
   // Split on --- (horizontal rule) as slide separator
@@ -81,8 +77,6 @@
 
     content-slide(
       title: slide-title,
-      footer-text: company-name,
-      logo: resolved-logo,
       slide-number: slide-num,
       total-slides: slide-count,
     )[

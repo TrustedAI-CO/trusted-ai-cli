@@ -329,7 +329,6 @@ def _wrap_md_with_template(md_file: Path, template_dir: Path) -> str:
             secondary_color = colors["secondary"]
 
     brand_vars = f'#let company-name = "{_escape_typst_string(company_name)}"\n'
-    brand_vars += "#let company-logo = none\n"
     if company_tagline:
         brand_vars += f'#let company-tagline = "{_escape_typst_string(company_tagline)}"\n'
     if primary_color:
@@ -337,23 +336,11 @@ def _wrap_md_with_template(md_file: Path, template_dir: Path) -> str:
     if secondary_color:
         brand_vars += f'#let secondary-color = rgb("{_escape_typst_string(secondary_color)}")\n'
 
-    for asset_name in ("icon", "logo", "banner"):
-        asset_path = brand_dir / f"{asset_name}.png"
-        if asset_path.is_file():
-            brand_vars += f'#let company-{asset_name} = "{asset_path.as_posix()}"\n'
-        else:
-            brand_vars += f"#let company-{asset_name} = none\n"
-
     lib_path = (template_dir / "lib.typ").as_posix()
 
     # Build template() call with frontmatter metadata
-    template_args = [
-        "company-name: company-name",
-        "icon: company-icon",
-        "logo: company-logo",
-        "banner: company-banner",
-    ]
-    for key in ("title", "subtitle", "author", "date", "affiliation", "version"):
+    template_args = ["company-name: company-name"]
+    for key in ("title", "subtitle", "author", "organization", "date", "version"):
         if key in frontmatter:
             template_args.append(
                 f'{key}: "{_escape_typst_string(frontmatter[key])}"'

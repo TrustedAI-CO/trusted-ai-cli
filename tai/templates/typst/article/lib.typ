@@ -8,18 +8,20 @@
 #let template(
   body,
   company-name: "TrustedAI",
-  logo: none,
   title: none,
   subtitle: none,
   author: none,
+  organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
+  version: none,
 ) = {
   _article(
     title: if title != none { title } else { company-name },
     subtitle: subtitle,
     author: if author != none { author } else { "" },
+    organization: organization,
     date: date,
-    logo: if logo != none { logo } else { "brand/logo.png" },
+    version: version,
     body,
   )
 }

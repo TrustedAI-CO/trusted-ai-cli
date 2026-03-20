@@ -8,13 +8,10 @@
 #let template(
   body,
   company-name: "TrustedAI",
-  icon: none,
-  logo: none,
-  banner: none,
   title: none,
   subtitle: none,
   author: none,
-  affiliation: none,
+  organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
   version: none,
 ) = {
@@ -22,9 +19,8 @@
     title: if title != none { title } else { company-name + " Report" },
     subtitle: subtitle,
     author: if author != none { author } else { company-name },
-    affiliation: affiliation,
+    organization: organization,
     date: date,
-    banner: banner,
     version: version,
     body,
   )

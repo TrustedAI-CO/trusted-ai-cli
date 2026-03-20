@@ -6,8 +6,8 @@
   title: "Quarterly Security Audit",
   subtitle: "Infrastructure & Application Review",
   author: "TrustedAI Engineering",
-  affiliation: "TrustedAI Co., Ltd.",
-  date: "March 2026",
+  organization: "TrustedAI Co., Ltd.",
+  date: "March 19, 2026",
   version: "1.0",
 )
 

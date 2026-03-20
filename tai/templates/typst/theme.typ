@@ -91,8 +91,26 @@
   box(
     fill: color.lighten(85%),
     inset: (x: 0.5em, y: 0.2em),
+    outset: (y: 0.2em),
     radius: 3pt,
-    text(fill: color, size: size-small, weight: "medium", label),
+    text(fill: color, size: size-body, weight: "medium", label),
+  )
+}
+
+/// Inline code formatter
+#let _code-inline(it) = {
+  h(0.2em) + box(fill: tai-light, outset: 0.2em, radius: 2pt, text(font: font-mono, size: 0.75em, it)) + h(0.2em)
+}
+
+/// Block code formatter
+#let _code-block(it) = {
+  block(
+    fill: tai-white,
+    stroke: 1pt + tai-border,
+    inset: 1em,
+    radius: 4pt,
+    width: 100%,
+    text(font: font-mono, size: 0.75em, fill: color-text, it),
   )
 }
 
@@ -103,16 +121,6 @@
   set list(indent: 1em, marker: text(fill: tai-blue, "•"))
   set enum(indent: 1em, numbering: n => text(fill: tai-blue, numbering("1.", n)))
   show link: it => underline(text(fill: tai-blue, it))
-  show raw.where(block: false): it => {
-    h(0.3em) + box(fill: tai-light, outset: 0.2em, radius: 2pt, text(font: font-mono, size: size-small, it)) + h(0.3em)
-  }
-  show raw.where(block: true): it => {
-    block(
-      fill: tai-dark,
-      inset: 1em,
-      radius: 4pt,
-      width: 100%,
-      text(font: font-mono, size: size-small, fill: tai-white, it),
-    )
-  }
+  show raw.where(block: false): _code-inline
+  show raw.where(block: true): _code-block
 }

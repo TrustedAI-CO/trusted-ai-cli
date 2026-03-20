@@ -9,9 +9,9 @@
   title: "",
   subtitle: none,
   author: "",
+  organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
-  logo: "brand/logo.png",
-  show-page-numbers: true,
+  version: none,
   body,
 ) = {
   set document(title: title, author: author)
@@ -26,16 +26,14 @@
   set page(
     margin: 2.1cm,
     fill: tai-warm,
-    numbering: if show-page-numbers { "1" } else { none },
+    numbering: "1",
     number-align: center,
     header: none,
   )
 
   // ── Logo ──────────────────────────────────
-  if logo != none {
-    image(logo, width: 4cm)
-    v(space-md)
-  }
+  image("brand/logo.png", width: 4cm)
+  v(space-md)
 
   // ── Title block ────────────────────────────
   text(font: font-title, size: size-h1, weight: "bold", fill: color-primary, title)
@@ -47,12 +45,20 @@
 
   v(space-md)
 
-  // ── Author & date ──────────────────────────
+  // ── Author & meta ─────────────────────────
   if author != "" {
     text(weight: "semibold", author)
-    h(1.5em)
   }
+  if organization != none {
+    if author != "" { h(0.8em) + text(fill: color-text-muted, "·") + h(0.8em) }
+    text(fill: color-text-muted, organization)
+  }
+  linebreak()
   text(size: size-small, fill: color-text-muted, date)
+  if version != none {
+    h(0.8em)
+    tag("v" + version)
+  }
 
   v(space-md)
   tai-rule(color: tai-border)

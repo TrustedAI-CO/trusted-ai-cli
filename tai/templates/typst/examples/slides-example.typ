@@ -8,8 +8,9 @@
   title: "TrustedAI CLI",
   subtitle: "Ship Safer Software, Faster",
   author: "Thien Nguyen",
-  institution: "TrustedAI Co., Ltd.",
-  date: "March 2026",
+  organization: "TrustedAI Co., Ltd.",
+  date: "March 19, 2026",
+  version: "0.1",
 )
 
 // ── Section: Problem ─────────────────────────
@@ -18,7 +19,7 @@
 
 #content-slide(
   title: "AI Safety Is an Afterthought",
-  footer-text: "TrustedAI",
+
   slide-number: 2,
   total-slides: 8,
 )[
@@ -40,7 +41,7 @@
 
 #two-col-slide(
   title: "Integrated Safety Tooling",
-  footer-text: "TrustedAI",
+
   slide-number: 4,
   total-slides: 8,
 )[
@@ -79,7 +80,7 @@
 
 #content-slide(
   title: "2026 Roadmap",
-  footer-text: "TrustedAI",
+
   slide-number: 6,
   total-slides: 8,
 )[
@@ -103,7 +104,7 @@
 
 #content-slide(
   title: "Thank You",
-  footer-text: "TrustedAI",
+
   slide-number: 8,
   total-slides: 8,
 )[

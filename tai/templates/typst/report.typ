@@ -9,9 +9,8 @@
   title: "",
   subtitle: none,
   author: "",
-  affiliation: none,
+  organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
-  banner: none,
   version: none,
   body,
 ) = {
@@ -33,18 +32,10 @@
   // ── Cover page ─────────────────────────────
   set page(margin: 2.1cm, fill: tai-warm)
 
-  // Decorative circles (bubble style)
-  place(top + left, dx: -35%, dy: -28%, circle(radius: 150pt, fill: color-primary))
-  place(top + left, dx: -10%, dy: -5%, circle(radius: 75pt, fill: color-secondary.lighten(40%)))
-  place(bottom + right, dx: 40%, dy: 30%, circle(radius: 150pt, fill: color-secondary.lighten(50%)))
-  place(bottom + right, dx: 15%, dy: 20%, circle(radius: 50pt, fill: color-highlight.lighten(60%)))
-
-  // Banner
-  if banner != none {
-    place(top + right, dx: -0.5cm, dy: 0.5cm, image(banner, width: 6cm))
-  }
-
   v(2fr)
+
+  // Logo
+  align(center, image("brand/logo.png", width: 5cm))
 
   // Title block
   align(center)[
@@ -52,22 +43,24 @@
   ]
 
   if subtitle != none {
-    v(0.8em, weak: true)
     align(center, text(font: font-title, size: size-subtitle, weight: "medium", fill: color-secondary, subtitle))
   }
 
-  v(1.2em, weak: true)
+  v(0.3em)
   align(center, tai-rule(width: 30%))
-  v(1em, weak: true)
-  align(center, text(size: size-body, fill: color-text-muted, date))
 
   v(2fr)
 
   // Author block
   align(center)[
-    #if author != "" { text(weight: "semibold", size: 13pt, author); linebreak() }
-    #if affiliation != none { text(fill: color-text-muted, affiliation); linebreak() }
-    #if version != none { v(0.4em); tag("v" + version) }
+    #if author != "" { text(weight: "semibold", author) }
+    #if organization != none {
+      if author != "" { h(0.8em) + text(fill: color-text-muted, "·") + h(0.8em) }
+      text(fill: color-text-muted, organization)
+    }
+    #linebreak()
+    #text(size: size-small, fill: color-text-muted, date)
+    #if version != none { h(0.8em); tag("v" + version) }
   ]
 
   v(1fr)
@@ -81,7 +74,7 @@
       set text(size: size-small, fill: color-text-muted)
       emph(title)
       h(1fr)
-      text(weight: "medium", "TrustedAI")
+      emph(author)
       v(0.3em)
       line(length: 100%, stroke: 0.5pt + tai-border)
     },

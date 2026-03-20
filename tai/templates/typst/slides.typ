@@ -23,10 +23,9 @@
   title: "",
   subtitle: none,
   author: "",
+  organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
-  institution: none,
-  logo: "brand/logo.png",
-  extra: none,
+  version: none,
 ) = {
   set page(
     paper: "presentation-16-9",
@@ -37,10 +36,8 @@
   )
 
   // Logo
-  if logo != none {
-    image(logo, width: 5cm)
-    v(0.6cm)
-  }
+  image("brand/logo.png", width: 5cm)
+  v(0.6cm)
 
   // Title
   block(width: 85%)[
@@ -58,23 +55,27 @@
 
   v(1.5cm)
 
-  // Author
+  // Author & organization
   block(width: 70%)[
     #text(size: 19pt, weight: "medium", author)
+    #if organization != none {
+      h(0.6em)
+      text(size: 15pt, fill: color-text-muted, "·")
+      h(0.6em)
+      text(size: 15pt, fill: color-text-muted, organization)
+    }
   ]
 
   v(0.9cm)
 
-  // Extra info (conference, date, etc.)
-  if extra != none {
-    block(width: 70%)[
-      #text(size: 15pt, fill: color-text-muted, extra)
-    ]
-  } else {
-    block(width: 70%)[
-      #text(size: 15pt, fill: color-text-muted, date)
-    ]
-  }
+  // Date & version
+  block(width: 70%)[
+    #text(size: 15pt, fill: color-text-muted, date)
+    #if version != none {
+      h(0.8em)
+      tag("v" + version)
+    }
+  ]
 }
 
 // ──────────────────────────────────────────────
@@ -108,8 +109,6 @@
 
 #let content-slide(
   title: "",
-  footer-text: "TrustedAI",
-  logo: "brand/logo.png",
   slide-number: none,
   total-slides: none,
   body,
@@ -126,6 +125,7 @@
     footer: {
       set text(size: slide-footer-size, fill: color-text-muted)
       if slide-number != none {
+        h(1fr)
         box(
           fill: color-primary,
           inset: (x: 0.4em, y: 0.3em),
@@ -161,16 +161,8 @@
   show heading.where(level: 3): set text(font: font-title, size: 17pt, fill: color-primary, weight: "medium")
   show heading: it => { it + v(0.4em) }
   show link: it => underline(text(fill: tai-blue, it))
-
-  show raw.where(block: true): it => {
-    block(
-      fill: tai-dark,
-      inset: 0.8em,
-      radius: 4pt,
-      width: 100%,
-      text(font: font-mono, size: slide-code-size, fill: tai-white, it),
-    )
-  }
+  show raw.where(block: false): _code-inline
+  show raw.where(block: true): _code-block
 
   body
 }
@@ -181,8 +173,6 @@
 
 #let two-col-slide(
   title: "",
-  footer-text: "TrustedAI",
-  logo: "brand/logo.png",
   slide-number: none,
   total-slides: none,
   left-body,
@@ -190,8 +180,6 @@
 ) = {
   content-slide(
     title: title,
-    footer-text: footer-text,
-    logo: logo,
     slide-number: slide-number,
     total-slides: total-slides,
   )[
