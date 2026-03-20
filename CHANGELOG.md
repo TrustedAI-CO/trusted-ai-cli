@@ -1,7 +1,17 @@
 # CHANGELOG
 
 
-## v0.3.1 (2026-03-19)
+## v0.3.1 (2026-03-20)
+
+### Added
+
+- **pdf**: `tai pdf templates` subcommand to list installed templates with `--json` support
+- **pdf**: Interactive template picker when `--template` is omitted on `.md` files in TTY terminals
+
+### Changed
+
+- **pdf**: Non-interactive terminals now error with available template names instead of silently compiling without branding
+- **pdf**: Missing templates now error with `tai pdf setup-templates` hint instead of silently proceeding
 
 ### Bug Fixes
 
@@ -14,7 +24,6 @@
   running `tai` after installing via `uv pip install`. Add UV_TOOL installer detection for paths
   under ~/.local/share/uv/tools/ and use `uv tool install --force` for updates. Also fix README
   install instructions to use `uv tool install`.
-
 
 ## v0.3.0 (2026-03-19)
 
