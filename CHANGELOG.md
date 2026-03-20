@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.5.1 (2026-03-20)
+
+### Bug Fixes
+
+- **pdf**: Remove unused logo argument from template() call
+  ([`83264da`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/83264da9a34bb646e3d0e2b109d3b8feedb892d1))
+
+Templates don't accept a `logo` parameter — the logo is accessed directly from brand assets via
+  theme.typ. Passing it caused "unexpected argument: logo" compilation errors.
+
+
 ## v0.5.0 (2026-03-20)
 
 ### Chores
