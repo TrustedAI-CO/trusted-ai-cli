@@ -137,7 +137,10 @@ class TestPreprocess:
         cache_file = tmp_path / f"{_content_hash(source)}.svg"
         cache_file.write_bytes(b"<svg>cached</svg>")
 
-        with patch("tai.core.mermaid.subprocess.run") as mock_run:
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch("tai.core.mermaid.subprocess.run") as mock_run,
+        ):
             result = preprocess(content, cache_base=tmp_path)
 
         mock_run.assert_not_called()
@@ -325,7 +328,10 @@ class TestPreprocessErrors:
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
         bad_path = tmp_path / "no" / "access"
 
-        with patch("tai.core.mermaid.Path.mkdir", side_effect=OSError("denied")):
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch("tai.core.mermaid.Path.mkdir", side_effect=OSError("denied")),
+        ):
             with pytest.raises(MermaidError, match="Cannot create cache"):
                 preprocess(content, cache_base=bad_path)
 
