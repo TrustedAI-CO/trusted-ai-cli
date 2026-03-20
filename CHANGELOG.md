@@ -8,22 +8,26 @@
 - **templates**: Revert zebraw integration — restore original code block styling with border, uniform background, and mono font
 
 
-## [0.4.1.3] - 2026-03-21
+## v0.8.0 (2026-03-20) origin/main
 
-### Added
+### Chores
 
-- **templates**: Integrate zebraw package for enhanced code blocks with line numbers, zebra striping, and language tabs across all Typst templates (article, report, slides)
+- Bump version and changelog (v0.4.1.3)
+  ([`1968e39`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1968e3925283dc90181d8454c1e5031861214221))
 
-### Fixed
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
-- **templates**: Fix `apply-body-style` scoping bug where set/show rules never propagated to body content — refactored to wrap body parameter directly
+- Resolve CHANGELOG merge conflict (develop ← main)
+  ([`5f426b2`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5f426b29ccfef50877647d91fb40fd9f2318e830))
 
+### Features
 
-## [0.4.1.2] - 2026-03-20
+- **templates**: Integrate zebraw for enhanced code blocks
+  ([`1b40825`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1b408258815fcd3ae3485012430fd233dfecbf76))
 
-### Changed
-
-- **skills**: Rename plan-ceo/plan-ceo-light to plan-biz/plan-biz-light across all skill definitions, cross-references, README, and CHANGELOG
+Replace basic _code-block styling with zebraw package (v0.6.1) for line numbers, zebra striping, and
+  language tabs. Fix apply-body-style scoping bug where set/show rules never propagated to body
+  content.
 
 
 ## v0.7.0 (2026-03-20)
@@ -32,6 +36,11 @@
 
 - Bump version and changelog (v0.4.1.1)
   ([`38bc125`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/38bc125afc334f4516835fbd8b08894c012d2c57))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+- Bump version and changelog (v0.4.1.2)
+  ([`c224ae0`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c224ae09982e0949e109dfa98e6835706698414f))
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
@@ -53,6 +62,14 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 H1 → title promotion was article-only. Now works for report, slides, and any future template. When
   an H1 is extracted, the title is written back to the source file's frontmatter so subsequent runs
   don't re-prompt.
+
+### Refactoring
+
+- **skills**: Rename plan-ceo to plan-biz
+  ([`4af3df8`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4af3df8461f6d8c63d49c347cd1a53c1e0478e05))
+
+Replace all references to plan-ceo/CEO with plan-biz/Biz across skill definitions, cross-references,
+  README, and CHANGELOG.
 
 
 ## v0.5.4 (2026-03-20)
@@ -566,10 +583,10 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
-- **skills**: Add light versions of plan-biz, plan-eng, and review skills
+- **skills**: Add light versions of plan-ceo, plan-eng, and review skills
   ([`39a0efa`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/39a0efa018e397b984c476dc3fd680a229c0c155))
 
-Speed-optimized variants that trade thoroughness for fast feedback: - plan-biz-light: premise
+Speed-optimized variants that trade thoroughness for fast feedback: - plan-ceo-light: premise
   challenge + dream state + top 3 risks (no 10-section walkthrough) - plan-eng-light: scope
   challenge + architecture diagram + top concerns (no interactive stops) - review-light:
   CRITICAL-only single-pass review (SQL, race conditions, LLM trust, enums)
@@ -607,7 +624,7 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
   ([`7bb7e28`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/7bb7e28824697211674417cc9219192257f3bb0c))
 
 tai-workflow-aware compaction guide that teaches Claude when and how to compact based on phase
-  transitions (/plan-biz → /plan-eng → implement → /review → /ship). Documents what survives
+  transitions (/plan-ceo → /plan-eng → implement → /review → /ship). Documents what survives
   compaction, hook behavior, and best practices.
 
 - **skills**: Add tai skills setup/update commands with bundled Claude Code skills
@@ -643,7 +660,7 @@ Show session tool-call count, compaction history, and suggestions for when to ru
 * feat(skills): add strategic compact skill for Claude Code
 
 tai-workflow-aware compaction guide that teaches Claude when and how to compact based on phase
-  transitions (/plan-biz → /plan-eng → implement → /review → /ship). Documents what survives
+  transitions (/plan-ceo → /plan-eng → implement → /review → /ship). Documents what survives
   compaction, hook behavior, and best practices.
 
 * chore: bump version and changelog (v0.1.1)
@@ -827,7 +844,7 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
 * feat(skills): upgrade tech-research skill to v2.0 with depth framework
 
-Transplant plan-biz's proven depth patterns into tech-research: - Research Prime Directives and
+Transplant plan-ceo's proven depth patterns into tech-research: - Research Prime Directives and
   Thinking Instincts for structured analysis - Depth modes (Quick/Standard/Deep) with user selection
   - Multi-source triangulation protocol for claim verification - Adversarial red team section with
   confidence calibration - Interactive checkpoints for mid-research steering - Forcing questions per
@@ -880,7 +897,7 @@ Consolidate setup/update into a single `tai claude setup-skills` command. Skips 
 - **skills**: Rename plan-xxx-review to plan-xxx
   ([`bc7c783`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bc7c783cbe4f471d9391a82f26f902b406544539))
 
-Shorter, cleaner skill names: - plan-biz-review → plan-biz - plan-design-review → plan-design -
+Shorter, cleaner skill names: - plan-ceo-review → plan-ceo - plan-design-review → plan-design -
   plan-eng-review → plan-eng
 
 Updated all cross-references across skill files.
