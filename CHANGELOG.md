@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## [0.4.2.0] - 2026-03-21
+
+### Added
+
+- **pdf**: Mermaid diagram rendering — detect ```mermaid code blocks in markdown, render to SVG via mermaid.ink API, cache by content hash, and embed in PDF output
+- **pdf**: Caption support for mermaid diagrams via `%% caption:` comment syntax
+- **pdf**: Brand color theming for mermaid diagrams from brand.toml
+- **pdf**: SVG post-processing to convert foreignObject HTML to native text for Typst compatibility
+- **config**: `BrandColors` dataclass and `load_brand_colors()` shared helper
+
+### Changed
+
+- **pdf**: Refactored brand.toml loading in `_wrap_md_with_template()` to use shared `load_brand_colors()`
+
+
 ## [0.4.1.4] - 2026-03-21
 
 ### Removed
