@@ -310,15 +310,17 @@ def _compile_markdown(
 
             frontmatter = _parse_frontmatter(md_content)
 
-            # Article: extract single H1 as title, promote headings
+            # Extract single H1 as title and promote headings for all templates
             promoted_body: str | None = None
-            if resolved_template == "article":
-                body = _strip_frontmatter_body(md_content)
-                h1_title, promoted = _extract_single_h1(body)
-                if h1_title is not None:
-                    if "title" not in frontmatter:
-                        frontmatter["title"] = h1_title
-                    promoted_body = promoted
+            body = _strip_frontmatter_body(md_content)
+            h1_title, promoted = _extract_single_h1(body)
+            if h1_title is not None:
+                if "title" not in frontmatter:
+                    frontmatter["title"] = h1_title
+                    md_content = _update_file_frontmatter(
+                        md_file, md_content, frontmatter
+                    )
+                promoted_body = promoted
 
             # Prompt for missing frontmatter and update source file
             md_content, frontmatter = _ensure_frontmatter(
