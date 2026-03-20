@@ -1,21 +1,20 @@
-"""Tests for tai.core.mermaid — mermaid diagram rendering."""
+"""Tests for tai.core.mermaid — local mermaid diagram rendering."""
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-import httpx
 import pytest
 
 from tai.core.config import BrandColors
 from tai.core.errors import MermaidError
 from tai.core.mermaid import (
-    _build_mermaid_ink_url,
+    _build_mmdc_config,
     _content_hash,
-    _fix_foreign_objects,
+    _find_mmdc,
     _parse_caption,
-    _strip_html_tags,
     preprocess,
 )
 
@@ -46,117 +45,57 @@ class TestParseCaption:
         assert _parse_caption("%%   caption:   Trimmed  ") == "Trimmed"
 
 
-class TestBuildMermaidInkUrl:
-    def test_basic_url(self) -> None:
-        url = _build_mermaid_ink_url("graph TD", brand=None)
-        assert url.startswith("https://mermaid.ink/svg/")
-        assert "theme" not in url
+class TestBuildMmdcConfig:
+    def test_no_brand(self) -> None:
+        assert _build_mmdc_config(None) is None
 
-    def test_brand_colors(self) -> None:
-        brand = BrandColors(primary="#1a73e8", secondary="#4a4a4a")
-        url = _build_mermaid_ink_url("graph TD", brand=brand)
-        assert "theme=base" in url
-        assert "primaryColor:#1a73e8" in url
-        assert "secondaryColor:#4a4a4a" in url
+    def test_no_primary(self) -> None:
+        assert _build_mmdc_config(BrandColors()) is None
 
-    def test_brand_primary_only(self) -> None:
-        brand = BrandColors(primary="#1a73e8")
-        url = _build_mermaid_ink_url("graph TD", brand=brand)
-        assert "primaryColor:#1a73e8" in url
-        assert "secondaryColor" not in url
+    def test_primary_only(self) -> None:
+        config = _build_mmdc_config(BrandColors(primary="#1a73e8"))
+        assert config == {
+            "theme": "base",
+            "themeVariables": {"primaryColor": "#1a73e8"},
+        }
 
-    def test_no_brand_primary(self) -> None:
-        brand = BrandColors()
-        url = _build_mermaid_ink_url("graph TD", brand=brand)
-        assert "theme" not in url
-
-
-# ── SVG post-processing tests ────────────────────────────────────────────────
-
-
-class TestStripHtmlTags:
-    def test_simple_html(self) -> None:
-        assert _strip_html_tags("<p>Hello</p>") == "Hello"
-
-    def test_nested_tags(self) -> None:
-        assert _strip_html_tags('<span class="x"><p>World</p></span>') == "World"
-
-    def test_entities(self) -> None:
-        assert _strip_html_tags("A &amp; B &lt; C") == "A & B < C"
-
-    def test_empty(self) -> None:
-        assert _strip_html_tags("") == ""
-
-
-class TestFixForeignObjects:
-    def test_replaces_foreign_object_with_text(self) -> None:
-        svg = (
-            b'<svg><g><foreignObject width="80" height="24">'
-            b'<div xmlns="http://www.w3.org/1999/xhtml">'
-            b'<span class="nodeLabel"><p>User</p></span>'
-            b'</div></foreignObject></g></svg>'
+    def test_primary_and_secondary(self) -> None:
+        config = _build_mmdc_config(
+            BrandColors(primary="#1a73e8", secondary="#4a4a4a")
         )
-        result = _fix_foreign_objects(svg)
-        decoded = result.decode("utf-8")
-        assert "foreignObject" not in decoded
-        assert "<text" in decoded
-        assert "User" in decoded
-        assert 'text-anchor="middle"' in decoded
+        assert config == {
+            "theme": "base",
+            "themeVariables": {
+                "primaryColor": "#1a73e8",
+                "secondaryColor": "#4a4a4a",
+            },
+        }
 
-    def test_preserves_svg_without_foreign_objects(self) -> None:
-        svg = b'<svg><text>Hello</text></svg>'
-        result = _fix_foreign_objects(svg)
-        assert result == svg
 
-    def test_handles_multiple_foreign_objects(self) -> None:
-        svg = (
-            b'<svg>'
-            b'<foreignObject width="40" height="20">'
-            b'<div xmlns="http://www.w3.org/1999/xhtml"><p>A</p></div>'
-            b'</foreignObject>'
-            b'<foreignObject width="60" height="20">'
-            b'<div xmlns="http://www.w3.org/1999/xhtml"><p>B</p></div>'
-            b'</foreignObject>'
-            b'</svg>'
-        )
-        result = _fix_foreign_objects(svg).decode("utf-8")
-        assert "foreignObject" not in result
-        assert ">A<" in result
-        assert ">B<" in result
+class TestFindMmdc:
+    def test_found(self) -> None:
+        with patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"):
+            assert _find_mmdc() == "/usr/bin/mmdc"
 
-    def test_empty_paragraph_removed(self) -> None:
-        svg = (
-            b'<foreignObject width="40" height="20">'
-            b'<div xmlns="http://www.w3.org/1999/xhtml"><p></p></div>'
-            b'</foreignObject>'
-        )
-        result = _fix_foreign_objects(svg).decode("utf-8")
-        assert "foreignObject" not in result
-        assert "<text" not in result
+    def test_not_found_raises(self) -> None:
+        with patch("tai.core.mermaid.shutil.which", return_value=None):
+            with pytest.raises(MermaidError, match="not installed"):
+                _find_mmdc()
 
-    def test_integration_with_preprocess(self, tmp_path: Path) -> None:
-        """SVG with foreignObject is post-processed when cached."""
-        content = "```mermaid\ngraph TD\n  A[Hello] --> B[World]\n```\n"
-        svg_with_fo = (
-            b'<svg><foreignObject width="80" height="24">'
-            b'<div xmlns="http://www.w3.org/1999/xhtml">'
-            b'<span><p>Hello</p></span>'
-            b'</div></foreignObject></svg>'
-        )
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = svg_with_fo
+# ── helper to mock successful mmdc rendering ─────────────────────────────────
 
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
-            preprocess(content, cache_base=tmp_path)
 
-        # Verify cached file has text elements, not foreignObject
-        cached = list(tmp_path.glob("*.svg"))
-        assert len(cached) == 1
-        cached_content = cached[0].read_text()
-        assert "foreignObject" not in cached_content
-        assert "Hello" in cached_content
+def _mock_mmdc_success(svg_content: bytes = b"<svg>test</svg>"):
+    """Return a side_effect function that writes SVG to the output path."""
+
+    def side_effect(cmd, **kwargs):
+        output_idx = cmd.index("-o") + 1
+        output_path = Path(cmd[output_idx])
+        output_path.write_bytes(svg_content)
+        return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+    return side_effect
 
 
 # ── preprocess tests ─────────────────────────────────────────────────────────
@@ -172,13 +111,14 @@ class TestPreprocess:
 
     def test_single_block_cache_miss(self, tmp_path: Path) -> None:
         content = "# Title\n\n```mermaid\ngraph TD\n  A --> B\n```\n\nMore text."
-        svg_content = b"<svg>test</svg>"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = svg_content
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ),
+        ):
             result = preprocess(content, cache_base=tmp_path)
 
         assert "```mermaid" not in result.content
@@ -186,26 +126,21 @@ class TestPreprocess:
         assert result.has_diagrams
         assert len(result.diagrams) == 1
 
-        # Verify SVG was cached
         cached_files = list(tmp_path.glob("*.svg"))
         assert len(cached_files) == 1
-        assert cached_files[0].read_bytes() == svg_content
+        assert cached_files[0].read_bytes() == b"<svg>test</svg>"
 
     def test_single_block_cache_hit(self, tmp_path: Path) -> None:
         source = "graph TD\n  A --> B\n"
         content = f"# Title\n\n```mermaid\n{source}```\n"
 
-        # Pre-populate cache
-        from tai.core.mermaid import _content_hash
-
         cache_file = tmp_path / f"{_content_hash(source)}.svg"
         cache_file.write_bytes(b"<svg>cached</svg>")
 
-        with patch("tai.core.mermaid.httpx.get") as mock_get:
+        with patch("tai.core.mermaid.subprocess.run") as mock_run:
             result = preprocess(content, cache_base=tmp_path)
 
-        # API should NOT have been called
-        mock_get.assert_not_called()
+        mock_run.assert_not_called()
         assert result.has_diagrams
         assert result.diagrams[0].svg_path == cache_file
 
@@ -216,11 +151,13 @@ class TestPreprocess:
             "```mermaid\nsequenceDiagram\n  A->>B: Hello\n```\n"
         )
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"<svg>test</svg>"
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ),
+        ):
             result = preprocess(content, cache_base=tmp_path)
 
         assert len(result.diagrams) == 2
@@ -231,11 +168,13 @@ class TestPreprocess:
     def test_caption_parsing(self, tmp_path: Path) -> None:
         content = "```mermaid\n%% caption: System Flow\ngraph TD\n  A --> B\n```\n"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"<svg>test</svg>"
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ),
+        ):
             result = preprocess(content, cache_base=tmp_path)
 
         assert result.diagrams[0].caption == "System Flow"
@@ -244,28 +183,39 @@ class TestPreprocess:
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
         brand = BrandColors(primary="#ff0000")
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"<svg>test</svg>"
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response) as mock_get:
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ) as mock_run,
+        ):
             preprocess(content, brand=brand, cache_base=tmp_path)
 
-        called_url = mock_get.call_args[0][0]
-        assert "primaryColor:#ff0000" in called_url
+        cmd = mock_run.call_args[0][0]
+        assert "--configFile" in cmd
 
-    def test_no_brand_default_theme(self, tmp_path: Path) -> None:
+    def test_fails_when_mmdc_missing(self, tmp_path: Path) -> None:
+        content = "# Title\n\n```mermaid\ngraph TD\n  A --> B\n```\n\nMore text."
+
+        with patch("tai.core.mermaid.shutil.which", return_value=None):
+            with pytest.raises(MermaidError, match="not installed"):
+                preprocess(content, cache_base=tmp_path)
+
+    def test_no_brand_no_config(self, tmp_path: Path) -> None:
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"<svg>test</svg>"
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response) as mock_get:
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ) as mock_run,
+        ):
             preprocess(content, brand=None, cache_base=tmp_path)
 
-        called_url = mock_get.call_args[0][0]
-        assert "theme" not in called_url
+        cmd = mock_run.call_args[0][0]
+        assert "--configFile" not in cmd
 
 
 # ── typst show rules tests ──────────────────────────────────────────────────
@@ -275,11 +225,13 @@ class TestTypstShowRules:
     def test_generates_image_rule(self, tmp_path: Path) -> None:
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"<svg>test</svg>"
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ),
+        ):
             result = preprocess(content, cache_base=tmp_path)
 
         rules = result.typst_show_rules()
@@ -292,11 +244,13 @@ class TestTypstShowRules:
     def test_generates_figure_rule_with_caption(self, tmp_path: Path) -> None:
         content = "```mermaid\n%% caption: My Flow\ngraph TD\n  A --> B\n```\n"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"<svg>test</svg>"
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ),
+        ):
             result = preprocess(content, cache_base=tmp_path)
 
         rules = result.typst_show_rules()
@@ -312,44 +266,58 @@ class TestTypstShowRules:
 
 
 class TestPreprocessErrors:
-    def test_api_error_status(self, tmp_path: Path) -> None:
+    def test_mmdc_nonzero_exit(self, tmp_path: Path) -> None:
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
+        mock_result = subprocess.CompletedProcess(
+            [], 1, stdout="", stderr="Parse error"
+        )
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch("tai.core.mermaid.subprocess.run", return_value=mock_result),
+        ):
             with pytest.raises(MermaidError, match="diagram #1 failed"):
                 preprocess(content, cache_base=tmp_path)
 
-    def test_api_timeout(self, tmp_path: Path) -> None:
+    def test_mmdc_timeout(self, tmp_path: Path) -> None:
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
-        with patch(
-            "tai.core.mermaid.httpx.get",
-            side_effect=httpx.TimeoutException("timeout"),
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=subprocess.TimeoutExpired(cmd="mmdc", timeout=60),
+            ),
         ):
             with pytest.raises(MermaidError, match="timed out"):
                 preprocess(content, cache_base=tmp_path)
 
-    def test_api_network_error(self, tmp_path: Path) -> None:
+    def test_mmdc_not_found_at_runtime(self, tmp_path: Path) -> None:
+        """mmdc found by shutil.which but missing when subprocess runs."""
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
-        with patch(
-            "tai.core.mermaid.httpx.get",
-            side_effect=httpx.ConnectError("refused"),
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=FileNotFoundError("mmdc"),
+            ),
         ):
-            with pytest.raises(MermaidError, match="network error"):
+            with pytest.raises(MermaidError, match="mmdc.*not found"):
                 preprocess(content, cache_base=tmp_path)
 
-    def test_invalid_svg_response(self, tmp_path: Path) -> None:
+    def test_invalid_svg_output(self, tmp_path: Path) -> None:
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"not an svg at all"
+        def write_bad_svg(cmd, **kwargs):
+            output_path = Path(cmd[cmd.index("-o") + 1])
+            output_path.write_bytes(b"not an svg at all")
+            return subprocess.CompletedProcess(cmd, 0)
 
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch("tai.core.mermaid.subprocess.run", side_effect=write_bad_svg),
+        ):
             with pytest.raises(MermaidError, match="invalid SVG"):
                 preprocess(content, cache_base=tmp_path)
 
@@ -364,14 +332,21 @@ class TestPreprocessErrors:
     def test_cache_write_error(self, tmp_path: Path) -> None:
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"<svg>test</svg>"
+        original_write_bytes = Path.write_bytes
+
+        def selective_write_error(self_path, data):
+            # Only fail when writing to the cache dir, allow temp files
+            if str(self_path).startswith(str(tmp_path)):
+                raise OSError("disk full")
+            return original_write_bytes(self_path, data)
 
         with (
-            patch("tai.core.mermaid.httpx.get", return_value=mock_response),
-            patch.object(Path, "write_bytes", side_effect=OSError("disk full")),
-            patch.object(Path, "is_file", return_value=False),
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ),
+            patch.object(Path, "write_bytes", selective_write_error),
         ):
             with pytest.raises(MermaidError, match="Cannot write cached SVG"):
                 preprocess(content, cache_base=tmp_path)
@@ -390,11 +365,13 @@ class TestCacheDir:
         cache = tmp_path / "new" / "cache"
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = b"<svg>test</svg>"
-
-        with patch("tai.core.mermaid.httpx.get", return_value=mock_response):
+        with (
+            patch("tai.core.mermaid.shutil.which", return_value="/usr/bin/mmdc"),
+            patch(
+                "tai.core.mermaid.subprocess.run",
+                side_effect=_mock_mmdc_success(),
+            ),
+        ):
             preprocess(content, cache_base=cache)
 
         assert cache.is_dir()
