@@ -1,7 +1,7 @@
 """Mermaid diagram rendering for PDF compilation.
 
-Detects ```mermaid code blocks in markdown, renders them via the
-mermaid.ink API to SVG, caches results by content hash, and replaces
+Detects ```mermaid code blocks in markdown, renders them locally via
+the mermaid CLI (mmdc), caches results by content hash, and replaces
 blocks with text placeholders. Typst show rules at the document level
 then swap placeholders for actual #image() calls.
 
@@ -11,19 +11,18 @@ image paths relative to the cmarker package directory.
 
 from __future__ import annotations
 
-import base64
 import hashlib
+import json
 import re
+import shutil
+import subprocess
+import tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-
-import httpx
 
 from tai.core.config import BrandColors
 from tai.core.errors import MermaidError
-
-_MERMAID_INK_BASE = "https://mermaid.ink/svg/"
 
 _MERMAID_BLOCK_RE = re.compile(
     r"```mermaid\s*\n(.*?)```",
@@ -34,7 +33,7 @@ _CAPTION_RE = re.compile(r"%%\s*caption:\s*(.+)", re.IGNORECASE)
 
 _PLACEHOLDER_PREFIX = "TAIMERMAID"
 
-_API_TIMEOUT_SECONDS = 30
+_RENDER_TIMEOUT_SECONDS = 60
 _MAX_PARALLEL_WORKERS = 4
 
 
@@ -112,77 +111,25 @@ def _parse_caption(source: str) -> str | None:
     return match.group(1).strip() if match else None
 
 
-_FOREIGN_OBJECT_RE = re.compile(
-    r"<foreignObject[^>]*>(.*?)</foreignObject>",
-    re.DOTALL,
-)
-
-_HTML_TEXT_RE = re.compile(r"<p>(.*?)</p>", re.DOTALL)
-
-_HTML_TAG_RE = re.compile(r"<[^>]+>")
-
-_FO_DIMENSIONS_RE = re.compile(
-    r'width="([^"]*)".*?height="([^"]*)"',
-)
+def _find_mmdc() -> str:
+    """Locate the mmdc executable or raise with install instructions."""
+    path = shutil.which("mmdc")
+    if path:
+        return path
+    raise MermaidError(
+        "Mermaid CLI (mmdc) is not installed",
+        hint="Install it with: npm install -g @mermaid-js/mermaid-cli",
+    )
 
 
-def _strip_html_tags(html: str) -> str:
-    """Remove HTML tags and decode common entities."""
-    text = _HTML_TAG_RE.sub("", html)
-    return text.replace("&amp;", "&").replace("&lt;", "<").replace("&gt;", ">").strip()
-
-
-def _fix_foreign_objects(svg: bytes) -> bytes:
-    """Replace <foreignObject> HTML blocks with native SVG <text> elements.
-
-    Typst's SVG renderer doesn't support foreignObject (used by mermaid
-    for node labels in flowcharts). This extracts the text content and
-    creates a centered <text> element instead.
-    """
-    svg_str = svg.decode("utf-8")
-
-    def _replace_fo(match: re.Match[str]) -> str:
-        fo_content = match.group(1)
-        attrs_str = match.group(0).split(">")[0]
-
-        # Extract text from <p> tags
-        text_match = _HTML_TEXT_RE.search(fo_content)
-        if not text_match:
-            return ""
-        text = _strip_html_tags(text_match.group(1))
-        if not text:
-            return ""
-
-        # Extract dimensions for centering
-        dim_match = _FO_DIMENSIONS_RE.search(attrs_str)
-        if dim_match:
-            cx = float(dim_match.group(1)) / 2
-            cy = float(dim_match.group(2)) / 2
-        else:
-            cx, cy = 0, 0
-
-        return (
-            f'<text x="{cx}" y="{cy}" '
-            f'text-anchor="middle" dominant-baseline="central" '
-            f'font-size="14px">{text}</text>'
-        )
-
-    result = _FOREIGN_OBJECT_RE.sub(_replace_fo, svg_str)
-    return result.encode("utf-8")
-
-
-def _build_mermaid_ink_url(source: str, brand: BrandColors | None) -> str:
-    """Build a mermaid.ink SVG URL with optional brand theme."""
-    encoded = base64.urlsafe_b64encode(source.encode("utf-8")).decode("ascii")
-    url = f"{_MERMAID_INK_BASE}{encoded}"
-
-    if brand and brand.primary:
-        theme_vars = f"primaryColor:{brand.primary}"
-        if brand.secondary:
-            theme_vars += f",secondaryColor:{brand.secondary}"
-        url += f"?theme=base&themeVariables={theme_vars}"
-
-    return url
+def _build_mmdc_config(brand: BrandColors | None) -> dict | None:
+    """Build a mmdc JSON config dict for brand theming."""
+    if not brand or not brand.primary:
+        return None
+    theme_variables: dict[str, str] = {"primaryColor": brand.primary}
+    if brand.secondary:
+        theme_variables["secondaryColor"] = brand.secondary
+    return {"theme": "base", "themeVariables": theme_variables}
 
 
 def _render_single(
@@ -190,8 +137,9 @@ def _render_single(
     cache: Path,
     brand: BrandColors | None,
     index: int,
+    mmdc: str = "",
 ) -> Path:
-    """Render one mermaid diagram to SVG via mermaid.ink API.
+    """Render one mermaid diagram to SVG via local mmdc CLI.
 
     Returns the path to the cached SVG file.
     """
@@ -201,36 +149,59 @@ def _render_single(
     if cached_path.is_file():
         return cached_path
 
-    url = _build_mermaid_ink_url(source, brand)
+    mmdc_config = _build_mmdc_config(brand)
 
-    try:
-        response = httpx.get(url, timeout=_API_TIMEOUT_SECONDS, follow_redirects=True)
-    except httpx.TimeoutException as exc:
-        raise MermaidError(
-            f"Mermaid diagram #{index + 1} timed out after {_API_TIMEOUT_SECONDS}s",
-            hint="Check your network connection or simplify the diagram.",
-        ) from exc
-    except httpx.HTTPError as exc:
-        raise MermaidError(
-            f"Mermaid diagram #{index + 1} network error: {exc}",
-            hint="Check your network connection.",
-        ) from exc
+    with tempfile.TemporaryDirectory(prefix="tai-mermaid-") as tmp_dir:
+        tmp = Path(tmp_dir)
+        input_path = tmp / "diagram.mmd"
+        output_path = tmp / "diagram.svg"
+        input_path.write_text(source, encoding="utf-8")
 
-    if response.status_code != 200:
-        raise MermaidError(
-            f"Mermaid diagram #{index + 1} failed (HTTP {response.status_code})",
-            hint="Check the diagram syntax. The mermaid.ink API could not render it.",
-        )
+        cmd = [mmdc, "-i", str(input_path), "-o", str(output_path), "-q"]
+        if mmdc_config:
+            config_path = tmp / "config.json"
+            config_path.write_text(
+                json.dumps(mmdc_config), encoding="utf-8"
+            )
+            cmd.extend(["--configFile", str(config_path)])
 
-    svg_data = response.content
-    if not svg_data or b"<svg" not in svg_data[:500]:
-        raise MermaidError(
-            f"Mermaid diagram #{index + 1} returned invalid SVG",
-            hint="Check the diagram syntax.",
-        )
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=_RENDER_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise MermaidError(
+                f"Mermaid diagram #{index + 1} timed out after {_RENDER_TIMEOUT_SECONDS}s",
+                hint="Simplify the diagram or increase the timeout.",
+            ) from exc
+        except FileNotFoundError as exc:
+            raise MermaidError(
+                "Mermaid CLI (mmdc) not found",
+                hint="Install it with: npm install -g @mermaid-js/mermaid-cli",
+            ) from exc
 
-    # Convert foreignObject HTML to native SVG text for Typst compatibility
-    svg_data = _fix_foreign_objects(svg_data)
+        if result.returncode != 0:
+            stderr = result.stderr.strip()
+            raise MermaidError(
+                f"Mermaid diagram #{index + 1} failed to render",
+                hint=stderr or "Check the diagram syntax.",
+            )
+
+        if not output_path.is_file():
+            raise MermaidError(
+                f"Mermaid diagram #{index + 1} produced no output",
+                hint="Check the diagram syntax.",
+            )
+
+        svg_data = output_path.read_bytes()
+        if not svg_data or b"<svg" not in svg_data[:500]:
+            raise MermaidError(
+                f"Mermaid diagram #{index + 1} returned invalid SVG",
+                hint="Check the diagram syntax.",
+            )
 
     try:
         cached_path.write_bytes(svg_data)
@@ -251,7 +222,7 @@ def preprocess(
 ) -> PreprocessResult:
     """Replace mermaid code blocks in markdown with text placeholders.
 
-    Renders each mermaid block via the mermaid.ink API, caches the
+    Renders each mermaid block via the local mmdc CLI, caches the
     resulting SVG by content hash, and substitutes the code block with
     a unique text placeholder.
 
@@ -263,6 +234,7 @@ def preprocess(
     if not blocks:
         return PreprocessResult(content=md_content)
 
+    mmdc = _find_mmdc()
     cache = _cache_dir(cache_base)
     sources = [match.group(1) for match in blocks]
     captions = [_parse_caption(src) for src in sources]
@@ -272,7 +244,7 @@ def preprocess(
 
     with ThreadPoolExecutor(max_workers=worker_count) as pool:
         futures = {
-            pool.submit(_render_single, src, cache, brand, i): i
+            pool.submit(_render_single, src, cache, brand, i, mmdc): i
             for i, src in enumerate(sources)
         }
         for future in as_completed(futures):
