@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## [0.4.2.1] - 2026-03-21
+
+### Fixed
+
+- **tests**: Add missing `shutil.which` mocks to `test_single_block_cache_hit` and `test_cache_dir_permission_error` so mermaid tests pass in CI environments without mmdc installed
+
+
 ## [0.4.2.0] - 2026-03-21
 
 ### Added
