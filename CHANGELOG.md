@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## [0.4.1.3] - 2026-03-21
+
+### Added
+
+- **templates**: Integrate zebraw package for enhanced code blocks with line numbers, zebra striping, and language tabs across all Typst templates (article, report, slides)
+
+### Fixed
+
+- **templates**: Fix `apply-body-style` scoping bug where set/show rules never propagated to body content — refactored to wrap body parameter directly
+
+
 ## [0.4.1.2] - 2026-03-20
 
 ### Changed
