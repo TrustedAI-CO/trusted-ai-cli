@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## [0.4.2.2] - 2026-03-21
+
+### Added
+
+- **generate-pdf skill**: Add best-practice guidance for diagrams and charts — use Mermaid for flowcharts only, use Python (matplotlib/seaborn) with company color palette for data-heavy plots
+
+
 ## [0.4.2.1] - 2026-03-21
 
 ### Fixed
