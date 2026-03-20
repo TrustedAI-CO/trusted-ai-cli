@@ -25,7 +25,7 @@
   author: "",
   date: datetime.today().display("[month repr:long] [day], [year]"),
   institution: none,
-  logo: none,
+  logo: "brand/logo.png",
   extra: none,
 ) = {
   set page(
@@ -33,20 +33,14 @@
     margin: (left: 2.2cm, right: 2.2cm, top: 3.2cm, bottom: 2.2cm),
     fill: tai-warm,
     header: none,
-    footer: {
-      set text(size: slide-footer-size, fill: color-text-muted, weight: "medium")
-      if institution != none {
-        institution
-      }
-    },
+    footer: none,
   )
 
   // Logo
   if logo != none {
-    place(top + right, dx: -0.5cm, dy: -1.5cm, image(logo, width: 4cm))
+    image(logo, width: 5cm)
+    v(0.6cm)
   }
-
-  v(0.8cm)
 
   // Title
   block(width: 85%)[
@@ -115,7 +109,7 @@
 #let content-slide(
   title: "",
   footer-text: "TrustedAI",
-  footer-logo: none,
+  logo: "brand/logo.png",
   slide-number: none,
   total-slides: none,
   body,
@@ -131,29 +125,15 @@
     },
     footer: {
       set text(size: slide-footer-size, fill: color-text-muted)
-      grid(
-        columns: (auto, 0.4cm, 1fr, auto),
-        if slide-number != none {
-          box(
-            fill: color-primary,
-            inset: (x: 0.4em, y: 0.3em),
-          )[
-            #set align(center + horizon)
-            #text(fill: tai-white, size: 12pt, str(slide-number))
-          ]
-        },
-        [],
-        {
-          set align(left + horizon)
-          footer-text
-        },
-        {
-          set align(right + horizon)
-          if footer-logo != none {
-            image(footer-logo, height: 1em)
-          }
-        },
-      )
+      if slide-number != none {
+        box(
+          fill: color-primary,
+          inset: (x: 0.4em, y: 0.3em),
+        )[
+          #set align(center + horizon)
+          #text(fill: tai-white, size: 12pt, str(slide-number))
+        ]
+      }
     },
   )
 
@@ -176,7 +156,9 @@
       ]
     },
   )
-  show heading: set text(font: font-title, fill: color-primary)
+  show heading.where(level: 1): set text(font: font-title, size: 22pt, fill: color-primary, weight: "bold")
+  show heading.where(level: 2): set text(font: font-title, size: 20pt, fill: color-primary, weight: "semibold")
+  show heading.where(level: 3): set text(font: font-title, size: 17pt, fill: color-primary, weight: "medium")
   show heading: it => { it + v(0.4em) }
   show link: it => underline(text(fill: tai-blue, it))
 
@@ -200,7 +182,7 @@
 #let two-col-slide(
   title: "",
   footer-text: "TrustedAI",
-  footer-logo: none,
+  logo: "brand/logo.png",
   slide-number: none,
   total-slides: none,
   left-body,
@@ -209,7 +191,7 @@
   content-slide(
     title: title,
     footer-text: footer-text,
-    footer-logo: footer-logo,
+    logo: logo,
     slide-number: slide-number,
     total-slides: total-slides,
   )[

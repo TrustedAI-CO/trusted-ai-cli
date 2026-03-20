@@ -10,19 +10,18 @@
 #let template(
   body,
   company-name: "TrustedAI",
-  icon: none,
   logo: none,
-  banner: none,
   title: none,
   subtitle: none,
   author: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
   institution: none,
 ) = {
+  let resolved-logo = if logo != none { logo } else { "brand/logo.png" }
   content-slide(
     title: if title != none { title } else { company-name },
     footer-text: company-name,
-    footer-logo: logo,
+    logo: resolved-logo,
   )[
     #set text(font: font-body, size: 18pt, fill: color-text)
     #set par(leading: 0.7em)
@@ -37,9 +36,7 @@
 #let render-slides(
   md-string,
   company-name: "TrustedAI",
-  icon: none,
   logo: none,
-  banner: none,
   title: none,
   subtitle: none,
   author: none,
@@ -47,6 +44,8 @@
   institution: none,
 ) = {
   import "@preview/cmarker:0.1.8"
+
+  let resolved-logo = if logo != none { logo } else { "brand/logo.png" }
 
   // Title slide from frontmatter params
   title-slide(
@@ -68,10 +67,10 @@
     if section == "" { continue }
 
     // Extract title from first # heading
-    let slide-title = company-name
+    let slide-title = ""
     let slide-body = section
 
-    let heading-match = section.match(regex("^#\s+(.+)$"))
+    let heading-match = section.match(regex("#\\s+(.+)"))
     if heading-match != none {
       slide-title = heading-match.captures.at(0)
       // Remove the heading from body so it's not rendered twice
@@ -83,7 +82,7 @@
     content-slide(
       title: slide-title,
       footer-text: company-name,
-      footer-logo: logo,
+      logo: resolved-logo,
       slide-number: slide-num,
       total-slides: slide-count,
     )[
@@ -91,8 +90,10 @@
       #set par(leading: 0.7em)
       #set list(indent: 0.8em, marker: move(dy: 0.11cm, square(width: 0.4em, height: 0.4em, fill: color-primary)), spacing: 0.8em)
       #set enum(indent: 0.8em, spacing: 0.8em)
-      #show heading: set text(font: font-title, fill: color-primary)
-      #show heading: it => { it + v(0.4em) }
+      #show heading.where(level: 1): set text(size: 0pt)
+      #show heading.where(level: 2): set text(font: font-title, size: 20pt, fill: color-primary, weight: "semibold")
+      #show heading.where(level: 3): set text(font: font-title, size: 17pt, fill: color-primary, weight: "medium")
+      #show heading: it => { it + v(0.3em) }
       #show link: it => underline(text(fill: tai-blue, it))
       #cmarker.render(slide-body, smart-punctuation: true)
     ]
