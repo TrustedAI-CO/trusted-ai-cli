@@ -79,8 +79,8 @@ def setup(ctx: typer.Context) -> None:
 
     console.print(f"\n[green]Saved {len(updates)} change(s) to profile [bold]{profile_name}[/bold].[/green]")
 
-    console.print("\nInstalling skills, hooks, and templates...")
-    skills_ok, hooks_ok, templates_ok = run_post_update()
+    console.print("\nInstalling skills, hooks, templates, and styles...")
+    skills_ok, hooks_ok, templates_ok, style_ok = run_post_update()
 
     if skills_ok:
         console.print("  [green]Skills installed[/green]")
@@ -96,6 +96,11 @@ def setup(ctx: typer.Context) -> None:
         console.print("  [green]Templates installed[/green]")
     else:
         err_console.print("  [yellow]Warning: templates install failed. Run 'tai pdf setup-templates' manually.[/yellow]")
+
+    if style_ok:
+        console.print("  [green]Matplotlib style installed[/green]")
+    else:
+        err_console.print("  [yellow]Warning: style install failed. Run 'tai style install' manually.[/yellow]")
 
 
 def _coerce(raw: str, target_type: type) -> object:
