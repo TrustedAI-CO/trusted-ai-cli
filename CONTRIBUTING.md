@@ -38,12 +38,12 @@ tests/
 
 ## Development workflow
 
-1. Create a feature branch from `develop`
+1. Create a feature branch from `main`
 2. Write tests first (TDD) — see [testing rules](#testing-rules)
 3. Implement the feature
 4. Run `pytest` and verify 80%+ coverage
 5. Commit with [conventional commits](https://www.conventionalcommits.org/): `feat:`, `fix:`, `refactor:`, etc.
-6. Open a PR against `develop`
+6. Open a PR against `main`
 
 ## Testing rules
 

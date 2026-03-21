@@ -164,9 +164,6 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
-- Resolve CHANGELOG merge conflict (develop ← main)
-  ([`c1d8101`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c1d810191c01a10aa838ac60888e802f1059c5dd))
-
 ### Features
 
 - **mermaid**: Replace mermaid.ink API with local mmdc CLI rendering
@@ -197,9 +194,6 @@ Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
   ([`582d499`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/582d499d7c772314022a1da843aa6f9e3b31362e))
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
-
-- Resolve CHANGELOG merge conflict (develop ← main)
-  ([`5f426b2`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5f426b29ccfef50877647d91fb40fd9f2318e830))
 
 ### Features
 
@@ -261,11 +255,6 @@ Replace all references to plan-ceo/CEO with plan-biz/Biz across skill definition
 
 
 ## v0.5.4 (2026-03-20)
-
-### Chores
-
-- Resolve merge conflict in CHANGELOG.md (main → develop)
-  ([`6f17b35`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/6f17b3505ae4dfd98cbf00559987381b4dda48d2))
 
 ### Continuous Integration
 
@@ -351,8 +340,6 @@ Add comprehensive changelog entry for the Typst PDF template system.
 
 ### Chores
 
-- Resolve merge conflict in CHANGELOG.md (develop → main)
-  ([`463c0df`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/463c0df3d1c725d05eff92b5a442dde7a9f98671))
 
 
 ## v0.3.1 (2026-03-19)
@@ -432,9 +419,6 @@ Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
   install instructions to use `uv tool install`.
 
 ### Chores
-
-- Resolve merge conflict in CHANGELOG.md
-  ([`d27ebd5`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d27ebd5bc61a8245bb3c01f5f7dd82b2c8321b2b))
 
 - **templates**: Align example naming and add report-example.md
   ([`d419df0`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d419df07caa817a23448a5a40439fbb886f4d338))
