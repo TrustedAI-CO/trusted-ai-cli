@@ -111,29 +111,24 @@ graph TD
 
 For bar charts, line graphs, scatter plots, histograms, heatmaps, and any visualization driven by numerical data, generate the chart as a PNG using Python (matplotlib/seaborn) and embed it in the Markdown.
 
-**Use the company color palette:**
+**Use the TrustedAI matplotlib style** (install once with `tai style install`):
 
 ```python
-# Company color palette — use these for all data visualizations
-COMPANY_COLORS = {
-    "primary": "#2563EB",    # Blue — main data series, primary bars
-    "secondary": "#7C3AED",  # Purple — secondary data series
-    "accent": "#06B6D4",     # Cyan — highlights, callouts
-    "success": "#10B981",    # Green — positive metrics
-    "warning": "#F59E0B",    # Amber — caution, thresholds
-    "danger": "#EF4444",     # Red — negative metrics, alerts
-    "neutral": "#6B7280",    # Gray — baselines, gridlines
-}
+import matplotlib.pyplot as plt
 
-# Ordered list for cycling through multi-series charts
-PALETTE = ["#2563EB", "#7C3AED", "#06B6D4", "#10B981", "#F59E0B", "#EF4444"]
+plt.style.use('trustedai')
+
+# That's it — colors, fonts, background, grid, and spines are all on-brand.
+# For programmatic access to the palette:
+from tai.core.style import PALETTE, COLORS
 ```
 
 **Workflow:**
 1. Write a Python script that generates the chart as a `.png` file
-2. Run the script with `python script.py`
-3. Reference the image in Markdown: `![Chart title](chart.png)`
-4. Compile the document with `tai pdf compile`
+2. Add `plt.style.use('trustedai')` at the top
+3. Run the script with `python script.py`
+4. Reference the image in Markdown: `![Chart title](chart.png)`
+5. Compile the document with `tai pdf compile`
 
 ## Troubleshooting
 

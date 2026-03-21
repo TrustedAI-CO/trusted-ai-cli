@@ -1,12 +1,24 @@
 # CHANGELOG
 
 
-## v0.10.2 (2026-03-21)
+## v0.4.3.1 (2026-03-21)
 
 ### Fixed
 
 - **mermaid**: Disable htmlLabels in mmdc config so diagram text renders as native SVG `<tspan>` elements instead of `<foreignObject>`, which Typst cannot render — fixes invisible text in PDF output
 
+
+## v0.4.3.0 (2026-03-21)
+
+### Added
+
+- **style**: TrustedAI matplotlib style (`tai style install`) — brand-matched light theme with warm cream background (#f4f1eb), Hanken Grotesk font, and 6-color palette (navy/blue/sky/accent/amber/teal)
+- **style**: Python API for palette constants (`from tai.core.style import PALETTE, COLORS`)
+- **updater**: Auto-install matplotlib style on `tai setup` and `tai update`
+
+### Changed
+
+- **generate-pdf skill**: Replace hardcoded color dict with `plt.style.use('trustedai')`
 
 ## v0.10.1 (2026-03-20)
 

@@ -111,12 +111,12 @@ def _run_update(info: UpdateCheck, use_json: bool) -> None:
 
     if not use_json:
         console.print(f"[green]Updated to {info.latest}[/green]")
-        console.print("\nRefreshing skills, hooks, and templates...")
+        console.print("\nRefreshing skills, hooks, templates, and styles...")
 
-    skills_ok, hooks_ok, templates_ok = run_post_update()
+    skills_ok, hooks_ok, templates_ok, style_ok = run_post_update()
 
     if not use_json:
-        _print_post_update(skills_ok, hooks_ok, templates_ok)
+        _print_post_update(skills_ok, hooks_ok, templates_ok, style_ok)
     else:
         console.print_json(json.dumps({
             "current": info.current,
@@ -125,10 +125,11 @@ def _run_update(info: UpdateCheck, use_json: bool) -> None:
             "skills_refreshed": skills_ok,
             "hooks_refreshed": hooks_ok,
             "templates_refreshed": templates_ok,
+            "style_refreshed": style_ok,
         }))
 
 
-def _print_post_update(skills_ok: bool, hooks_ok: bool, templates_ok: bool) -> None:
+def _print_post_update(skills_ok: bool, hooks_ok: bool, templates_ok: bool, style_ok: bool) -> None:
     if skills_ok:
         console.print("  [green]Skills refreshed[/green]")
     else:
@@ -143,6 +144,11 @@ def _print_post_update(skills_ok: bool, hooks_ok: bool, templates_ok: bool) -> N
         console.print("  [green]Templates refreshed[/green]")
     else:
         err_console.print("  [yellow]Warning: templates refresh failed. Run 'tai pdf setup-templates' manually.[/yellow]")
+
+    if style_ok:
+        console.print("  [green]Matplotlib style refreshed[/green]")
+    else:
+        err_console.print("  [yellow]Warning: style refresh failed. Run 'tai style install' manually.[/yellow]")
 
 
 def _print_error(exc: UpdateError, use_json: bool) -> None:
