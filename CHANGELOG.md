@@ -15,32 +15,71 @@
 - **skills**: Remove plan-biz-light and plan-eng-light (consolidated into quick mode in plan-ceo and plan-eng)
 
 
-## v0.4.3.1 (2026-03-21)
+## v0.11.0 (2026-03-21)
 
-### Fixed
+### Bug Fixes
 
-- **mermaid**: Disable htmlLabels in mmdc config so diagram text renders as native SVG `<tspan>` elements instead of `<foreignObject>`, which Typst cannot render — fixes invisible text in PDF output
+- **mermaid**: Disable htmlLabels to fix invisible text in PDF output
+  ([`2c667b6`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2c667b6102fc65d4eb940d33a47486a7582f0c45))
 
+mermaid-cli v11+ defaults to htmlLabels: true, rendering node labels as HTML inside SVG
+  <foreignObject> elements. Typst's SVG renderer does not support foreignObject, so all diagram text
+  was invisible in compiled PDFs.
 
-## v0.4.3.0 (2026-03-21)
+Always pass htmlLabels: false in the mmdc config to force native SVG <tspan> rendering.
 
-### Added
+### Chores
 
-- **style**: TrustedAI matplotlib style (`tai style install`) — brand-matched light theme with warm cream background (#f4f1eb), Hanken Grotesk font, and 6-color palette (navy/blue/sky/accent/amber/teal)
-- **style**: Python API for palette constants (`from tai.core.style import PALETTE, COLORS`)
-- **updater**: Auto-install matplotlib style on `tai setup` and `tai update`
+- Bump version and changelog (v0.10.2)
+  ([`2f92f2c`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2f92f2cea08a5ca7d95540671cedf374a8ff4fa6))
 
-### Changed
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
-- **generate-pdf skill**: Replace hardcoded color dict with `plt.style.use('trustedai')`
+- Resolve CHANGELOG merge conflict (develop ← main)
+  ([`4567a77`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4567a775682e1263e6f44b6a3821d22d66583570))
+
+### Features
+
+- **style**: Add TrustedAI matplotlib style
+  ([#60](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/60),
+  [`8ca1029`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/8ca102937431ce10cc7b887cac914e9dca4abfe7))
+
+* feat(style): add TrustedAI matplotlib style
+
+Brand-matched light theme with warm cream background (#f4f1eb), Hanken Grotesk font, and 6-color
+  palette from theme.typ.
+
+New files: - tai/data/styles/trustedai.mplstyle — the .mplstyle asset - tai/core/style.py — PALETTE,
+  COLORS constants and install() - tai/commands/style.py — `tai style install` CLI command - tests/
+  — 14 tests (palette, bundled file, install, CLI)
+
+* feat(style): auto-install style on setup and update
+
+run_post_update() now returns a 4-tuple including style_ok. tai setup and tai update show style
+  install status. Soft-skips when matplotlib is not installed.
+
+* docs(generate-pdf): use plt.style.use('trustedai') instead of hardcoded colors
+
+Replace the hardcoded COMPANY_COLORS dict in the generate-pdf skill with the new trustedai
+  matplotlib style.
+
+* chore: bump version and changelog (v0.4.3.0)
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+---------
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
+
 
 ## v0.10.1 (2026-03-20)
 
-### Added
-
-- **generate-pdf skill**: Add best-practice guidance for diagrams and charts — use Mermaid for flowcharts only, use Python (matplotlib/seaborn) with company color palette for data-heavy plots
-
 ### Chores
+
+- Resolve CHANGELOG merge conflict (develop ← feature)
+  ([`bab7aed`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bab7aedcdd1c9c5353c8096d06dd4f04eb42ac2f))
 
 - Resolve CHANGELOG merge conflict (develop ← main)
   ([`fc4728f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/fc4728fa449676151f7cacc8271e6d3d59f8b75e))
@@ -64,8 +103,21 @@ Add scope override to cmarker.render() so images resolve relative to the Typst r
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
+- Bump version and changelog (v0.4.2.2)
+  ([`24e96ff`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/24e96ffe71b8487ae6eecbd3465beee98448f42f))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
 - Resolve CHANGELOG merge conflict (develop ← main)
   ([`12d36ff`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/12d36fff980cf8c1caeb4b527564cc8b61c44969))
+
+### Documentation
+
+- **generate-pdf**: Add diagram and chart best practices
+  ([`dede3d4`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/dede3d40da131985da473887b638159c777e4830))
+
+Recommend Mermaid for flowcharts only, Python matplotlib/seaborn with company color palette for
+  data-heavy plots.
 
 
 ## v0.9.0 (2026-03-20)
