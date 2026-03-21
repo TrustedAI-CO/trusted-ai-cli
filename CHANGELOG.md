@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.4.3.2 (2026-03-21)
+
+### Changed
+
+- **skills**: Sync plan-eng and plan-ceo skills with gstack's latest structure and approach
+- **skills**: plan-ceo upgraded to 11-section Mega Plan Review (Error/Rescue Map, Security, Data Flow, Observability, Deployment, Long-Term Trajectory, Design/UX)
+- **skills**: plan-eng gains Completion Status Protocol, staleness detection, review chaining
+- **skills**: Add investigate and second-opinion skills
+
+### Removed
+
+- **skills**: Remove plan-biz-light and plan-eng-light (consolidated into quick mode in plan-ceo and plan-eng)
+
+
 ## v0.4.3.1 (2026-03-21)
 
 ### Fixed
