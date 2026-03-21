@@ -122,14 +122,20 @@ def _find_mmdc() -> str:
     )
 
 
-def _build_mmdc_config(brand: BrandColors | None) -> dict | None:
-    """Build a mmdc JSON config dict for brand theming."""
-    if not brand or not brand.primary:
-        return None
-    theme_variables: dict[str, str] = {"primaryColor": brand.primary}
-    if brand.secondary:
-        theme_variables["secondaryColor"] = brand.secondary
-    return {"theme": "base", "themeVariables": theme_variables}
+def _build_mmdc_config(brand: BrandColors | None) -> dict:
+    """Build a mmdc JSON config dict for brand theming.
+
+    Always disables htmlLabels so mermaid renders text as native SVG
+    <tspan> elements instead of <foreignObject>, which Typst cannot render.
+    """
+    config: dict = {"htmlLabels": False, "flowchart": {"htmlLabels": False}}
+    if brand and brand.primary:
+        theme_variables: dict[str, str] = {"primaryColor": brand.primary}
+        if brand.secondary:
+            theme_variables["secondaryColor"] = brand.secondary
+        config["theme"] = "base"
+        config["themeVariables"] = theme_variables
+    return config
 
 
 def _render_single(
