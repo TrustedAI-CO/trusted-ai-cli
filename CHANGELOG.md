@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## [0.4.4.0] - 2026-03-22
+
+### Added
+
+- **skills**: Add `/office-hours` skill — product thinking before code. Two modes: Startup mode (six forcing questions for demand reality, status quo, desperate specificity, narrowest wedge, observation, and future-fit) and Builder mode (design thinking brainstorm for side projects, hackathons, learning). Produces a design doc, never code. Adapted from gstack's office-hours skill with TAI conventions.
+
+
 ## v0.12.0 (2026-03-21)
 
 ### Chores
