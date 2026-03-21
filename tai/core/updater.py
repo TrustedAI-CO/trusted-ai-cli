@@ -250,10 +250,11 @@ def _build_install_cmd(installer: Installer, wheel_path: Path) -> list[str]:
             raise UpdateError(f"Unsupported installer: {installer!r}")
 
 
-def run_post_update() -> tuple[bool, bool, bool]:
-    """Run setup-skills, setup-hooks, and setup-templates via subprocess.
+def run_post_update() -> tuple[bool, bool, bool, bool]:
+    """Run setup-skills, setup-hooks, setup-templates, and style install.
 
-    Returns (skills_ok, hooks_ok, templates_ok).
+    Returns (skills_ok, hooks_ok, templates_ok, style_ok).
+    Style install silently skips when matplotlib is not installed.
     """
     tai_bin = shutil.which("tai") or "tai"
 
@@ -290,7 +291,20 @@ def run_post_update() -> tuple[bool, bool, bool]:
         _log.debug("Post-update setup-templates failed: %s", exc)
         templates_ok = False
 
-    return skills_ok, hooks_ok, templates_ok
+    try:
+        from tai.core.style import StyleInstallError, install  # noqa: PLC0415
+
+        install()
+        style_ok = True
+    except StyleInstallError as exc:
+        # matplotlib not installed → soft skip, not a failure
+        _log.debug("Post-update style install skipped: %s", exc)
+        style_ok = True
+    except Exception as exc:
+        _log.debug("Post-update style install failed: %s", exc)
+        style_ok = False
+
+    return skills_ok, hooks_ok, templates_ok, style_ok
 
 
 # ── Startup update-check cache ───────────────────────────────────────────────
