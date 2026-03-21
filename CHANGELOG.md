@@ -1,18 +1,12 @@
 # CHANGELOG
 
 
-## v0.4.3.2 (2026-03-21)
+## v0.12.0 (2026-03-21)
 
-### Changed
+### Chores
 
-- **skills**: Sync plan-eng and plan-ceo skills with gstack's latest structure and approach
-- **skills**: plan-ceo upgraded to 11-section Mega Plan Review (Error/Rescue Map, Security, Data Flow, Observability, Deployment, Long-Term Trajectory, Design/UX)
-- **skills**: plan-eng gains Completion Status Protocol, staleness detection, review chaining
-- **skills**: Add investigate and second-opinion skills
-
-### Removed
-
-- **skills**: Remove plan-biz-light and plan-eng-light (consolidated into quick mode in plan-ceo and plan-eng)
+- Resolve CHANGELOG merge conflict (develop ← main)
+  ([`2620850`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/26208509ed22413d26cadd1b61c415886ce5965a))
 
 
 ## v0.11.0 (2026-03-21)
@@ -28,6 +22,11 @@ mermaid-cli v11+ defaults to htmlLabels: true, rendering node labels as HTML ins
 
 Always pass htmlLabels: false in the mmdc config to force native SVG <tspan> rendering.
 
+- **skills**: Remove second-opinion from PR scope
+  ([`1864ff5`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1864ff5970deb1deb34fdb6404ffc4a228666144))
+
+Per PR review comment — second-opinion skill is not part of this PR.
+
 ### Chores
 
 - Bump version and changelog (v0.10.2)
@@ -35,10 +34,25 @@ Always pass htmlLabels: false in the mmdc config to force native SVG <tspan> ren
 
 Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
+- Bump version and changelog (v0.4.3.2)
+  ([`a0666e4`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a0666e42ecc9b6c2314c3886970bc306440129d8))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
 - Resolve CHANGELOG merge conflict (develop ← main)
   ([`4567a77`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4567a775682e1263e6f44b6a3821d22d66583570))
 
 ### Features
+
+- **skills**: Sync plan-eng and plan-ceo with gstack structure
+  ([`63e923a`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/63e923abe890bb8670ed32a156a1b260b909e4f6))
+
+- plan-eng: add Completion Status Protocol, staleness detection, review chaining - plan-ceo: upgrade
+  to 11-section Mega Plan Review (Error/Rescue Map, Security, Data Flow, Observability, Deployment,
+  Long-Term Trajectory, Design/UX) - plan-ceo: add PRE-REVIEW SYSTEM AUDIT, Implementation
+  Alternatives, Spec Review Loop, CEO Plan persistence, docs/designs promotion - Rename plan-biz →
+  plan-ceo to match gstack naming - Remove plan-biz-light and plan-eng-light (consolidated into
+  quick mode) - Add investigate and second-opinion skills
 
 - **style**: Add TrustedAI matplotlib style
   ([#60](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/60),
