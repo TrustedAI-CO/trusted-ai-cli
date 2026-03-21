@@ -46,15 +46,18 @@ class TestParseCaption:
 
 
 class TestBuildMmdcConfig:
+    _HTML_LABELS_BASE = {"htmlLabels": False, "flowchart": {"htmlLabels": False}}
+
     def test_no_brand(self) -> None:
-        assert _build_mmdc_config(None) is None
+        assert _build_mmdc_config(None) == self._HTML_LABELS_BASE
 
     def test_no_primary(self) -> None:
-        assert _build_mmdc_config(BrandColors()) is None
+        assert _build_mmdc_config(BrandColors()) == self._HTML_LABELS_BASE
 
     def test_primary_only(self) -> None:
         config = _build_mmdc_config(BrandColors(primary="#1a73e8"))
         assert config == {
+            **self._HTML_LABELS_BASE,
             "theme": "base",
             "themeVariables": {"primaryColor": "#1a73e8"},
         }
@@ -64,6 +67,7 @@ class TestBuildMmdcConfig:
             BrandColors(primary="#1a73e8", secondary="#4a4a4a")
         )
         assert config == {
+            **self._HTML_LABELS_BASE,
             "theme": "base",
             "themeVariables": {
                 "primaryColor": "#1a73e8",
@@ -205,7 +209,8 @@ class TestPreprocess:
             with pytest.raises(MermaidError, match="not installed"):
                 preprocess(content, cache_base=tmp_path)
 
-    def test_no_brand_no_config(self, tmp_path: Path) -> None:
+    def test_no_brand_still_passes_config(self, tmp_path: Path) -> None:
+        """Even without brand colors, a config disabling htmlLabels is passed."""
         content = "```mermaid\ngraph TD\n  A --> B\n```\n"
 
         with (
@@ -218,7 +223,7 @@ class TestPreprocess:
             preprocess(content, brand=None, cache_base=tmp_path)
 
         cmd = mock_run.call_args[0][0]
-        assert "--configFile" not in cmd
+        assert "--configFile" in cmd
 
 
 # ── typst show rules tests ──────────────────────────────────────────────────
