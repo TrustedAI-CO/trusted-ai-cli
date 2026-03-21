@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.10.2 (2026-03-21)
+
+### Fixed
+
+- **mermaid**: Disable htmlLabels in mmdc config so diagram text renders as native SVG `<tspan>` elements instead of `<foreignObject>`, which Typst cannot render — fixes invisible text in PDF output
+
+
 ## v0.10.1 (2026-03-20)
 
 ### Added
