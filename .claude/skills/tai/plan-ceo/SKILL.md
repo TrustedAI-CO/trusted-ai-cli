@@ -1,13 +1,16 @@
 ---
-name: plan-biz
-version: 1.0.0
+name: plan-ceo
+version: 3.0.0
 description: |
-  [TAI] Business-mode plan review. Rethink the problem, find the 10-star product,
+  [TAI] CEO/founder-mode plan review. Rethink the problem, find the 10-star product,
   challenge premises, expand scope when it creates a better product. Four modes:
   SCOPE EXPANSION (dream big), SELECTIVE EXPANSION (hold scope + cherry-pick
   expansions), HOLD SCOPE (maximum rigor), SCOPE REDUCTION (strip to essentials).
+  Say "quick" for fast scan (premise + risks + verdict only).
   Use when asked to "think bigger", "expand scope", "strategy review", "rethink this",
   or "is this ambitious enough".
+  Proactively suggest when the user is questioning scope or ambition of a plan,
+  or when the plan feels like it could be thinking bigger.
 allowed-tools:
   - Read
   - Grep
@@ -19,7 +22,6 @@ allowed-tools:
 ## Preamble (run first)
 
 ```bash
-
 _BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 echo "BRANCH: $_BRANCH"
 ```
@@ -61,21 +63,30 @@ AI-assisted coding makes the marginal cost of completeness near-zero. When you p
 - BAD: "Let's defer test coverage to a follow-up PR." (Tests are the cheapest lake to boil.)
 - BAD: Quoting only human-team effort: "This would take 2 weeks." (Say: "2 weeks human / ~1 hour CC.")
 
-## Steps to reproduce
-1. {step}
+## Completion Status Protocol
 
-## Raw output
+When completing a skill workflow, report status using one of:
+- **DONE** — All steps completed successfully. Evidence provided for each claim.
+- **DONE_WITH_CONCERNS** — Completed, but with issues the user should know about. List each concern.
+- **BLOCKED** — Cannot proceed. State what is blocking and what was tried.
+- **NEEDS_CONTEXT** — Missing information required to continue. State exactly what you need.
+
+### Escalation
+
+It is always OK to stop and say "this is too hard for me" or "I'm not confident in this result."
+
+Bad work is worse than no work. You will not be penalized for escalating.
+- If you have attempted a task 3 times without success, STOP and escalate.
+- If you are uncertain about a security-sensitive change, STOP and escalate.
+- If the scope of work exceeds what you can verify, STOP and escalate.
+
+Escalation format:
 ```
-{paste the actual error or unexpected output here}
+STATUS: BLOCKED | NEEDS_CONTEXT
+REASON: [1-2 sentences]
+ATTEMPTED: [what you tried]
+RECOMMENDATION: [what the user should do next]
 ```
-
-## What would make this a 10
-{one sentence: what tai should have done differently}
-
-**Date:** {YYYY-MM-DD} | **Version:** {tai version} | **Skill:** /{skill}
-```
-
-Slug: lowercase, hyphens, max 60 chars (e.g. `browse-js-no-await`). Skip if file already exists. Max 3 reports per session. File inline and continue — don't stop the workflow. Tell user: "Filed tai field report: {title}"
 
 ## Language
 
@@ -108,6 +119,29 @@ branch name wherever the instructions say "the base branch."
 
 ---
 
+## Quick Mode
+
+If the user says "quick", "fast", or "light" — run the abbreviated version:
+
+1. **Premise challenge:** 3 questions (2-3 sentences each):
+   - Is this the right problem?
+   - What's the actual user/business outcome? Most direct path?
+   - What happens if we do nothing?
+
+2. **Dream state mapping:**
+   ```
+   CURRENT STATE → THIS PLAN → 12-MONTH IDEAL
+   ```
+   One sentence: does plan move toward or away from ideal?
+
+3. **Top 3 risks:** Each with What could go wrong / Likelihood / Mitigation.
+
+4. **Verdict:** Ship it / Adjust / Rethink / Kill it + one paragraph.
+
+Output as a single document. No AskUserQuestion stops. Log result and stop.
+
+---
+
 # Mega Plan Review Mode
 
 ## Philosophy
@@ -123,7 +157,7 @@ Do NOT make any code changes. Do NOT start implementation. Your only job right n
 
 ## Prime Directives
 1. Zero silent failures. Every failure mode must be visible — to the system, to the team, to the user. If a failure can happen silently, that is a critical defect in the plan.
-2. Every error has a name. Don't say "handle errors." Name the specific exception class, what triggers it, what rescues it, what the user sees, and whether it's tested. rescue StandardError is a code smell — call it out.
+2. Every error has a name. Don't say "handle errors." Name the specific exception class, what triggers it, what catches it, what the user sees, and whether it's tested. Catch-all error handling (e.g., catch Exception, rescue StandardError, except Exception) is a code smell — call it out.
 3. Data flows have shadow paths. Every data flow has a happy path and three shadow paths: nil input, empty/zero-length input, and upstream error. Trace all four for every new flow.
 4. Interactions have edge cases. Every user-visible interaction has edge cases: double-click, navigate-away-mid-action, slow connection, stale state, back button. Map them.
 5. Observability is scope, not afterthought. New dashboards, alerts, and runbooks are first-class deliverables, not post-launch cleanup items.
@@ -145,9 +179,9 @@ Do NOT make any code changes. Do NOT start implementation. Your only job right n
 * ASCII diagrams in code comments for complex designs — Models (state transitions), Services (pipelines), Controllers (request flow), Concerns (mixin behavior), Tests (non-obvious setup).
 * Diagram maintenance is part of the change — stale diagrams are worse than none.
 
-## Cognitive Patterns — How Great Leaders Think
+## Cognitive Patterns — How Great CEOs Think
 
-These are not checklist items. They are thinking instincts — the cognitive moves that separate 10x leaders from competent managers. Let them shape your perspective throughout the review. Don't enumerate them; internalize them.
+These are not checklist items. They are thinking instincts — the cognitive moves that separate 10x CEOs from competent managers. Let them shape your perspective throughout the review. Don't enumerate them; internalize them.
 
 1. **Classification instinct** — Categorize every decision by reversibility x magnitude (Bezos one-way/two-way doors). Most things are two-way doors; move fast.
 2. **Paranoid scanning** — Continuously scan for strategic inflection points, cultural drift, talent erosion, process-as-proxy disease (Grove: "Only the paranoid survive").
@@ -181,8 +215,8 @@ Run the following commands:
 git log --oneline -30                          # Recent history
 git diff <base> --stat                           # What's already changed
 git stash list                                 # Any stashed work
-grep -r "TODO\|FIXME\|HACK\|XXX" --include="*.rb" --include="*.js" -l
-find . -name "*.rb" -newer Gemfile.lock | head -20  # Recently touched files
+grep -r "TODO\|FIXME\|HACK\|XXX" -l --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=.git . | head -30
+git log --since=30.days --name-only --format="" | sort | uniq -c | sort -rn | head -20  # Recently touched files
 ```
 Then read CLAUDE.md, TODOS.md, and any existing architecture docs. When reading TODOS.md, specifically:
 * Note any TODOs this plan touches, blocks, or unlocks
@@ -224,6 +258,36 @@ Describe the ideal end state of this system 12 months from now. Does this plan m
   [describe]          --->       [describe delta]    --->    [describe target]
 ```
 
+### 0C-bis. Implementation Alternatives (MANDATORY)
+
+Before selecting a mode (0F), produce 2-3 distinct implementation approaches. This is NOT optional — every plan must consider alternatives.
+
+For each approach:
+```
+APPROACH A: [Name]
+  Summary: [1-2 sentences]
+  Effort:  [S/M/L/XL]
+  Risk:    [Low/Med/High]
+  Pros:    [2-3 bullets]
+  Cons:    [2-3 bullets]
+  Reuses:  [existing code/patterns leveraged]
+
+APPROACH B: [Name]
+  ...
+
+APPROACH C: [Name] (optional — include if a meaningfully different path exists)
+  ...
+```
+
+**RECOMMENDATION:** Choose [X] because [one-line reason mapped to engineering preferences].
+
+Rules:
+- At least 2 approaches required. 3 preferred for non-trivial plans.
+- One approach must be the "minimal viable" (fewest files, smallest diff).
+- One approach must be the "ideal architecture" (best long-term trajectory).
+- If only one approach exists, explain concretely why alternatives were eliminated.
+- Do NOT proceed to mode selection (0F) without user approval of the chosen approach.
+
 ### 0D. Mode-Specific Analysis
 **For SCOPE EXPANSION** — run all three, then the opt-in ceremony:
 1. 10x check: What's the version that's 10x more ambitious and delivers 10x more value for 2x the effort? Describe it concretely.
@@ -248,30 +312,30 @@ Describe the ideal end state of this system 12 months from now. Does this plan m
 1. Ruthless cut: What is the absolute minimum that ships value to a user? Everything else is deferred. No exceptions.
 2. What can be a follow-up PR? Separate "must ship together" from "nice to ship together."
 
-### 0D-POST. Persist Biz Plan (EXPANSION and SELECTIVE EXPANSION only)
+### 0D-POST. Persist CEO Plan (EXPANSION and SELECTIVE EXPANSION only)
 
 After the opt-in/cherry-pick ceremony, write the plan to disk so the vision and decisions survive beyond this conversation. Only run this step for EXPANSION and SELECTIVE EXPANSION modes.
 
 ```bash
 _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$SLUG/ceo-plans
+mkdir -p ~/.tai-skills/projects/$_SLUG/ceo-plans
 ```
 
-Before writing, check for existing Biz plans in the ceo-plans/ directory. If any are >30 days old or their branch has been merged/deleted, offer to archive them:
+Before writing, check for existing CEO plans in the ceo-plans/ directory. If any are >30 days old or their branch has been merged/deleted, offer to archive them:
 
 ```bash
-mkdir -p ~/.tai-skills/projects/$SLUG/ceo-plans/archive
-# For each stale plan: mv ~/.tai-skills/projects/$SLUG/ceo-plans/{old-plan}.md ~/.tai-skills/projects/$SLUG/ceo-plans/archive/
+mkdir -p ~/.tai-skills/projects/$_SLUG/ceo-plans/archive
+# For each stale plan: mv ~/.tai-skills/projects/$_SLUG/ceo-plans/{old-plan}.md ~/.tai-skills/projects/$_SLUG/ceo-plans/archive/
 ```
 
-Write to `~/.tai-skills/projects/$SLUG/ceo-plans/{date}-{feature-slug}.md` using this format:
+Write to `~/.tai-skills/projects/$_SLUG/ceo-plans/{date}-{feature-slug}.md` using this format:
 
 ```markdown
 ---
 status: ACTIVE
 ---
-# Biz Plan: {Feature Name}
-Generated by /plan-biz on {date}
+# CEO Plan: {Feature Name}
+Generated by /plan-ceo on {date}
 Branch: {branch} | Mode: {EXPANSION / SELECTIVE EXPANSION}
 Repo: {owner/repo}
 
@@ -297,6 +361,71 @@ Repo: {owner/repo}
 ```
 
 Derive the feature slug from the plan being reviewed (e.g., "user-dashboard", "auth-refactor"). Use the date in YYYY-MM-DD format.
+
+After writing the CEO plan, run the spec review loop on it:
+
+## Spec Review Loop
+
+Before presenting the document to the user for approval, run an adversarial review.
+
+**Step 1: Dispatch reviewer subagent**
+
+Use the Agent tool to dispatch an independent reviewer. The reviewer has fresh context
+and cannot see the brainstorming conversation — only the document. This ensures genuine
+adversarial independence.
+
+Prompt the subagent with:
+- The file path of the document just written
+- "Read this document and review it on 5 dimensions. For each dimension, note PASS or
+  list specific issues with suggested fixes. At the end, output a quality score (1-10)
+  across all dimensions."
+
+**Dimensions:**
+1. **Completeness** — Are all requirements addressed? Missing edge cases?
+2. **Consistency** — Do parts of the document agree with each other? Contradictions?
+3. **Clarity** — Could an engineer implement this without asking questions? Ambiguous language?
+4. **Scope** — Does the document creep beyond the original problem? YAGNI violations?
+5. **Feasibility** — Can this actually be built with the stated approach? Hidden complexity?
+
+The subagent should return:
+- A quality score (1-10)
+- PASS if no issues, or a numbered list of issues with dimension, description, and fix
+
+**Step 2: Fix and re-dispatch**
+
+If the reviewer returns issues:
+1. Fix each issue in the document on disk (use Edit tool)
+2. Re-dispatch the reviewer subagent with the updated document
+3. Maximum 3 iterations total
+
+**Convergence guard:** If the reviewer returns the same issues on consecutive iterations
+(the fix didn't resolve them or the reviewer disagrees with the fix), stop the loop
+and persist those issues as "Reviewer Concerns" in the document rather than looping
+further.
+
+If the subagent fails, times out, or is unavailable — skip the review loop entirely.
+Tell the user: "Spec review unavailable — presenting unreviewed doc." The document is
+already written to disk; the review is a quality bonus, not a gate.
+
+**Step 3: Report and persist metrics**
+
+After the loop completes (PASS, max iterations, or convergence guard):
+
+1. Tell the user the result — summary by default:
+   "Your doc survived N rounds of adversarial review. M issues caught and fixed.
+   Quality score: X/10."
+   If they ask "what did the reviewer find?", show the full reviewer output.
+
+2. If issues remain after max iterations or convergence, add a "## Reviewer Concerns"
+   section to the document listing each unresolved issue. Downstream skills will see this.
+
+3. Append metrics:
+```bash
+_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
+mkdir -p ~/.tai-skills/analytics
+echo '{"skill":"plan-ceo","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","iterations":ITERATIONS,"issues_found":FOUND,"issues_fixed":FIXED,"remaining":REMAINING,"quality_score":SCORE}' >> ~/.tai-skills/analytics/spec-review.jsonl 2>/dev/null || true
+```
+Replace ITERATIONS, FOUND, FIXED, REMAINING, SCORE with actual values from the review.
 
 ### 0E. Temporal Interrogation (EXPANSION, SELECTIVE EXPANSION, and HOLD modes)
 Think ahead to implementation: What decisions will need to be made during implementation that should be resolved NOW in the plan?
@@ -330,6 +459,8 @@ Context-dependent defaults:
 * Plan touching >15 files → suggest REDUCTION unless user pushes back
 * User says "go big" / "ambitious" / "cathedral" → EXPANSION, no question
 * User says "hold scope but tempt me" / "show me options" / "cherry-pick" → SELECTIVE EXPANSION, no question
+
+After mode is selected, confirm which implementation approach (from 0C-bis) applies under the chosen mode. EXPANSION may favor the ideal architecture approach; REDUCTION may favor the minimal viable approach.
 
 Once selected, commit fully. Do not silently drift.
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY. If no issues or fix is obvious, state what you'll do and move on — don't waste a question. Do NOT proceed until user responds.
@@ -367,24 +498,24 @@ For every new method, service, or codepath that can fail, fill in this table:
 ```
   METHOD/CODEPATH          | WHAT CAN GO WRONG           | EXCEPTION CLASS
   -------------------------|-----------------------------|-----------------
-  ExampleService#call      | API timeout                 | Faraday::TimeoutError
+  ExampleService#call      | API timeout                 | TimeoutError
                            | API returns 429             | RateLimitError
-                           | API returns malformed JSON  | JSON::ParserError
-                           | DB connection pool exhausted| ActiveRecord::ConnectionTimeoutError
-                           | Record not found            | ActiveRecord::RecordNotFound
+                           | API returns malformed JSON  | JSONParseError
+                           | DB connection pool exhausted| ConnectionPoolExhausted
+                           | Record not found            | RecordNotFound
   -------------------------|-----------------------------|-----------------
 
   EXCEPTION CLASS              | RESCUED?  | RESCUE ACTION          | USER SEES
   -----------------------------|-----------|------------------------|------------------
-  Faraday::TimeoutError        | Y         | Retry 2x, then raise   | "Service temporarily unavailable"
+  TimeoutError                 | Y         | Retry 2x, then raise   | "Service temporarily unavailable"
   RateLimitError               | Y         | Backoff + retry         | Nothing (transparent)
-  JSON::ParserError            | N ← GAP   | —                      | 500 error ← BAD
-  ConnectionTimeoutError       | N ← GAP   | —                      | 500 error ← BAD
-  ActiveRecord::RecordNotFound | Y         | Return nil, log warning | "Not found" message
+  JSONParseError               | N ← GAP   | —                      | 500 error ← BAD
+  ConnectionPoolExhausted      | N ← GAP   | —                      | 500 error ← BAD
+  RecordNotFound               | Y         | Return nil, log warning | "Not found" message
 ```
 Rules for this section:
-* `rescue StandardError` is ALWAYS a smell. Name the specific exceptions.
-* `rescue => e` with only `Rails.logger.error(e.message)` is insufficient. Log the full context: what was being attempted, with what arguments, for what user/request.
+* Catch-all error handling (`rescue StandardError`, `catch (Exception e)`, `except Exception`) is ALWAYS a smell. Name the specific exceptions.
+* Catching an error with only a generic log message is insufficient. Log the full context: what was being attempted, with what arguments, for what user/request.
 * Every rescued error must either: retry with backoff, degrade gracefully with a user-visible message, or re-raise with added context. "Swallow and continue" is almost never acceptable.
 * For each GAP (unrescued error that should be rescued): specify the rescue action and what the user should see.
 * For LLM/AI service calls specifically: what happens when the response is malformed? When it's empty? When it hallucinates invalid JSON? When the model returns a refusal? Each of these is a distinct failure mode.
@@ -397,7 +528,7 @@ Evaluate:
 * Input validation. For every new user input: is it validated, sanitized, and rejected loudly on failure? What happens with: nil, empty string, string when integer expected, string exceeding max length, unicode edge cases, HTML/script injection attempts?
 * Authorization. For every new data access: is it scoped to the right user/role? Is there a direct object reference vulnerability? Can user A access user B's data by manipulating IDs?
 * Secrets and credentials. New secrets? In env vars, not hardcoded? Rotatable?
-* Dependency risk. New gems/npm packages? Security track record?
+* Dependency risk. New packages? Security track record?
 * Data classification. PII, payment data, credentials? Handling consistent with existing patterns?
 * Injection vectors. SQL, command, template, LLM prompt injection — check all.
 * Audit logging. For sensitive operations: is there an audit trail?
@@ -495,7 +626,7 @@ For LLM/prompt changes: Check CLAUDE.md for the "Prompt/LLM changes" file patter
 
 ### Section 7: Performance Review
 Evaluate:
-* N+1 queries. For every new ActiveRecord association traversal: is there an includes/preload?
+* N+1 queries. For every new database association traversal: is there an eager load?
 * Memory usage. For every new data structure: what's the maximum size in production?
 * Database indexes. For every new query: is there an index?
 * Caching opportunities. For every expensive computation or external call: should it be cached?
@@ -513,7 +644,7 @@ Evaluate:
 * Alerting. What new alerts should exist?
 * Dashboards. What new dashboard panels do you want on day 1?
 * Debuggability. If a bug is reported 3 weeks post-ship, can you reconstruct what happened from logs alone?
-* Admin tooling. New operational tasks that need admin UI or rake tasks?
+* Admin tooling. New operational tasks that need admin UI or scripts?
 * Runbooks. For each new failure mode: what's the operational response?
 
 **EXPANSION and SELECTIVE EXPANSION addition:**
@@ -541,7 +672,7 @@ Evaluate:
 * Path dependency. Does this make future changes harder?
 * Knowledge concentration. Documentation sufficient for a new engineer?
 * Reversibility. Rate 1-5: 1 = one-way door, 5 = easily reversible.
-* Ecosystem fit. Aligns with Rails/JS ecosystem direction?
+* Ecosystem fit. Aligns with language/framework ecosystem direction?
 * The 1-year question. Read this plan as a new engineer in 12 months — obvious?
 
 **EXPANSION and SELECTIVE EXPANSION additions:**
@@ -551,7 +682,7 @@ Evaluate:
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY. If no issues or fix is obvious, state what you'll do and move on — don't waste a question. Do NOT proceed until user responds.
 
 ### Section 11: Design & UX Review (skip if no UI scope detected)
-The founder calling in the designer. Not a pixel-level audit — that's /plan-design and /design-review. This is ensuring the plan has design intentionality.
+The CEO calling in the designer. Not a pixel-level audit — that's /plan-design and /design-review. This is ensuring the plan has design intentionality.
 
 Evaluate:
 * Information architecture — what does the user see first, second, third?
@@ -559,7 +690,7 @@ Evaluate:
   FEATURE | LOADING | EMPTY | ERROR | SUCCESS | PARTIAL
 * User journey coherence — storyboard the emotional arc
 * AI slop risk — does the plan describe generic UI patterns?
-* DESIGN.md alignment — does the plan match the stated design system?
+* Design system alignment — does the plan match the stated design system?
 * Responsive intention — is mobile mentioned or afterthought?
 * Accessibility basics — keyboard nav, screen readers, contrast, touch targets
 
@@ -607,7 +738,7 @@ Complete table of every method that can fail, every exception class, rescued sta
 Any row with RESCUED=N, TEST=N, USER SEES=Silent → **CRITICAL GAP**.
 
 ### TODOS.md updates
-Present each potential TODO as its own individual AskUserQuestion. Never batch TODOs — one per question. Never silently skip this step. Follow the format in `.claude/skills/review/TODOS-format.md`.
+Present each potential TODO as its own individual AskUserQuestion. Never batch TODOs — one per question. Never silently skip this step. Follow the format in `.claude/skills/tai/review/TODOS-format.md`.
 
 For each TODO, describe:
 * **What:** One-line description of the work.
@@ -622,7 +753,7 @@ For each TODO, describe:
 Then present options: **A)** Add to TODOS.md **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
 
 ### Scope Expansion Decisions (EXPANSION and SELECTIVE EXPANSION only)
-For EXPANSION and SELECTIVE EXPANSION modes: expansion opportunities and delight items were surfaced and decided in Step 0D (opt-in/cherry-pick ceremony). The decisions are persisted in the Biz plan document. Reference the Biz plan for the full record. Do not re-surface them here — list the accepted expansions for completeness:
+For EXPANSION and SELECTIVE EXPANSION modes: expansion opportunities and delight items were surfaced and decided in Step 0D (opt-in/cherry-pick ceremony). The decisions are persisted in the CEO plan document. Reference the CEO plan for the full record. Do not re-surface them here — list the accepted expansions for completeness:
 * Accepted: {list items added to scope}
 * Deferred: {list items sent to TODOS.md}
 * Skipped: {list items rejected}
@@ -665,7 +796,7 @@ List every ASCII diagram in files this plan touches. Still accurate?
   | Failure modes        | ___ total, ___ CRITICAL GAPS                |
   | TODOS.md updates     | ___ items proposed                          |
   | Scope proposals      | ___ proposed, ___ accepted (EXP + SEL)      |
-  | Biz plan             | written / skipped (HOLD/REDUCTION)           |
+  | CEO plan             | written / skipped (HOLD/REDUCTION)           |
   | Lake Score           | X/Y recommendations chose complete option   |
   | Diagrams produced    | ___ (list types)                            |
   | Stale diagrams found | ___                                         |
@@ -682,29 +813,29 @@ After producing the Completion Summary above, persist the review result:
 
 ```bash
 _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$SLUG
-echo '{"skill":"plan-biz","timestamp":"TIMESTAMP","status":"STATUS","unresolved":N,"critical_gaps":N,"mode":"MODE"}' >> ~/.tai-skills/projects/$SLUG/$BRANCH-reviews.jsonl
+mkdir -p ~/.tai-skills/projects/$_SLUG
+_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+echo "{\"skill\":\"plan-ceo\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"status\":\"STATUS\",\"commit_hash\":\"$_COMMIT\",\"unresolved\":N,\"critical_gaps\":N,\"mode\":\"MODE\"}" >> ~/.tai-skills/projects/$_SLUG/$_BRANCH-reviews.jsonl
 ```
 
-Before running this command, substitute the placeholder values from the Completion Summary you just produced:
-- **TIMESTAMP**: current ISO 8601 datetime (e.g., 2026-03-16T14:30:00)
+Substitute values from the Completion Summary:
+- **TIMESTAMP**: current ISO 8601 datetime
 - **STATUS**: "clean" if 0 unresolved decisions AND 0 critical gaps; otherwise "issues_open"
 - **unresolved**: number from "Unresolved decisions" in the summary
 - **critical_gaps**: number from "Failure modes: ___ CRITICAL GAPS" in the summary
 - **MODE**: the mode the user selected (SCOPE_EXPANSION / SELECTIVE_EXPANSION / HOLD_SCOPE / SCOPE_REDUCTION)
+- **COMMIT**: output of `git rev-parse --short HEAD`
 
 ## Review Readiness Dashboard
 
-After completing the review, read the review log and config to display the dashboard.
+After completing the review, read the review log to display the dashboard.
 
 ```bash
 _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-cat ~/.tai-skills/projects/$SLUG/$BRANCH-reviews.jsonl 2>/dev/null || echo "NO_REVIEWS"
-echo "---CONFIG---"
-echo "false"
+cat ~/.tai-skills/projects/$_SLUG/$_BRANCH-reviews.jsonl 2>/dev/null || echo "NO_REVIEWS"
 ```
 
-Parse the output. Find the most recent entry for each skill (plan-biz, plan-eng, plan-design, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
+Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng, plan-design, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
 
 ```
 +====================================================================+
@@ -713,7 +844,7 @@ Parse the output. Find the most recent entry for each skill (plan-biz, plan-eng,
 | Review          | Runs | Last Run            | Status    | Required |
 |-----------------|------|---------------------|-----------|----------|
 | Eng Review      |  1   | 2026-03-16 15:00    | CLEAR     | YES      |
-| Biz Review      |  0   | —                   | —         | no       |
+| CEO Review      |  0   | —                   | —         | no       |
 | Design Review   |  0   | —                   | —         | no       |
 +--------------------------------------------------------------------+
 | VERDICT: CLEARED — Eng Review passed                                |
@@ -721,26 +852,45 @@ Parse the output. Find the most recent entry for each skill (plan-biz, plan-eng,
 ```
 
 **Review tiers:**
-- **Eng Review (required by default):** The only review that gates shipping. Covers architecture, code quality, tests, performance. Can be disabled globally with setting \`TAI_SKIP_ENG_REVIEW=true\` env var (the "don't bother me" setting).
-- **Biz Review (optional):** Use your judgment. Recommend it for big product/business changes, new user-facing features, or scope decisions. Skip for bug fixes, refactors, infra, and cleanup.
+- **Eng Review (required by default):** The only review that gates shipping. Covers architecture, code quality, tests, performance. Can be disabled globally with setting `TAI_SKIP_ENG_REVIEW=true` env var.
+- **CEO Review (optional):** Use your judgment. Recommend it for big product/business changes, new user-facing features, or scope decisions. Skip for bug fixes, refactors, infra, and cleanup.
 - **Design Review (optional):** Use your judgment. Recommend it for UI/UX changes. Skip for backend-only, infra, or prompt-only changes.
 
 **Verdict logic:**
-- **CLEARED**: Eng Review has >= 1 entry within 7 days with status "clean" (or \`skip_eng_review\` is \`true\`)
+- **CLEARED**: Eng Review has >= 1 entry within 7 days with status "clean" (or `skip_eng_review` is `true`)
 - **NOT CLEARED**: Eng Review missing, stale (>7 days), or has open issues
-- Biz and Design reviews are shown for context but never block shipping
-- If \`skip_eng_review\` config is \`true\`, Eng Review shows "SKIPPED (global)" and verdict is CLEARED
+- CEO and Design reviews are shown for context but never block shipping
+- If `skip_eng_review` config is `true`, Eng Review shows "SKIPPED (global)" and verdict is CLEARED
+
+**Staleness detection:** After displaying the dashboard, check if any existing reviews may be stale:
+- For each review entry that has a `commit_hash` field: compare it against the current HEAD. If different, count elapsed commits: `git rev-list --count STORED_COMMIT..HEAD`. Display: "Note: {skill} review from {date} may be stale — {N} commits since review"
+- If all reviews match the current HEAD, do not display any staleness notes
+
+## Next Steps — Review Chaining
+
+After displaying the Review Readiness Dashboard, recommend the next review(s) based on what this CEO review discovered.
+
+**Recommend /plan-eng if eng review is not skipped globally** — check the dashboard output for `skip_eng_review`. If this CEO review expanded scope, changed architectural direction, or accepted scope expansions, emphasize that a fresh eng review is needed. If an eng review already exists in the dashboard but the commit hash shows it predates this CEO review, note that it may be stale and should be re-run.
+
+**Recommend /plan-design if UI scope was detected** — specifically if Section 11 (Design & UX Review) was NOT skipped, or if accepted scope expansions included UI-facing features. In SCOPE REDUCTION mode, skip this recommendation.
+
+**If both are needed, recommend eng review first** (required gate), then design review.
+
+Use AskUserQuestion to present the next step. Include only applicable options:
+- **A)** Run /plan-eng next (required gate)
+- **B)** Run /plan-design next (only if UI scope detected)
+- **C)** Skip — I'll handle reviews manually
 
 ## docs/designs Promotion (EXPANSION and SELECTIVE EXPANSION only)
 
-At the end of the review, if the vision produced a compelling feature direction, offer to promote the Biz plan to the project repo. AskUserQuestion:
+At the end of the review, if the vision produced a compelling feature direction, offer to promote the CEO plan to the project repo. AskUserQuestion:
 
 "The vision from this review produced {N} accepted scope expansions. Want to promote it to a design doc in the repo?"
 - **A)** Promote to `docs/designs/{FEATURE}.md` (committed to repo, visible to the team)
 - **B)** Keep in `~/.tai-skills/projects/` only (local, personal reference)
 - **C)** Skip
 
-If promoted, copy the Biz plan content to `docs/designs/{FEATURE}.md` (create the directory if needed) and update the `status` field in the original Biz plan from `ACTIVE` to `PROMOTED`.
+If promoted, copy the CEO plan content to `docs/designs/{FEATURE}.md` (create the directory if needed) and update the `status` field in the original CEO plan from `ACTIVE` to `PROMOTED`.
 
 ## Formatting Rules
 * NUMBER issues (1, 2, 3...) and LETTERS for options (A, B, C...).
@@ -780,7 +930,7 @@ If promoted, copy the Biz plan content to `docs/designs/{FEATURE}.md` (create th
   │             │              │  risk check  │              │                    │
   │ Error map   │ Full + chaos │ Full + chaos │ Full         │ Critical paths     │
   │             │  scenarios   │ for accepted │              │  only              │
-  │ Biz plan    │ Written      │ Written      │ Skipped      │ Skipped            │
+  │ CEO plan    │ Written      │ Written      │ Skipped      │ Skipped            │
   │ Phase 2/3   │ Map accepted │ Map accepted │ Note it      │ Skip               │
   │ planning    │              │ cherry-picks │              │                    │
   │ Design      │ "Inevitable" │ If UI scope  │ If UI scope  │ Skip               │

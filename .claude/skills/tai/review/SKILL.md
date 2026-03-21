@@ -151,6 +151,41 @@ Run `git diff origin/<base>` to get the full diff. This includes both committed 
 
 ---
 
+## Step 3.5: Scope drift detection
+
+Before reviewing code quality, check whether the diff matches its stated intent.
+
+1. **Gather intent signals:**
+   - Read commit messages on this branch: `git log origin/<base>..HEAD --format="%s%n%b"`
+   - Read PR description if available: `gh pr view --json body -q .body 2>/dev/null`
+   - Read TODOS.md if it exists — check for items this branch claims to address
+   - Check branch name for intent clues
+
+2. **Compare diff against intent:**
+   - **Scope creep:** Are there changes in the diff that don't match any stated intent? Files touched that have nothing to do with the branch's purpose?
+   - **Missing requirements:** Does the intent describe work that ISN'T in the diff? Features mentioned in commits/PR but not implemented?
+   - **Unrelated cleanup:** Changes that are fine individually but unrelated to this PR's goal (rename refactors, formatting, unrelated fixes)
+
+3. **Output (only if drift detected):**
+   ```
+   ⚠ SCOPE DRIFT DETECTED
+
+   Stated intent: {summary of what commits/PR say this branch does}
+
+   SCOPE CREEP (changes beyond stated intent):
+   - {file} — {what it does that's unrelated}
+
+   MISSING (stated but not implemented):
+   - {feature/fix described in commits but not in diff}
+
+   UNRELATED CLEANUP (not harmful, but clutters the diff):
+   - {file} — {what changed}
+   ```
+
+   If no drift detected, skip this step silently.
+
+---
+
 ## Step 4: Two-pass review
 
 Apply the checklist against the diff in two passes:
@@ -314,3 +349,29 @@ If no documentation files exist, skip this step silently.
 - **Be terse.** One line problem, one line fix. No preamble.
 - **Only flag real problems.** Skip anything that's fine.
 - **Use Greptile reply templates from greptile-triage.md.** Every reply includes evidence. Never post vague replies.
+
+## Review Log
+
+After completing the review, persist the result with the current commit hash for staleness tracking:
+
+```bash
+_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
+_BRANCH_SAFE=$(git branch --show-current | tr '/' '-')
+_COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+_COMMITS_ON_BRANCH=$(git rev-list --count origin/<base>..HEAD 2>/dev/null || echo "0")
+mkdir -p "$HOME/.tai-skills/projects/$_SLUG"
+echo "{\"skill\":\"review\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"status\":\"STATUS\",\"commit_hash\":\"$_COMMIT\",\"commits_on_branch\":$_COMMITS_ON_BRANCH,\"findings\":N,\"auto_fixed\":M,\"scope_drift\":DRIFT}" >> "$HOME/.tai-skills/projects/$_SLUG/${_BRANCH_SAFE}-reviews.jsonl"
+```
+
+Substitute: STATUS = "clean" if 0 findings or "issues_found", N = total findings, M = auto-fixed count, DRIFT = true/false (whether scope drift was detected in Step 3.5).
+
+## Review Staleness
+
+When displaying the Review Readiness Dashboard (in /ship or /plan-eng), check review staleness:
+
+1. Read the last review entry's `commit_hash`
+2. Count commits since that hash: `git rev-list --count {commit_hash}..HEAD`
+3. If >0 commits since last review, show: `⚠ STALE — N commits since last review at {commit_hash}`
+4. If 0 commits, show: `✓ FRESH — reviewed at current HEAD`
+
+A stale review doesn't block shipping but should be flagged visibly in the dashboard.
