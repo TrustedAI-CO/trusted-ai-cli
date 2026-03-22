@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## [0.4.5.0] - 2026-03-23
+
+### Added
+
+- **skills**: Add autonomous plan executor skill (/tai-execute) — fills the gap between
+  /tai-plan-eng and /tai-ship. Thin orchestrator dispatches fresh-context subagents per task,
+  supports wave-based parallel execution, 4-tier deviation rules, self-verification,
+  checkpoint protocol, and resume from interruption. Inspired by GSD's fresh-context pattern.
+- **todos**: Add stress-test TODO for /tai-execute parallel wave execution.
+
 ## v0.14.0 (2026-03-22)
 
 ### Features
