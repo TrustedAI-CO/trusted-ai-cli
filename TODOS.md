@@ -96,3 +96,17 @@
 
 **Depends on:** File-based project state (.tai/ directory).
 
+## Stress-test /tai-execute parallel wave execution
+
+**What:** Run /tai-execute on a 10+ task plan with 3+ waves to stress-test parallel execution, file overlap detection, and checkpoint concurrency handling.
+
+**Why:** Parallel execution is the highest-risk feature in /tai-execute. Real-world stress testing will surface edge cases that spec review can't predict — race conditions, state file contention, transitive file conflicts.
+
+**Pros:** Catches real bugs before users hit them. Builds confidence in the wave system.
+
+**Cons:** Requires a sufficiently complex plan to exercise all code paths.
+
+**Context:** /tai-execute ships with wave-based parallel execution, deviation rules, and checkpoint protocol. This TODO is a validation pass specifically targeting the parallel execution path. Priority: P1 (after /tai-execute ships). Effort: S (human: ~2h / CC: ~15 min).
+
+**Depends on:** /tai-execute skill shipping.
+
