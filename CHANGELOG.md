@@ -1,19 +1,39 @@
 # CHANGELOG
 
 
-## [0.4.5.0] - 2026-03-23
+## v0.15.0 (2026-03-22)
 
-### Added
+### Chores
 
-- **skills**: Add autonomous plan executor skill (/tai-execute) — fills the gap between
-  /tai-plan-eng and /tai-ship. Thin orchestrator dispatches fresh-context subagents per task,
-  supports wave-based parallel execution, 4-tier deviation rules, self-verification,
-  checkpoint protocol, and resume from interruption. Inspired by GSD's fresh-context pattern.
-- **todos**: Add stress-test TODO for /tai-execute parallel wave execution.
+- Bump version and changelog (v0.4.5.0)
+  ([`957afe6`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/957afe6c86c7d6802f62bdbbaca0670e3ef4b0e7))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+### Features
+
+- **skills**: Add autonomous plan executor skill (/tai-execute)
+  ([`7ed6a3c`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/7ed6a3cd5444d875073d5c7dd11fb33bf4aceba7))
+
+Thin orchestrator + fresh subagent architecture that fills the gap between /tai-plan-eng and
+  /tai-ship. Supports wave-based parallel execution, 4-tier deviation rules, checkpoint protocol,
+  self-verification, and resume from interruption. Adds stress-test TODO for parallel wave
+  execution.
+
 
 ## v0.14.0 (2026-03-22)
 
 ### Features
+
+- **skills**: Add codebase mapping skill (/tai-map)
+  ([`0eb1a7f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0eb1a7f23e121076cdfbb30e32bdcc19a9849efb))
+
+Spawns 4 parallel agents to analyze stack, architecture, conventions, and concerns. Produces
+  structured Markdown in .tai/map/ that other skills can consume as context. Inspired by GSD's
+  map-codebase pattern.
+
+Also updates TODOS.md with GSD adoption roadmap items (context monitor, file-based state, /tai-map,
+  /tai-init, fresh-context architecture) including spike findings on statusLine API constraints.
 
 - **skills**: Add codebase mapping skill (/tai-map)
   ([#68](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/68),
