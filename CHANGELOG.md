@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.14.0 (2026-03-22)
+
+### Features
+
+- **skills**: Add codebase mapping skill (/tai-map)
+  ([#68](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/68),
+  [`2921b71`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2921b717d0837c194f88a00e282d14c8e094cad4))
+
+Spawns 4 parallel agents to analyze stack, architecture, conventions, and concerns. Produces
+  structured Markdown in .tai/map/ that other skills can consume as context. Inspired by GSD's
+  map-codebase pattern.
+
+Also updates TODOS.md with GSD adoption roadmap items (context monitor, file-based state, /tai-map,
+  /tai-init, fresh-context architecture) including spike findings on statusLine API constraints.
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+
 ## v0.13.0 (2026-03-21)
 
 ### Features
