@@ -203,6 +203,9 @@ def compile_cmd(
     debug: bool = typer.Option(
         False, "--debug", help="Keep intermediate .typ file."
     ),
+    no_logo: bool = typer.Option(
+        False, "--no-logo", help="Omit logo from the first page."
+    ),
 ) -> None:
     """Compile a Markdown or Typst file to PDF."""
     from tai.core import typst as typst_mod
@@ -234,7 +237,8 @@ def compile_cmd(
             )
 
         _compile_markdown(
-            typst_bin, file, output_path, template_name=template, debug=debug
+            typst_bin, file, output_path, template_name=template, debug=debug,
+            no_logo=no_logo,
         )
 
     except (TypstError, TemplateError, MermaidError) as exc:
@@ -280,6 +284,7 @@ def _compile_markdown(
     *,
     template_name: str | None,
     debug: bool,
+    no_logo: bool = False,
 ) -> None:
     """Convert markdown to PDF, optionally applying a template."""
     from tai.core import typst as typst_mod
@@ -352,7 +357,8 @@ def _compile_markdown(
                 compile_md_file = tmp_md
 
             typ_content = _wrap_md_with_template(
-                compile_md_file, template_dir, frontmatter=frontmatter
+                compile_md_file, template_dir, frontmatter=frontmatter,
+                no_logo=no_logo,
             )
         else:
             # No template — write temp file if mermaid changed content
@@ -553,6 +559,7 @@ def _wrap_md_with_template(
     template_dir: Path,
     *,
     frontmatter: dict[str, str] | None = None,
+    no_logo: bool = False,
 ) -> str:
     """Generate a .typ file that imports the template and renders markdown."""
     md_abs = md_file.resolve().as_posix()
@@ -575,6 +582,8 @@ def _wrap_md_with_template(
 
     # Build template() call with frontmatter metadata
     template_args = ["company-name: company-name"]
+    if no_logo:
+        template_args.append("show-logo: false")
     for key in ("title", "subtitle", "author", "organization", "date", "version"):
         if key in frontmatter:
             template_args.append(
