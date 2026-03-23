@@ -14,6 +14,7 @@
   organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
   version: none,
+  show-logo: true,
 ) = {
   _article(
     title: if title != none { title } else { company-name },
@@ -22,6 +23,7 @@
     organization: organization,
     date: date,
     version: version,
+    show-logo: show-logo,
     body,
   )
 }

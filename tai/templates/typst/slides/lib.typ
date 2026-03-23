@@ -16,6 +16,7 @@
   organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
   version: none,
+  show-logo: true,
 ) = {
   content-slide(
     title: if title != none { title } else { company-name },
@@ -39,6 +40,7 @@
   organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
   version: none,
+  show-logo: true,
 ) = {
   import "@preview/cmarker:0.1.8"
 
@@ -50,6 +52,7 @@
     organization: organization,
     date: date,
     version: version,
+    show-logo: show-logo,
   )
 
   // Split on --- (horizontal rule) as slide separator
