@@ -1,13 +1,24 @@
 # CHANGELOG
 
 
-## [0.4.6.0] - 2026-03-23
+## v0.15.1 (2026-03-23)
 
-### Changed
+### Bug Fixes
 
-- **skills(plan-ceo)**: Default to fast mode (premise + risks + verdict). Say "deep" for full 11-section interactive review. Batch AskUserQuestion per section instead of per issue.
-- **skills(plan-eng)**: Default to fast mode (scope + diagram + concerns). Say "deep" for full interactive review. Batch AskUserQuestion per section instead of per issue.
-- **skills(ship)**: Default to fast mode — skip test coverage audit, Greptile review, TODOS.md, and design review. Say "thorough" for full workflow. Core flow (tests, code review, version, changelog, PR) unchanged.
+- Trigger release for v0.4.6.0
+  ([`d96f436`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d96f436267d8d4f980a50e31d8fe12d8b0c0be42))
+
+### Chores
+
+- Bump version and changelog (v0.4.6.0)
+  ([`12ec298`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/12ec298e418ef977ce86c663033962c82c32398a))
+
+Speed up plan-ceo, plan-eng, and ship skills: - Default to fast mode (non-interactive) for plan-ceo
+  and plan-eng - Batch AskUserQuestion per section instead of per issue in deep mode - Ship skips
+  optional steps (coverage audit, Greptile, TODOS, design review) by default - Say "deep"/"thorough"
+  to get the full interactive workflows
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 
 ## v0.15.0 (2026-03-22)
