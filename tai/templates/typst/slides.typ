@@ -26,6 +26,7 @@
   organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
   version: none,
+  show-logo: true,
 ) = {
   set page(
     paper: "presentation-16-9",
@@ -36,8 +37,10 @@
   )
 
   // Logo
-  image("brand/logo.png", width: 5cm)
-  v(0.6cm)
+  if show-logo {
+    image("brand/logo.png", width: 5cm)
+    v(0.6cm)
+  }
 
   // Title
   block(width: 85%)[

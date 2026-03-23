@@ -12,6 +12,7 @@
   organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
   version: none,
+  show-logo: true,
   body,
 ) = {
   set document(title: title, author: author)
@@ -34,8 +35,10 @@
   )
 
   // ── Logo ──────────────────────────────────
-  image("brand/logo.png", width: 4cm)
-  v(space-md)
+  if show-logo {
+    image("brand/logo.png", width: 4cm)
+    v(space-md)
+  }
 
   // ── Title block ────────────────────────────
   text(font: font-title, size: size-h1, weight: "bold", fill: color-primary, title)
