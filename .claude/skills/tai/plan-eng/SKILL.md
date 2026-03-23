@@ -101,9 +101,13 @@ Keep these in English regardless of language:
 - Technical terms: SQL, CSRF, API, LLM, XSS, etc.
 Translate all prose, explanations, recommendations, and AskUserQuestion text.
 
-## Quick Mode
+## Mode Selection
 
-If the user says "quick", "fast", or "light" — run the abbreviated version:
+**Default mode is FAST.** The fast review runs automatically unless the user says "deep", "full", or "thorough".
+
+### Fast Mode (default)
+
+Run this abbreviated version. No AskUserQuestion stops. Output as a single document, log result, and stop.
 
 1. **Scope challenge:** Answer 3 questions (2-3 sentences each):
    - What existing code already solves sub-problems?
@@ -116,9 +120,9 @@ If the user says "quick", "fast", or "light" — run the abbreviated version:
 
 4. **Verdict:** One sentence — Proceed / Simplify first / Rethink / Address [specific concern]
 
-Output as a single document. No AskUserQuestion stops. Log result and stop.
-
 ---
+
+### Deep Mode (triggered by "deep", "full", or "thorough")
 
 Review this plan thoroughly before making any code changes. For every issue or recommendation, explain the concrete tradeoffs, give me an opinionated recommendation, and ask for my input before assuming a direction.
 
@@ -176,6 +180,25 @@ Always work through the full interactive review: one section at a time (Architec
 
 **Critical: Once the user accepts or rejects a scope reduction recommendation, commit fully.** Do not re-argue for smaller scope during later review sections. Do not silently reduce scope or skip planned components.
 
+## AskUserQuestion Batching Rule (Deep Mode)
+
+**Batch all issues per section into ONE AskUserQuestion call.** Do NOT stop once per issue. Present all issues for a section together, numbered, with recommendations and options for each. The user responds to all at once. Only proceed to the next section after the user responds.
+
+Format:
+```
+Issues found in [Section Name]:
+
+1. [Issue title]
+   [Description] — RECOMMENDATION: [X] because [reason]
+   Options: A) ... B) ... C) ...
+
+2. [Issue title]
+   [Description] — RECOMMENDATION: [X] because [reason]
+   Options: A) ... B) ... C) ...
+
+Reply with your choices (e.g., "1A, 2B") or ask about any.
+```
+
 ## Review Sections (after scope is agreed)
 
 ### 1. Architecture review
@@ -188,7 +211,7 @@ Evaluate:
 * Whether key flows deserve ASCII diagrams in the plan or in code comments.
 * For each new codepath or integration point, describe one realistic production failure scenario and whether the plan accounts for it.
 
-**STOP.** For each issue found in this section, call AskUserQuestion individually. One issue per call. Present options, state your recommendation, explain WHY. Do NOT batch multiple issues into one AskUserQuestion. Only proceed to the next section after ALL issues in this section are resolved.
+**STOP.** Batch all issues in this section into ONE AskUserQuestion (see Batching Rule above). Only proceed to the next section after the user responds.
 
 ### 2. Code quality review
 Evaluate:
@@ -199,14 +222,14 @@ Evaluate:
 * Areas that are over-engineered or under-engineered relative to my preferences.
 * Existing ASCII diagrams in touched files — are they still accurate after this change?
 
-**STOP.** For each issue found in this section, call AskUserQuestion individually. One issue per call. Present options, state your recommendation, explain WHY. Do NOT batch multiple issues into one AskUserQuestion. Only proceed to the next section after ALL issues in this section are resolved.
+**STOP.** Batch all issues in this section into ONE AskUserQuestion (see Batching Rule above). Only proceed to the next section after the user responds.
 
 ### 3. Test review
 Make a diagram of all new UX, new data flow, new codepaths, and new branching if statements or outcomes. For each, note what is new about the features discussed in this branch and plan. Then, for each new item in the diagram, make sure there is a corresponding test.
 
 For LLM/prompt changes: check the "Prompt/LLM changes" file patterns listed in CLAUDE.md. If this plan touches ANY of those patterns, state which eval suites must be run, which cases should be added, and what baselines to compare against. Then use AskUserQuestion to confirm the eval scope with the user.
 
-**STOP.** For each issue found in this section, call AskUserQuestion individually. One issue per call. Present options, state your recommendation, explain WHY. Do NOT batch multiple issues into one AskUserQuestion. Only proceed to the next section after ALL issues in this section are resolved.
+**STOP.** Batch all issues in this section into ONE AskUserQuestion (see Batching Rule above). Only proceed to the next section after the user responds.
 
 ### Test Plan Artifact
 
@@ -249,13 +272,13 @@ Evaluate:
 * Caching opportunities.
 * Slow or high-complexity code paths.
 
-**STOP.** For each issue found in this section, call AskUserQuestion individually. One issue per call. Present options, state your recommendation, explain WHY. Do NOT batch multiple issues into one AskUserQuestion. Only proceed to the next section after ALL issues in this section are resolved.
+**STOP.** Batch all issues in this section into ONE AskUserQuestion (see Batching Rule above). Only proceed to the next section after the user responds.
 
 ## CRITICAL RULE — How to ask questions
 Follow the AskUserQuestion format from the Preamble above. Additional rules for plan reviews:
-* **One issue = one AskUserQuestion call.** Never combine multiple issues into one question.
-* Describe the problem concretely, with file and line references.
-* Present 2-3 options, including "do nothing" where that's reasonable.
+* **Batch all issues per section into ONE AskUserQuestion.** Present all issues together, numbered, with recommendations and options. The user responds to all at once (e.g., "1A, 2B, 3A").
+* Describe each problem concretely, with file and line references.
+* Present 2-3 options per issue, including "do nothing" where that's reasonable.
 * For each option, specify in one line: effort (human: ~X / CC: ~Y), risk, and maintenance burden. If the complete option is only marginally more effort than the shortcut with CC, recommend the complete option.
 * **Map the reasoning to my engineering preferences above.** One sentence connecting your recommendation to a specific preference (DRY, explicit > clever, minimal diff, etc.).
 * Label with issue NUMBER + option LETTER (e.g., "3A", "3B").
