@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## [0.4.6.0] - 2026-03-23
+
+### Changed
+
+- **skills(plan-ceo)**: Default to fast mode (premise + risks + verdict). Say "deep" for full 11-section interactive review. Batch AskUserQuestion per section instead of per issue.
+- **skills(plan-eng)**: Default to fast mode (scope + diagram + concerns). Say "deep" for full interactive review. Batch AskUserQuestion per section instead of per issue.
+- **skills(ship)**: Default to fast mode — skip test coverage audit, Greptile review, TODOS.md, and design review. Say "thorough" for full workflow. Core flow (tests, code review, version, changelog, PR) unchanged.
+
+
 ## v0.15.0 (2026-03-22)
 
 ### Chores
