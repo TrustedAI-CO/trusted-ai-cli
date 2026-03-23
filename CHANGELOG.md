@@ -1,6 +1,39 @@
 # CHANGELOG
 
 
+## v0.16.1 (2026-03-23)
+
+### Bug Fixes
+
+- **pdf**: Pass show-logo through lib.typ wrappers
+  ([#72](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/72),
+  [`81ae11f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/81ae11f05ac1aaa4ca63fe7327fc2db475707421))
+
+* feat(pdf): add show-logo parameter to Typst templates
+
+Each template function now accepts a `show-logo: true` parameter (default true) that controls logo
+  rendering on the first page. When false, the logo block is skipped entirely.
+
+* feat(pdf): add --no-logo flag to compile command
+
+Thread a new --no-logo option through compile_cmd → _compile_markdown → _wrap_md_with_template,
+  which injects show-logo: false into the Typst template arguments when set.
+
+* test(pdf): add tests for --no-logo flag
+
+Cover _wrap_md_with_template with no_logo=True/False and verify the CLI accepts the --no-logo flag
+  without error.
+
+* fix(pdf): pass show-logo through lib.typ wrappers
+
+The lib.typ entry points for article, report, and slides were not accepting or forwarding the
+  show-logo parameter to the underlying template functions, causing a Typst compilation error.
+
+---------
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+
 ## v0.16.0 (2026-03-23)
 
 ### Features
