@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from typer.testing import CliRunner
 
-from tai.commands.pdf import app
+from tai.commands.pdf import _wrap_md_with_template, app
 
 runner = CliRunner()
 
@@ -311,6 +311,57 @@ class TestCompile:
         assert result.exit_code == 1
         assert "No templates installed" in result.output
         assert "setup-templates" in result.output
+
+
+# ── --no-logo tests ─────────────────────────────────────────────────────────
+
+
+class TestNoLogo:
+    @pytest.fixture
+    def template_env(self, tmp_path: Path):
+        """Create a minimal template dir and brand dir for _wrap_md_with_template."""
+        tpl_dir = tmp_path / "article"
+        tpl_dir.mkdir()
+        (tpl_dir / "lib.typ").write_text("#let article(doc, ..args) = { doc }\n")
+
+        brand_dir = tmp_path / "brand"
+        brand_dir.mkdir()
+        (brand_dir / "brand.toml").write_text(
+            '[company]\nname = "TestCo"\n[colors]\nprimary = "#000"\n'
+        )
+
+        md_file = tmp_path / "doc.md"
+        md_file.write_text("---\ntitle: Test\nauthor: Me\n---\n# Hello\n")
+
+        return tpl_dir, brand_dir, md_file
+
+    def test_wrap_md_no_logo_includes_show_logo_false(self, template_env) -> None:
+        tpl_dir, brand_dir, md_file = template_env
+        with patch("tai.commands.pdf.brand_install_dir", return_value=brand_dir):
+            result = _wrap_md_with_template(md_file, tpl_dir, no_logo=True)
+        assert "show-logo: false" in result
+
+    def test_wrap_md_default_omits_show_logo(self, template_env) -> None:
+        tpl_dir, brand_dir, md_file = template_env
+        with patch("tai.commands.pdf.brand_install_dir", return_value=brand_dir):
+            result = _wrap_md_with_template(md_file, tpl_dir)
+        assert "show-logo" not in result
+
+    def test_compile_no_logo_flag_accepted(self, tmp_path: Path) -> None:
+        """The --no-logo flag should be accepted without error."""
+        md_file = tmp_path / "doc.md"
+        md_file.write_text("# Hello")
+
+        version_result = MagicMock(stdout="typst 0.13.0")
+        compile_result = MagicMock(returncode=0, stderr="")
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/typst"),
+            patch("subprocess.run", side_effect=[version_result, compile_result]),
+            patch("tai.commands.pdf._pick_template", return_value=None),
+        ):
+            result = runner.invoke(app, ["compile", str(md_file), "--no-logo"])
+        assert result.exit_code == 0
 
 
 # ── templates command tests ──────────────────────────────────────────────────
