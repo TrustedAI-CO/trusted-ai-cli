@@ -1,6 +1,34 @@
 # CHANGELOG
 
 
+## v0.16.0 (2026-03-23)
+
+### Features
+
+- **pdf**: Add --no-logo flag to omit logo from first page
+  ([#71](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/71),
+  [`40a7f1f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/40a7f1faf01c8a5f09d87935c43c8fef94e7f566))
+
+* feat(pdf): add show-logo parameter to Typst templates
+
+Each template function now accepts a `show-logo: true` parameter (default true) that controls logo
+  rendering on the first page. When false, the logo block is skipped entirely.
+
+* feat(pdf): add --no-logo flag to compile command
+
+Thread a new --no-logo option through compile_cmd → _compile_markdown → _wrap_md_with_template,
+  which injects show-logo: false into the Typst template arguments when set.
+
+* test(pdf): add tests for --no-logo flag
+
+Cover _wrap_md_with_template with no_logo=True/False and verify the CLI accepts the --no-logo flag
+  without error.
+
+---------
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+
 ## v0.15.1 (2026-03-23)
 
 ### Bug Fixes
