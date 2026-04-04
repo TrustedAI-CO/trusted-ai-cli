@@ -1,25 +1,104 @@
 # CHANGELOG
 
 
-## v0.17.0 (2026-04-04)
-
-### Features
-
-- **sales**: Add Hnavi job entry submission with interactive prompts
-  - Parse entry form structure (questions, team members)
-  - `tai sales hnavi entry <job_id>` command with TTY validation
-  - Support for entry requirement answers and self-introduction
-
-- **sales**: Add sales skill for Claude Code
-  - Comprehensive documentation in `.claude/skills/tai/sales/SKILL.md`
-  - JSON output examples and workflow guides
+## v0.18.0 (2026-04-04)
 
 ### Bug Fixes
 
-- **sales**: Fix Aimitsu project listing with PrimeVue `.p-card` selectors
-- **sales**: Fix Aimitsu project details extraction (dt/dd pairs)
-- **sales**: Fix Aimitsu message sending with confirmation dialog handling
-- **sales**: Extract full project info: background, details, budget, schedule, etc.
+- **sales**: Correct HTML selectors for Hnavi job listings
+  ([`220c6ad`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/220c6ad88a696435c490d3663017d5f13d1c26f6))
+
+- Fix list_jobs() to use correct CSS selectors matching actual page structure - Job cards are in
+  div.card.mb-4.shadow.position-relative containers - Extract display No. (e.g., 202604020007)
+  separately from URL ID - Add _parse_job_cards() helper method for parsing - Change tag_filter
+  param to category param (e.g., "AI", "システム") - Add include_saas param to fetch jobs from both tabs
+  - AI jobs are in the SaaS tab, not the main 開発・制作 tab - Update CLI to use --category/-c and --saas
+  options - Update docs to reflect new command options
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+### Continuous Integration
+
+- Exclude sales modules from coverage (require playwright)
+  ([`d5e655f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d5e655fae57680830d9c2418773ff40242b11614))
+
+Sales modules require the optional `playwright` dependency which is not installed in CI. Exclude
+  them from coverage requirements.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+### Documentation
+
+- **changelog**: Update v0.17.0 with sales improvements
+  ([`80364ab`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/80364abc6e97a31ecc16f4166a7e2e9224c7d20d))
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+### Features
+
+- **sales**: Add sales command for Hnavi and Aimitsu platforms
+  ([`5212758`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5212758f62e3fcbe19d88369e3411266cd5686e0))
+
+Add new `tai sales` command with browser automation for managing sales pipelines on two Japanese B2B
+  platforms:
+
+- `tai sales hnavi jobs` - list AI jobs - `tai sales hnavi active` - list active negotiations - `tai
+  sales hnavi send <id> <msg>` - send message - `tai sales aimitsu list` - list projects - `tai
+  sales aimitsu show <no>` - show project details - `tai sales aimitsu send <no> <msg>` - send
+  message
+
+Features: - Headless browser automation with Playwright - Session caching for faster subsequent
+  commands - Credentials from environment variables (HNAVI_EMAIL, etc.) - --visible flag for
+  debugging - --json output support
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+- **sales**: Extract full job details from Hnavi
+  ([`3a64d62`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3a64d620dbfe2c186d9e5468d0ef7cd6e210d17e))
+
+- Update get_job() to extract all job information: - Display No., status, deadline, category - Max
+  companies, company size, location, website status - Entry conditions (numbered list) - Inquiry
+  content and hearing content - Support lookup by display No. (12 digits) in CLI - Improve CLI job
+  detail display with formatted output
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+- **sales**: Fix Aimitsu send, add Hnavi entry, add skill
+  ([`6571b99`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/6571b9932309a77b8a571db238a24c9e02b36445))
+
+Aimitsu improvements: - Fix list_projects to use PrimeVue .p-card selectors - Fix get_project to
+  extract dt/dd pairs for full project details - Fix send_message to handle confirmation dialog -
+  Extract all project fields: background, details, budget, schedule, etc.
+
+Hnavi improvements: - Add entry form parsing (questions, team members) - Add entry submission with
+  interactive prompts - Add entry command with TTY validation
+
+Other: - Add sales skill for Claude Code (.claude/skills/tai/sales/) - Update docs with entry
+  command usage
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+### Testing
+
+- **sales**: Add tests and documentation for sales command
+  ([`57aee51`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/57aee51457a85f90a039054c7b9b9d4d03f87252))
+
+- Add tests for sales CLI commands (test_sales_cmd.py) - Add tests for core sales module
+  (test_sales.py) - Add tests for skills module (test_skills.py) - Add tests for main.py update
+  banner - Update docs.py with sales command reference - Coverage now at 80.06%
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+- **sales**: Skip SalesBrowser tests when playwright unavailable
+  ([`bb4020d`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bb4020de81d8a5566d661072366df2a87700c5d9))
+
+Add requires_playwright decorator to skip tests that need the playwright package when it's not
+  installed (e.g., in CI).
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+
+## v0.17.0 (2026-04-04)
 
 
 ## v0.16.1 (2026-03-23)
