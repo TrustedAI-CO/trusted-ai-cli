@@ -179,6 +179,39 @@ tai api call <path> -X POST -d '{"key": "value"}'
 tai api endpoints                  # list all API endpoints
 ```
 
+### Sales
+
+Manage sales pipelines on Hnavi (発注ナビ) and Aimitsu (アイミツ) platforms.
+Requires `playwright` extra: `pip install 'trusted-ai-cli[sales]'`
+
+```
+tai sales status                   # show summary of both platforms
+tai sales login                    # test login to both platforms
+
+# Hnavi (発注ナビ)
+tai sales hnavi                    # show hnavi summary
+tai sales hnavi jobs               # list available AI jobs
+tai sales hnavi jobs <id>          # show job details
+tai sales hnavi active             # list active negotiations
+tai sales hnavi active <id>        # show negotiation details + messages
+tai sales hnavi send <id> "msg"    # send message to negotiation
+tai sales hnavi send <id> "msg" --file path  # with attachment
+
+# Aimitsu (アイミツ)
+tai sales aimitsu                  # show aimitsu summary
+tai sales aimitsu list             # list projects in negotiation
+tai sales aimitsu show <no>        # show project details
+tai sales aimitsu send <no> "msg"  # send message to project
+```
+
+Environment variables for credentials:
+- `HNAVI_EMAIL`, `HNAVI_PASSWORD`
+- `AIMITSU_EMAIL`, `AIMITSU_PASSWORD`
+
+Options:
+- `--visible` — show browser window (default: headless)
+- `--json` — output as JSON
+
 ## Non-Interactive Usage (Agents & CI)
 
 tai detects whether stdin is a TTY. In non-interactive contexts:
