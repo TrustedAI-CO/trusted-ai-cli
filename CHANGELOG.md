@@ -1,6 +1,9 @@
 # CHANGELOG
 
 
+## v0.17.0 (2026-04-04)
+
+
 ## v0.16.1 (2026-03-23)
 
 ### Bug Fixes
@@ -128,6 +131,14 @@ Also updates TODOS.md with GSD adoption roadmap items (context monitor, file-bas
   /tai-init, fresh-context architecture) including spike findings on statusLine API constraints.
 
 Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+- **skills**: Add notion-cli skill
+  ([`cf361ae`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/cf361aee512bbede55044f4e2e09013eb514b130))
+
+Add Notion CLI skill from makenotion/skills repo. Enables Claude Code to use the `ntn` CLI for
+  Notion API calls, worker management, and file uploads.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 
 ## v0.13.0 (2026-03-21)
