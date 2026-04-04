@@ -59,7 +59,7 @@ Every command supports `--json` for machine-readable output.
 
 ## Claude Code Skills
 
-19 bundled skills installed via `tai claude setup-skills`:
+20 bundled skills installed via `tai claude setup-skills`:
 
 | Skill | Speed | What it does |
 |-------|-------|-------------|
@@ -82,6 +82,7 @@ Every command supports `--json` for machine-readable output.
 | `/tech-research` | Full | Library comparison, architecture decisions, deep dives, troubleshooting |
 | `/project` | Fast | Project management: link, status, tasks, meetings, open tools |
 | `/smart-compact` | Full | Strategic context compaction guide |
+| `/notion-cli` | Full | Notion CLI (`ntn`) for API, workers, and file uploads |
 
 "Light" variants trade thoroughness for speed — use them when you need quick feedback.
 
