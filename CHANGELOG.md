@@ -1,6 +1,135 @@
 # CHANGELOG
 
 
+## v0.16.1 (2026-03-23)
+
+### Bug Fixes
+
+- **pdf**: Pass show-logo through lib.typ wrappers
+  ([#72](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/72),
+  [`81ae11f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/81ae11f05ac1aaa4ca63fe7327fc2db475707421))
+
+* feat(pdf): add show-logo parameter to Typst templates
+
+Each template function now accepts a `show-logo: true` parameter (default true) that controls logo
+  rendering on the first page. When false, the logo block is skipped entirely.
+
+* feat(pdf): add --no-logo flag to compile command
+
+Thread a new --no-logo option through compile_cmd → _compile_markdown → _wrap_md_with_template,
+  which injects show-logo: false into the Typst template arguments when set.
+
+* test(pdf): add tests for --no-logo flag
+
+Cover _wrap_md_with_template with no_logo=True/False and verify the CLI accepts the --no-logo flag
+  without error.
+
+* fix(pdf): pass show-logo through lib.typ wrappers
+
+The lib.typ entry points for article, report, and slides were not accepting or forwarding the
+  show-logo parameter to the underlying template functions, causing a Typst compilation error.
+
+---------
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+
+## v0.16.0 (2026-03-23)
+
+### Features
+
+- **pdf**: Add --no-logo flag to omit logo from first page
+  ([#71](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/71),
+  [`40a7f1f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/40a7f1faf01c8a5f09d87935c43c8fef94e7f566))
+
+* feat(pdf): add show-logo parameter to Typst templates
+
+Each template function now accepts a `show-logo: true` parameter (default true) that controls logo
+  rendering on the first page. When false, the logo block is skipped entirely.
+
+* feat(pdf): add --no-logo flag to compile command
+
+Thread a new --no-logo option through compile_cmd → _compile_markdown → _wrap_md_with_template,
+  which injects show-logo: false into the Typst template arguments when set.
+
+* test(pdf): add tests for --no-logo flag
+
+Cover _wrap_md_with_template with no_logo=True/False and verify the CLI accepts the --no-logo flag
+  without error.
+
+---------
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+
+## v0.15.1 (2026-03-23)
+
+### Bug Fixes
+
+- Trigger release for v0.4.6.0
+  ([`d96f436`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d96f436267d8d4f980a50e31d8fe12d8b0c0be42))
+
+### Chores
+
+- Bump version and changelog (v0.4.6.0)
+  ([`12ec298`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/12ec298e418ef977ce86c663033962c82c32398a))
+
+Speed up plan-ceo, plan-eng, and ship skills: - Default to fast mode (non-interactive) for plan-ceo
+  and plan-eng - Batch AskUserQuestion per section instead of per issue in deep mode - Ship skips
+  optional steps (coverage audit, Greptile, TODOS, design review) by default - Say "deep"/"thorough"
+  to get the full interactive workflows
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+
+## v0.15.0 (2026-03-22)
+
+### Chores
+
+- Bump version and changelog (v0.4.5.0)
+  ([`957afe6`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/957afe6c86c7d6802f62bdbbaca0670e3ef4b0e7))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+### Features
+
+- **skills**: Add autonomous plan executor skill (/tai-execute)
+  ([`7ed6a3c`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/7ed6a3cd5444d875073d5c7dd11fb33bf4aceba7))
+
+Thin orchestrator + fresh subagent architecture that fills the gap between /tai-plan-eng and
+  /tai-ship. Supports wave-based parallel execution, 4-tier deviation rules, checkpoint protocol,
+  self-verification, and resume from interruption. Adds stress-test TODO for parallel wave
+  execution.
+
+
+## v0.14.0 (2026-03-22)
+
+### Features
+
+- **skills**: Add codebase mapping skill (/tai-map)
+  ([`0eb1a7f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0eb1a7f23e121076cdfbb30e32bdcc19a9849efb))
+
+Spawns 4 parallel agents to analyze stack, architecture, conventions, and concerns. Produces
+  structured Markdown in .tai/map/ that other skills can consume as context. Inspired by GSD's
+  map-codebase pattern.
+
+Also updates TODOS.md with GSD adoption roadmap items (context monitor, file-based state, /tai-map,
+  /tai-init, fresh-context architecture) including spike findings on statusLine API constraints.
+
+- **skills**: Add codebase mapping skill (/tai-map)
+  ([#68](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/68),
+  [`2921b71`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2921b717d0837c194f88a00e282d14c8e094cad4))
+
+Spawns 4 parallel agents to analyze stack, architecture, conventions, and concerns. Produces
+  structured Markdown in .tai/map/ that other skills can consume as context. Inspired by GSD's
+  map-codebase pattern.
+
+Also updates TODOS.md with GSD adoption roadmap items (context monitor, file-based state, /tai-map,
+  /tai-init, fresh-context architecture) including spike findings on statusLine API constraints.
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+
 ## v0.13.0 (2026-03-21)
 
 ### Features

@@ -110,15 +110,22 @@ branch name wherever the instructions say "the base branch."
 
 You are running the `/ship` workflow. This is a **non-interactive, fully automated** workflow. Do NOT ask for confirmation at any step. The user said `/ship` which means DO IT. Run straight through and output the PR URL at the end.
 
+## Speed Mode
+
+**Default mode is FAST.** Skip optional steps to ship quickly. Say "thorough" or "full" to run everything.
+
+**Fast mode skips:**
+- Step 3.4 (Test Coverage Audit) — note "Skipped — run `/ship thorough` for full coverage audit" in PR body
+- Step 3.75 (Greptile Review) — skip silently
+- Step 5.5 (TODOS.md) — skip silently
+- Design review portion of Step 3.5 — skip silently (code review still runs)
+
 **Only stop for:**
 - On the base branch (abort)
 - Merge conflicts that can't be auto-resolved (stop, show conflicts)
 - Test failures (stop, show failures)
 - Pre-landing review finds ASK items that need user judgment
 - MINOR or MAJOR version bump needed (ask — see Step 4)
-- Greptile review comments that need user decision (complex fixes, false positives)
-- TODOS.md missing and user wants to create one (ask — see Step 5.5)
-- TODOS.md disorganized and user wants to reorganize (ask — see Step 5.5)
 
 **Never stop for:**
 - Uncommitted changes (always include them)
@@ -126,9 +133,15 @@ You are running the `/ship` workflow. This is a **non-interactive, fully automat
 - CHANGELOG content (auto-generate from diff)
 - Commit message approval (auto-commit)
 - Multi-file changesets (auto-split into bisectable commits)
-- TODOS.md completed-item detection (auto-mark)
 - Auto-fixable review findings (dead code, N+1, stale comments — fixed automatically)
+
+**Thorough mode additionally runs:**
+- Step 3.4 (Test Coverage Audit)
+- Step 3.75 (Greptile Review) — stops for user decision on comments
+- Step 5.5 (TODOS.md) — stops if missing or disorganized
+- Design review in Step 3.5
 - Test coverage gaps (auto-generate and commit, or flag in PR body)
+- TODOS.md completed-item detection (auto-mark)
 
 ---
 
@@ -460,7 +473,9 @@ If multiple suites need to run, run them sequentially (each needs a test lane). 
 
 ---
 
-## Step 3.4: Test Coverage Audit
+## Step 3.4: Test Coverage Audit (THOROUGH MODE ONLY — skip in fast mode)
+
+**In fast mode:** Print "Step 3.4: Skipped (fast mode — run `/ship thorough` for coverage audit)" and continue to Step 3.5.
 
 100% coverage is the goal — every untested path is a path where bugs hide and vibe coding becomes yolo coding. Evaluate what was ACTUALLY coded (from the diff), not what was planned.
 
@@ -610,7 +625,9 @@ Review the diff for structural issues that tests don't catch.
    - **Pass 1 (CRITICAL):** SQL & Data Safety, LLM Output Trust Boundary
    - **Pass 2 (INFORMATIONAL):** All remaining categories
 
-## Design Review (conditional, diff-scoped)
+## Design Review (THOROUGH MODE ONLY — skip in fast mode)
+
+**In fast mode:** Skip this design review subsection silently. Continue to step 4 (after code review output).
 
 Check if the diff touches frontend files using `tai-diff-scope`:
 
@@ -671,7 +688,9 @@ Save the review output — it goes into the PR body in Step 8.
 
 ---
 
-## Step 3.75: Address Greptile review comments (if PR exists)
+## Step 3.75: Address Greptile review comments (THOROUGH MODE ONLY — skip in fast mode)
+
+**In fast mode:** Skip this step silently. Continue to Step 4.
 
 Read `.claude/skills/review/greptile-triage.md` and follow the fetch, filter, classify, and **escalation detection** steps.
 
@@ -751,7 +770,9 @@ For each classified comment:
 
 ---
 
-## Step 5.5: TODOS.md (auto-update)
+## Step 5.5: TODOS.md (THOROUGH MODE ONLY — skip in fast mode)
+
+**In fast mode:** Skip this step silently. Continue to Step 6.
 
 Cross-reference the project's TODOS.md against the changes being shipped. Mark completed items automatically; prompt only if the file is missing or disorganized.
 

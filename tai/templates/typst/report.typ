@@ -12,6 +12,7 @@
   organization: none,
   date: datetime.today().display("[month repr:long] [day], [year]"),
   version: none,
+  show-logo: true,
   body,
 ) = {
   set document(author: author, title: title)
@@ -35,7 +36,9 @@
   v(2fr)
 
   // Logo
-  align(center, image("brand/logo.png", width: 5cm))
+  if show-logo {
+    align(center, image("brand/logo.png", width: 5cm))
+  }
 
   // Title block
   align(center)[
