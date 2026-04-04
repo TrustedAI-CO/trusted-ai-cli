@@ -58,7 +58,13 @@ testpaths = ["tests"]
 addopts = "--cov=tai --cov-report=term-missing --cov-fail-under=80"
 
 [tool.coverage.run]
-omit = ["tests/*"]
+omit = [
+    "tests/*",
+    # Sales modules require optional playwright dependency
+    "tai/core/sales/aimitsu.py",
+    "tai/core/sales/hnavi.py",
+    "tai/commands/sales.py",
+]
 
 [tool.semantic_release]
 version_toml = ["pyproject.toml:project.version"]
