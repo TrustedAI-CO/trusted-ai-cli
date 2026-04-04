@@ -30,6 +30,9 @@ dev = [
     "respx>=0.21",
     "python-semantic-release>=9.0",
 ]
+sales = [
+    "playwright>=1.40",
+]
 
 [project.scripts]
 tai = "tai.main:cli"

@@ -53,6 +53,7 @@ tai tasks
 | `tai api call` / `list` | Call company API endpoints *(coming soon)* |
 | `tai config get` / `set` / `list` | Profile-based configuration |
 | `tai secret set` / `get` / `rotate` / `exec` | Secret management with system keychain *(coming soon)* |
+| `tai sales hnavi` / `aimitsu` | Manage sales pipelines (Hnavi & Aimitsu) |
 | `tai docs` | LLM-friendly usage reference |
 
 Every command supports `--json` for machine-readable output.
