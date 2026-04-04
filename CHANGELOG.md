@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.18.1 (2026-04-05)
+
+### Documentation
+
+- **sales**: Add company context references to skill
+  - Add company-profile.md with team credentials, case studies
+  - Add entry-guidelines.md with tone, templates, NG words
+
+
 ## v0.18.0 (2026-04-04)
 
 ### Bug Fixes
