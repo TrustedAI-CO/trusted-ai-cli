@@ -364,6 +364,132 @@ def hnavi_send(
             raise typer.Exit(ExitCode.ERROR)
 
 
+@hnavi_app.command("entry")
+def hnavi_entry(
+    ctx: typer.Context,
+    job_id: Annotated[str, typer.Argument(help="Job ID to enter (URL ID or display No.).")],
+    visible: bool = typer.Option(False, "--visible", help="Show browser window."),
+    yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation prompt."),
+) -> None:
+    """Submit an entry for a job (interactive)."""
+    _check_playwright()
+
+    import sys
+    from tai.core.sales import SalesBrowser, HnaviClient
+
+    # Check if running in interactive mode
+    if not sys.stdin.isatty():
+        err_console.print(
+            "[bold red]Error:[/bold red] Entry command requires interactive mode.\n"
+            "[dim]Run in a terminal or use the API directly.[/dim]"
+        )
+        raise typer.Exit(ExitCode.USAGE)
+
+    with SalesBrowser(headless=not visible) as browser:
+        client = HnaviClient(browser)
+
+        # If job_id looks like a display No. (12 digits), find the URL ID first
+        url_id = job_id
+        if len(job_id) == 12 and job_id.isdigit():
+            console.print(f"[dim]Looking up job No. {job_id}...[/dim]")
+            all_jobs = client.list_jobs(include_saas=True)
+            for j in all_jobs:
+                if j.id == job_id:
+                    url_id = j.url.split("/")[-1]
+                    break
+            else:
+                err_console.print(f"[bold red]Error:[/bold red] Job No. {job_id} not found")
+                raise typer.Exit(ExitCode.NOT_FOUND)
+
+        # Get entry form
+        try:
+            console.print(f"[dim]Loading entry form...[/dim]")
+            form = client.get_entry_form(url_id)
+        except RuntimeError as e:
+            err_console.print(f"[bold red]Error:[/bold red] {e}")
+            raise typer.Exit(ExitCode.ERROR)
+
+        console.print(f"\n[bold]Entry for: {form.job_title}[/bold]\n")
+
+        # Collect answers to questions
+        answers: list[str] = []
+        console.print("[bold cyan]エントリー条件への回答[/bold cyan]")
+        console.print("[dim]各条件に対する回答を入力してください。[/dim]\n")
+
+        for q in form.questions:
+            console.print(f"[bold]{q.index + 1}. {q.question}[/bold]")
+            if q.required:
+                console.print("[dim](必須)[/dim]")
+            answer = typer.prompt("回答", default="")
+            answers.append(answer)
+            console.print()
+
+        # Self introduction
+        console.print("[bold cyan]自己推薦文[/bold cyan]")
+        console.print("[dim]御社をお勧めする理由や実績を記入してください。[/dim]")
+        self_intro = typer.prompt("自己推薦文", default="")
+        console.print()
+
+        # Team member selection
+        console.print("[bold cyan]担当者選択[/bold cyan]")
+        console.print("[dim]担当者を選択してください (カンマ区切りで番号を入力、例: 1,3)[/dim]\n")
+
+        for i, member in enumerate(form.team_members, 1):
+            selected_mark = "✓" if member.selected else " "
+            console.print(f"  [{selected_mark}] {i}. {member.name}")
+
+        # Get default selection (pre-selected members)
+        default_selection = ",".join(
+            str(i + 1)
+            for i, m in enumerate(form.team_members)
+            if m.selected
+        ) or "1"
+
+        member_input = typer.prompt("担当者番号", default=default_selection)
+        selected_member_ids: list[str] = []
+        try:
+            indices = [int(x.strip()) - 1 for x in member_input.split(",") if x.strip()]
+            for idx in indices:
+                if 0 <= idx < len(form.team_members):
+                    selected_member_ids.append(form.team_members[idx].id)
+        except ValueError:
+            pass
+
+        if not selected_member_ids:
+            # Default to first member
+            if form.team_members:
+                selected_member_ids = [form.team_members[0].id]
+
+        console.print()
+
+        # Confirmation
+        console.print("[bold]確認[/bold]")
+        console.print(f"  案件: {form.job_title}")
+        console.print(f"  回答数: {len([a for a in answers if a])}")
+        console.print(f"  担当者: {len(selected_member_ids)}名")
+        console.print()
+
+        if not yes:
+            confirm = typer.confirm("エントリーを送信しますか?", default=True)
+            if not confirm:
+                console.print("[yellow]キャンセルしました。[/yellow]")
+                raise typer.Exit(0)
+
+        # Submit entry
+        try:
+            console.print("[dim]Submitting entry...[/dim]")
+            client.submit_entry(
+                job_id=url_id,
+                answers=answers,
+                self_introduction=self_intro,
+                team_member_ids=selected_member_ids,
+            )
+            console.print(f"\n[bold green]✓ エントリーを送信しました![/bold green]")
+        except Exception as e:
+            err_console.print(f"[bold red]Error:[/bold red] {e}")
+            raise typer.Exit(ExitCode.ERROR)
+
+
 # ══════════════════════════════════════════════════════════════════════════════
 # Aimitsu commands
 # ══════════════════════════════════════════════════════════════════════════════
@@ -447,22 +573,77 @@ def aimitsu_show(
     if json_output:
         console.print_json(json.dumps(project))
     else:
-        console.print(f"\n[bold]{project.get('title', 'Project ' + project_no)}[/bold]")
-        if project.get("customer"):
-            console.print(f"Customer: {project['customer']}")
-        console.print(f"[dim]URL: {project.get('url')}[/dim]\n")
+        # Header with title and customer
+        title = project.get("title", "")
+        customer = project.get("customer", "Unknown")
+        console.print(f"\n[bold]{title or customer}[/bold]")
+        if title and customer:
+            console.print(f"カスタマー: {customer}")
+        console.print(f"[dim]URL: {project.get('url')}[/dim]")
 
-        # Show description
-        if project.get("description"):
-            console.print(project["description"][:2000])
+        # Project metadata
+        if project.get("inquiry_no"):
+            console.print(f"お問い合わせNo.: {project['inquiry_no']}")
+        if project.get("request_date"):
+            console.print(f"依頼日: {project['request_date']}")
+
+        # Project background and details
+        if project.get("background"):
+            console.print("\n[bold cyan]発注の背景[/bold cyan]")
+            console.print(f"  {project['background']}")
+
+        # Show individual detail fields if available
+        has_detail_fields = any(
+            project.get(k) for k in ["system_details", "required_features", "target_users", "current_issues"]
+        )
+        if has_detail_fields or project.get("details"):
+            console.print("\n[bold cyan]発注の詳細[/bold cyan]")
+            if project.get("system_details"):
+                console.print(f"  [dim]システム詳細:[/dim] {project['system_details']}")
+            if project.get("required_features"):
+                console.print(f"  [dim]必須機能:[/dim] {project['required_features']}")
+            if project.get("target_users"):
+                console.print(f"  [dim]対象ユーザー:[/dim] {project['target_users']}")
+            if project.get("current_issues"):
+                console.print(f"  [dim]課題:[/dim] {project['current_issues']}")
+            if project.get("development_type"):
+                console.print(f"  [dim]開発種別:[/dim] {project['development_type']}")
+
+        # Budget and schedule
+        if project.get("budget") or project.get("delivery") or project.get("schedule"):
+            console.print("\n[bold cyan]予算・スケジュール[/bold cyan]")
+            if project.get("budget"):
+                console.print(f"  予算: {project['budget']}")
+            if project.get("budget_certainty"):
+                console.print(f"  予算確度: {project['budget_certainty']}")
+            if project.get("delivery"):
+                console.print(f"  納期: {project['delivery']}")
+            if project.get("schedule"):
+                console.print(f"  スケジュール: {project['schedule']}")
+
+        # Contact preferences
+        if project.get("meeting_method") or project.get("contact_hours"):
+            console.print("\n[bold cyan]商談情報[/bold cyan]")
+            if project.get("meeting_method"):
+                console.print(f"  打ち合わせ方法: {project['meeting_method']}")
+            if project.get("contact_hours"):
+                console.print(f"  連絡可能時間: {project['contact_hours']}")
+            if project.get("preferred_times"):
+                console.print(f"  商談希望日: {project['preferred_times']}")
 
         # Show messages
         messages = project.get("messages", [])
         if messages:
-            console.print("\n[bold]Messages:[/bold]\n")
+            console.print(f"\n[bold cyan]メッセージ ({len(messages)}件)[/bold cyan]\n")
             for msg in messages:
-                console.print(f"[cyan]{msg['sender']}[/cyan] ({msg.get('date', '—')})")
-                console.print(f"  {msg['content']}\n")
+                sender = msg.get("sender", "Unknown")
+                date = msg.get("date", "—")
+                console.print(f"[cyan]{sender}[/cyan] [dim]({date})[/dim]")
+                # Indent message content
+                content = msg.get("content", "")
+                for line in content.split("\n"):
+                    console.print(f"  {line}")
+                console.print()
 
 
 @aimitsu_app.command("send")

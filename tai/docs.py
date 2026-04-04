@@ -194,6 +194,8 @@ tai sales hnavi jobs               # list all available jobs
 tai sales hnavi jobs -c AI         # filter by category (AI, システム, ホームページ, etc.)
 tai sales hnavi jobs --saas        # include SaaS tab jobs
 tai sales hnavi jobs <id>          # show job details
+tai sales hnavi entry <id>         # submit entry for job (interactive)
+tai sales hnavi entry <id> -y      # submit entry (skip confirmation)
 tai sales hnavi active             # list active negotiations
 tai sales hnavi active <id>        # show negotiation details + messages
 tai sales hnavi send <id> "msg"    # send message to negotiation

@@ -97,7 +97,8 @@ class AimitsuClient:
     def login(self) -> None:
         """Login to Aimitsu and establish session."""
         self.page.goto(f"{self.BASE_URL}/login")
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(1000)
 
         # Fill login form
         self.page.fill('input[name="email"], input[type="email"]', self.email)
@@ -105,7 +106,8 @@ class AimitsuClient:
         self.page.click('button[type="submit"], input[type="submit"]')
 
         # Wait for redirect after login
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(2000)
 
         if "/login" in self.page.url:
             raise RuntimeError("Aimitsu login failed. Check credentials.")
@@ -122,17 +124,18 @@ class AimitsuClient:
         """
         self._ensure_logged_in()
         self.page.goto(f"{self.MYPAGE_URL}/competition-list/in_negotiation_appointment")
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(2000)  # Wait for Vue components to render
 
         projects = []
 
-        # Find project rows in table
-        rows = self.page.query_selector_all("table tr, .project-item, [class*='competition']")
+        # Page uses PrimeVue .p-card components
+        cards = self.page.query_selector_all(".p-card")
 
-        for row in rows:
+        for card in cards:
             try:
                 # Look for project link
-                link = row.query_selector("a[href*='/competitions/']")
+                link = card.query_selector('a[href*="/competitions/"]')
                 if not link:
                     continue
 
@@ -142,19 +145,27 @@ class AimitsuClient:
                     continue
 
                 project_no = match.group(1)
-                title = link.inner_text().strip()
 
-                # Extract customer info
-                customer = None
-                customer_elem = row.query_selector("[class*='customer'], td:first-child")
-                if customer_elem:
-                    customer = customer_elem.inner_text().strip()
-
-                # Extract status
+                # Extract status from card header
                 status = None
-                status_elem = row.query_selector("[class*='status'], .badge")
+                status_elem = card.query_selector(".p-card-header .flex-grow-1")
                 if status_elem:
                     status = status_elem.inner_text().strip()
+
+                # Extract title and customer from card text
+                card_text = card.inner_text()
+
+                # Title appears after "案件"
+                title = ""
+                title_match = re.search(r"案件\s*\n(.+)", card_text)
+                if title_match:
+                    title = title_match.group(1).strip()
+
+                # Customer info appears after "カスタマー情報"
+                customer = None
+                customer_match = re.search(r"カスタマー情報\s*\n(.+?)\n(.+)", card_text)
+                if customer_match:
+                    customer = f"{customer_match.group(1).strip()} {customer_match.group(2).strip()}"
 
                 projects.append(
                     AimitsuProject(
@@ -181,49 +192,135 @@ class AimitsuClient:
         """
         self._ensure_logged_in()
         self.page.goto(f"{self.MYPAGE_URL}/competitions/{project_no}")
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(2000)
 
-        result = {
+        result: dict = {
             "no": project_no,
             "url": f"{self.MYPAGE_URL}/competitions/{project_no}",
             "messages": [],
         }
 
-        # Get title
-        title_elem = self.page.query_selector("h1, .project-title, [class*='title']")
-        if title_elem:
-            result["title"] = title_elem.inner_text().strip()
+        # Get page text for regex extraction
+        body = self.page.query_selector("body")
+        page_text = body.inner_text() if body else ""
 
-        # Get customer info
-        customer_elem = self.page.query_selector("[class*='customer'], [class*='client']")
-        if customer_elem:
-            result["customer"] = customer_elem.inner_text().strip()
+        # Extract customer name from "〇〇様 とのメッセージ"
+        customer_match = re.search(r"(.+?様)\s*とのメッセージ", page_text)
+        if customer_match:
+            result["customer"] = customer_match.group(1).strip()
 
-        # Get main content/description
-        content_elem = self.page.query_selector("main, .content, .project-detail, article")
-        if content_elem:
-            result["description"] = content_elem.inner_text().strip()
+        # Extract 依頼日 (request date)
+        date_match = re.search(r"依頼日[：:]\s*(\d+年\d+月\d+日)", page_text)
+        if date_match:
+            result["request_date"] = date_match.group(1)
 
-        # Get messages
-        message_elements = self.page.query_selector_all(
-            ".message, .message-item, [class*='message'], .chat-item"
-        )
+        # Extract お問い合わせNo. (inquiry number)
+        inquiry_match = re.search(r"お問い合わせNo\.?\s*[：:]\s*(\d+)", page_text)
+        if inquiry_match:
+            result["inquiry_no"] = inquiry_match.group(1)
 
-        for msg_elem in message_elements:
+        # Extract project details from dt/dd pairs
+        dt_dd_map: dict[str, str] = {}
+        dts = self.page.query_selector_all("dt")
+        for dt in dts:
+            label = dt.inner_text().strip()
+            dd = dt.evaluate_handle("(el) => el.nextElementSibling")
+            if dd:
+                dd_elem = dd.as_element()
+                if dd_elem:
+                    tag = dd_elem.evaluate("(el) => el.tagName")
+                    if tag == "DD":
+                        value = dd_elem.inner_text().strip()
+                        dt_dd_map[label] = value
+
+        # Map dt/dd values to result fields
+        field_mapping = {
+            "案件タイトル": "title",
+            "発注の背景": "background",
+            "発注の詳細": "details",
+            "システム詳細": "system_details",
+            "必須機能": "required_features",
+            "利用ユーザー（ターゲット）": "target_users",
+            "現状の課題と理由": "current_issues",
+            "予算": "budget",
+            "予算確度": "budget_certainty",
+            "予算レベル": "budget_level",
+            "納期": "delivery",
+            "スケジュール": "schedule",
+            "見積もり時期": "estimate_timing",
+            "開発": "development_type",
+            "開発種別": "development_category",
+            "打ち合わせ方法": "meeting_method",
+            "連絡可能な時間": "contact_hours",
+        }
+
+        for dt_label, result_key in field_mapping.items():
+            if dt_label in dt_dd_map:
+                result[result_key] = dt_dd_map[dt_label]
+
+        # Extract requirements from card bodies (fallback)
+        card_bodies = self.page.query_selector_all(".p-card-body, .p-card-content")
+        for card_body in card_bodies:
+            text = card_body.inner_text().strip()
+            if not text or "message" in text.lower():
+                continue
+
+            # Parse 必須条件 (requirements) if not already set
+            if "必須条件" in text and "requirements" not in result:
+                req_match = re.search(r"必須条件\s*\n(.+?)(?:\n|$)", text)
+                if req_match:
+                    result["requirements"] = req_match.group(1).strip()
+
+            # Parse アピールしてほしいポイント (appeal points)
+            if "アピールしてほしいポイント" in text and "appeal_points" not in result:
+                appeal_match = re.search(
+                    r"アピールしてほしいポイント\s*\n(.+?)(?:\n|$)", text
+                )
+                if appeal_match:
+                    result["appeal_points"] = appeal_match.group(1).strip()
+
+            # Parse 商談希望日 (preferred meeting times)
+            if "商談希望日" in text and "preferred_times" not in result:
+                meeting_match = re.search(r"商談希望日[：:]\s*\n?(.+)", text, re.DOTALL)
+                if meeting_match:
+                    result["preferred_times"] = meeting_match.group(1).strip()
+
+        # Get messages from .message-box elements
+        seen_contents: set[str] = set()
+        message_boxes = self.page.query_selector_all(".message-box")
+
+        for box in message_boxes:
             try:
-                # Get sender
-                sender_elem = msg_elem.query_selector("[class*='sender'], [class*='author'], .name")
-                sender = sender_elem.inner_text().strip() if sender_elem else "Unknown"
+                # Get header with sender and date
+                header = box.query_selector(".header")
 
-                # Get content
-                content_elem = msg_elem.query_selector("[class*='content'], [class*='body'], p")
-                content = content_elem.inner_text().strip() if content_elem else ""
+                # Extract company and person name from spans (first two font-bold elements)
+                sender = "Unknown"
+                if header:
+                    font_bolds = header.query_selector_all(".font-bold")
+                    # Filter out status indicators like "既読" (read)
+                    parts = [
+                        fb.inner_text().strip()
+                        for fb in font_bolds[:2]  # Only first two (company, person)
+                        if fb.inner_text().strip() not in ("既読", "未読")
+                    ]
+                    sender = " ".join(parts) if parts else "Unknown"
 
-                # Get date
-                date_elem = msg_elem.query_selector("[class*='date'], time, .timestamp")
-                date = date_elem.inner_text().strip() if date_elem else None
+                # Extract date from .text-time span
+                date = None
+                if header:
+                    date_elem = header.query_selector(".text-time")
+                    date = date_elem.inner_text().strip() if date_elem else None
 
-                if content:
+                # Get message content
+                msg_elem = box.query_selector(".message")
+                content = msg_elem.inner_text().strip() if msg_elem else ""
+
+                # Deduplicate messages
+                content_key = content[:100] if content else ""
+                if content and content_key not in seen_contents:
+                    seen_contents.add(content_key)
                     result["messages"].append(
                         AimitsuMessage(sender=sender, content=content, date=date).to_dict()
                     )
@@ -245,11 +342,12 @@ class AimitsuClient:
         """
         self._ensure_logged_in()
         self.page.goto(f"{self.MYPAGE_URL}/competitions/{project_no}")
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(2000)
 
-        # Find and fill message textarea
+        # Find PrimeVue textarea (no name attribute, uses classes)
         textarea = self.page.query_selector(
-            'textarea[name*="message"], textarea[name*="body"], textarea.message-input'
+            'textarea.p-inputtextarea, textarea[placeholder*="メッセージ"]'
         )
         if not textarea:
             raise RuntimeError("Could not find message input field")
@@ -262,14 +360,37 @@ class AimitsuClient:
             if file_input:
                 file_input.set_input_files(file_path)
 
-        # Submit the message
+        # Wait for send button to be enabled (Vue reactivity)
+        self.page.wait_for_timeout(500)
+
+        # Find send button by Japanese text or class
         submit_btn = self.page.query_selector(
-            'button[type="submit"], input[type="submit"], .send-button, [class*="submit"]'
+            'button.btn-f-blue:not(.p-disabled), '
+            'button:has-text("メッセージを送信する"):not(.p-disabled)'
         )
         if not submit_btn:
-            raise RuntimeError("Could not find submit button")
+            # Try without the :not(.p-disabled) in case button is still disabled
+            submit_btn = self.page.query_selector(
+                'button.btn-f-blue, button:has-text("メッセージを送信する")'
+            )
+            if not submit_btn:
+                raise RuntimeError("Could not find submit button")
 
         submit_btn.click()
-        self.page.wait_for_load_state("networkidle")
+
+        # Wait for confirmation dialog to appear
+        self.page.wait_for_timeout(500)
+
+        # Find and click confirm button in the dialog
+        confirm_btn = self.page.query_selector(
+            '.p-dialog button.btn-blue, '
+            '.p-dialog button:has-text("送信する")'
+        )
+        if confirm_btn:
+            confirm_btn.click()
+            self.page.wait_for_load_state("domcontentloaded")
+            self.page.wait_for_timeout(1000)
+        else:
+            raise RuntimeError("Could not find confirmation button in dialog")
 
         return True

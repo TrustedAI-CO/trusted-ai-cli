@@ -72,6 +72,60 @@ class HnaviMessage:
         }
 
 
+@dataclass
+class HnaviEntryQuestion:
+    """An entry requirement question."""
+
+    index: int
+    question: str
+    requirement_id: str
+    required: bool = True
+
+    def to_dict(self) -> dict:
+        return {
+            "index": self.index,
+            "question": self.question,
+            "requirement_id": self.requirement_id,
+            "required": self.required,
+        }
+
+
+@dataclass
+class HnaviTeamMember:
+    """A team member for entry."""
+
+    id: str
+    name: str
+    selected: bool = False
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "selected": self.selected,
+        }
+
+
+@dataclass
+class HnaviEntryForm:
+    """Entry form structure."""
+
+    job_id: str
+    job_title: str
+    questions: list[HnaviEntryQuestion]
+    team_members: list[HnaviTeamMember]
+    default_url: str | None = None
+
+    def to_dict(self) -> dict:
+        return {
+            "job_id": self.job_id,
+            "job_title": self.job_title,
+            "questions": [q.to_dict() for q in self.questions],
+            "team_members": [m.to_dict() for m in self.team_members],
+            "default_url": self.default_url,
+        }
+
+
 class HnaviClient:
     """Client for interacting with Hnavi (発注ナビ) developer portal."""
 
@@ -350,7 +404,8 @@ class HnaviClient:
         """
         self._ensure_logged_in()
         self.page.goto(f"{self.BASE_URL}/negotiations")
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(1000)
 
         negotiations = []
 
@@ -418,7 +473,8 @@ class HnaviClient:
         """
         self._ensure_logged_in()
         self.page.goto(f"{self.BASE_URL}/negotiations/{neg_id}")
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(1000)
 
         result = {
             "id": neg_id,
@@ -477,12 +533,11 @@ class HnaviClient:
         """
         self._ensure_logged_in()
         self.page.goto(f"{self.BASE_URL}/negotiations/{neg_id}")
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(1000)  # Brief wait for dynamic content
 
-        # Find and fill message textarea
-        textarea = self.page.query_selector(
-            'textarea[name*="message"], textarea[name*="body"], textarea.message-input'
-        )
+        # Find and fill message textarea (specific selector for negotiation messages)
+        textarea = self.page.query_selector('textarea[name="negotiation_message[content]"]')
         if not textarea:
             raise RuntimeError("Could not find message input field")
 
@@ -494,14 +549,209 @@ class HnaviClient:
             if file_input:
                 file_input.set_input_files(file_path)
 
-        # Submit the message
+        # Submit the form via JavaScript (button click fails due to overlapping elements)
+        form = self.page.query_selector('form[action="/negotiation_messages"]')
+        if not form:
+            raise RuntimeError("Could not find message form")
+
+        self.page.evaluate('document.querySelector(\'form[action="/negotiation_messages"]\').submit()')
+        self.page.wait_for_load_state("domcontentloaded")
+        self.page.wait_for_timeout(1000)
+
+        return True
+
+    def get_entry_form(self, job_id: str) -> HnaviEntryForm:
+        """Get the entry form structure for a job.
+
+        Args:
+            job_id: The job ID (URL ID or display No.)
+
+        Returns:
+            HnaviEntryForm with questions and team members
+        """
+        self._ensure_logged_in()
+
+        # Navigate to job page
+        self.page.goto(f"{self.BASE_URL}/jobs/{job_id}")
+        self.page.wait_for_load_state("networkidle")
+
+        # Get job title
+        title_elem = self.page.query_selector("div.title")
+        job_title = title_elem.inner_text().strip() if title_elem else ""
+
+        # Click the entry button to go to entry form
+        entry_btn = self.page.query_selector('input[data-go-to-entry="true"]')
+        if not entry_btn:
+            raise RuntimeError(
+                "Entry button not found. Job may be closed or already entered."
+            )
+
+        entry_btn.click()
+        self.page.wait_for_load_state("networkidle")
+
+        # Parse questions
+        questions: list[HnaviEntryQuestion] = []
+        form_groups = self.page.query_selector_all(
+            "div.form-group.text.required.entry_entry_requirement_answers_answer"
+        )
+
+        for i, group in enumerate(form_groups):
+            label = group.query_selector("label")
+            textarea = group.query_selector("textarea")
+
+            if label and textarea:
+                question_text = label.inner_text().strip()
+                # Remove the * indicator
+                question_text = question_text.replace(" *", "").strip()
+
+                # Get requirement ID from the hidden input that follows
+                name = textarea.get_attribute("name") or ""
+                req_id_match = re.search(r"\[(\d+)\]\[answer\]", name)
+                idx = int(req_id_match.group(1)) if req_id_match else i
+
+                # Find the hidden requirement_id input
+                req_id_input = self.page.query_selector(
+                    f'input[name="entry[entry_requirement_answers_attributes][{idx}][entry_requirement_id]"]'
+                )
+                req_id = req_id_input.get_attribute("value") if req_id_input else str(idx)
+
+                questions.append(
+                    HnaviEntryQuestion(
+                        index=idx,
+                        question=question_text,
+                        requirement_id=req_id,
+                        required="required" in (label.get_attribute("class") or ""),
+                    )
+                )
+
+        # Parse team members
+        team_members: list[HnaviTeamMember] = []
+        member_checkboxes = self.page.query_selector_all(
+            'input[name="entry[developer_user_ids][]"][type="checkbox"]'
+        )
+
+        for cb in member_checkboxes:
+            member_id = cb.get_attribute("value")
+            if not member_id:
+                continue
+
+            cb_id = cb.get_attribute("id") or ""
+            label = self.page.query_selector(f'label[for="{cb_id}"]')
+            name = label.inner_text().strip() if label else f"Member {member_id}"
+            selected = cb.get_attribute("checked") is not None
+
+            team_members.append(
+                HnaviTeamMember(id=member_id, name=name, selected=selected)
+            )
+
+        # Get default URL
+        url_input = self.page.query_selector('input[name="entry[url]"]')
+        default_url = url_input.get_attribute("value") if url_input else None
+
+        return HnaviEntryForm(
+            job_id=job_id,
+            job_title=job_title,
+            questions=questions,
+            team_members=team_members,
+            default_url=default_url,
+        )
+
+    def submit_entry(
+        self,
+        job_id: str,
+        answers: list[str],
+        self_introduction: str,
+        team_member_ids: list[str] | None = None,
+        url: str | None = None,
+        file_path: str | None = None,
+    ) -> bool:
+        """Submit an entry for a job.
+
+        Args:
+            job_id: The job ID
+            answers: List of answers to entry questions (in order)
+            self_introduction: Self-introduction text
+            team_member_ids: List of team member IDs to include (default: first available)
+            url: URL to display (default: use pre-filled)
+            file_path: Optional file to attach
+
+        Returns:
+            True if entry was submitted successfully
+        """
+        self._ensure_logged_in()
+
+        # Navigate to job page
+        self.page.goto(f"{self.BASE_URL}/jobs/{job_id}")
+        self.page.wait_for_load_state("networkidle")
+
+        # Click the entry button
+        entry_btn = self.page.query_selector('input[data-go-to-entry="true"]')
+        if not entry_btn:
+            raise RuntimeError(
+                "Entry button not found. Job may be closed or already entered."
+            )
+
+        entry_btn.click()
+        self.page.wait_for_load_state("networkidle")
+
+        # Fill in answers
+        textareas = self.page.query_selector_all(
+            'textarea[name*="entry_requirement_answers_attributes"]'
+        )
+
+        for i, textarea in enumerate(textareas):
+            if i < len(answers):
+                textarea.fill(answers[i])
+
+        # Fill self introduction
+        self_intro_textarea = self.page.query_selector(
+            'textarea[name="entry[self_introduction]"]'
+        )
+        if self_intro_textarea:
+            self_intro_textarea.fill(self_introduction)
+
+        # Select team members
+        if team_member_ids:
+            # Uncheck all first
+            member_checkboxes = self.page.query_selector_all(
+                'input[name="entry[developer_user_ids][]"][type="checkbox"]'
+            )
+            for cb in member_checkboxes:
+                if cb.is_checked():
+                    cb.uncheck()
+
+            # Check specified members
+            for member_id in team_member_ids:
+                cb = self.page.query_selector(
+                    f'input[name="entry[developer_user_ids][]"][value="{member_id}"]'
+                )
+                if cb:
+                    cb.check()
+
+        # Set URL if specified
+        if url:
+            url_input = self.page.query_selector('input[name="entry[url]"]')
+            if url_input:
+                url_input.fill(url)
+
+        # Attach file if specified
+        if file_path:
+            file_input = self.page.query_selector('input[name="entry[files][]"]')
+            if file_input:
+                file_input.set_input_files(file_path)
+
+        # Submit the entry
         submit_btn = self.page.query_selector(
-            'button[type="submit"], input[type="submit"], .send-button, [class*="submit"]'
+            'input[type="submit"][name="commit"][value="エントリー"]'
         )
         if not submit_btn:
-            raise RuntimeError("Could not find submit button")
+            raise RuntimeError("Submit button not found")
 
         submit_btn.click()
         self.page.wait_for_load_state("networkidle")
+
+        # Check if we're redirected away from the entry form (success)
+        if "/entries/new" in self.page.url:
+            raise RuntimeError("Entry submission may have failed. Still on entry form.")
 
         return True
