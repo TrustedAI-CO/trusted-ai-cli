@@ -3,6 +3,24 @@
 
 ## v0.17.0 (2026-04-04)
 
+### Features
+
+- **sales**: Add Hnavi job entry submission with interactive prompts
+  - Parse entry form structure (questions, team members)
+  - `tai sales hnavi entry <job_id>` command with TTY validation
+  - Support for entry requirement answers and self-introduction
+
+- **sales**: Add sales skill for Claude Code
+  - Comprehensive documentation in `.claude/skills/tai/sales/SKILL.md`
+  - JSON output examples and workflow guides
+
+### Bug Fixes
+
+- **sales**: Fix Aimitsu project listing with PrimeVue `.p-card` selectors
+- **sales**: Fix Aimitsu project details extraction (dt/dd pairs)
+- **sales**: Fix Aimitsu message sending with confirmation dialog handling
+- **sales**: Extract full project info: background, details, budget, schedule, etc.
+
 
 ## v0.16.1 (2026-03-23)
 
