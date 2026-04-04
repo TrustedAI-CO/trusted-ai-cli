@@ -125,7 +125,20 @@ def test_clear_cookies_not_exists(tmp_path):
 
 # ── SalesBrowser class tests ─────────────────────────────────────────────────
 
+# Check if playwright is available
+try:
+    import playwright  # noqa: F401
 
+    HAS_PLAYWRIGHT = True
+except ImportError:
+    HAS_PLAYWRIGHT = False
+
+requires_playwright = pytest.mark.skipif(
+    not HAS_PLAYWRIGHT, reason="playwright not installed"
+)
+
+
+@requires_playwright
 def test_sales_browser_context_manager():
     """SalesBrowser works as context manager."""
     from tai.core.sales.browser import SalesBrowser
@@ -149,6 +162,7 @@ def test_sales_browser_context_manager():
         mock_pw_instance.stop.assert_called_once()
 
 
+@requires_playwright
 def test_sales_browser_new_page():
     """SalesBrowser.new_page creates a page."""
     from tai.core.sales.browser import SalesBrowser
@@ -169,6 +183,7 @@ def test_sales_browser_new_page():
             assert page is mock_page
 
 
+@requires_playwright
 def test_sales_browser_context_property_error():
     """SalesBrowser.context raises when not started."""
     from tai.core.sales.browser import SalesBrowser
@@ -178,6 +193,7 @@ def test_sales_browser_context_property_error():
         _ = browser.context
 
 
+@requires_playwright
 def test_sales_browser_headless_option():
     """SalesBrowser respects headless option."""
     from tai.core.sales.browser import SalesBrowser
@@ -197,6 +213,7 @@ def test_sales_browser_headless_option():
         mock_pw_instance.chromium.launch.assert_called_once_with(headless=False)
 
 
+@requires_playwright
 def test_sales_browser_load_session():
     """SalesBrowser.load_session delegates to load_cookies."""
     from tai.core.sales.browser import SalesBrowser
@@ -217,6 +234,7 @@ def test_sales_browser_load_session():
                 mock_load.assert_called_once_with(mock_context, "test")
 
 
+@requires_playwright
 def test_sales_browser_save_session():
     """SalesBrowser.save_session delegates to save_cookies."""
     from tai.core.sales.browser import SalesBrowser
