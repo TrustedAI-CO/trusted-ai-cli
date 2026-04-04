@@ -43,6 +43,23 @@ export AIMITSU_EMAIL="your-email@example.com"
 export AIMITSU_PASSWORD="your-password"
 ```
 
+## Company Context
+
+Before drafting messages or entry responses, read the reference files:
+
+- **[references/company-profile.md](references/company-profile.md)** — Company overview, team
+  strengths, case studies, research achievements
+- **[references/entry-guidelines.md](references/entry-guidelines.md)** — Tone guidelines,
+  response patterns, self-introduction templates, NG words
+
+When crafting entry answers or messages:
+
+1. Match the response to the job category (AI, システム, 製造業, etc.)
+2. Include specific metrics from case studies when relevant
+3. Highlight team credentials (60% PhD, top university alumni, top conference publications)
+4. Emphasize End-to-End support and Japan-based communication
+5. Follow the tone guidelines: 丁寧かつ簡潔, 具体的, 顧客視点
+
 ## Command Reference
 
 ### Top-Level Commands
