@@ -87,7 +87,7 @@ def sales_status(
         # Hnavi
         if results["hnavi"].get("status") == "ok":
             console.print(f"[cyan]Hnavi (発注ナビ)[/cyan]")
-            console.print(f"  Jobs with AI tag: {results['hnavi']['jobs']}")
+            console.print(f"  Jobs available: {results['hnavi']['jobs']}")
             console.print(f"  Active negotiations: {results['hnavi']['negotiations']}")
         else:
             console.print(f"[cyan]Hnavi[/cyan]: [red]Error[/red] - {results['hnavi'].get('error')}")
@@ -153,7 +153,7 @@ def hnavi_status(ctx: typer.Context) -> None:
         negotiations = client.list_negotiations()
 
     console.print(f"\n[bold cyan]Hnavi (発注ナビ)[/bold cyan]")
-    console.print(f"  AI Jobs available: {len(jobs)}")
+    console.print(f"  Jobs available: {len(jobs)}")
     console.print(f"  Active negotiations: {len(negotiations)}\n")
 
 
@@ -161,11 +161,12 @@ def hnavi_status(ctx: typer.Context) -> None:
 def hnavi_jobs(
     ctx: typer.Context,
     job_id: Annotated[str | None, typer.Argument(help="Job ID for details (omit to list all).")] = None,
-    tag: str = typer.Option("AI", "--tag", "-t", help="Filter by tag."),
+    category: str | None = typer.Option(None, "--category", "-c", help="Filter by category (e.g., AI, システム, ホームページ)."),
+    saas: bool = typer.Option(False, "--saas", help="Include SaaS tab jobs."),
     visible: bool = typer.Option(False, "--visible", help="Show browser window."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
-    """List AI jobs or show job details."""
+    """List jobs or show job details."""
     _check_playwright()
 
     from tai.core.sales import SalesBrowser, HnaviClient
@@ -188,24 +189,27 @@ def hnavi_jobs(
                     console.print(job["description"][:2000])  # Truncate long descriptions
         else:
             # List jobs
-            jobs = client.list_jobs(tag_filter=tag)
+            jobs = client.list_jobs(category=category, include_saas=saas)
 
             if json_output:
                 console.print_json(json.dumps([j.to_dict() for j in jobs]))
             elif not jobs:
-                console.print(f"[dim]No jobs found with tag '{tag}'.[/dim]")
+                if category:
+                    console.print(f"[dim]No jobs found with category '{category}'.[/dim]")
+                else:
+                    console.print("[dim]No jobs found.[/dim]")
             else:
                 table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
-                table.add_column("ID", style="dim", no_wrap=True)
+                table.add_column("No.", style="dim", no_wrap=True)
                 table.add_column("Title")
-                table.add_column("Budget", style="dim")
-                table.add_column("Tags", style="cyan")
+                table.add_column("Deadline", style="dim")
+                table.add_column("Category", style="cyan")
 
                 for job in jobs:
                     table.add_row(
                         job.id,
                         job.title[:50],
-                        job.budget or "—",
+                        job.deadline or "—",
                         ", ".join(job.tags or []),
                     )
 

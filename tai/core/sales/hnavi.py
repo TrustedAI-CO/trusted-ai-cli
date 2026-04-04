@@ -137,11 +137,13 @@ class HnaviClient:
         self.browser.save_session(self.page, "hnavi")
         self._logged_in = True
 
-    def list_jobs(self, tag_filter: str | None = "AI") -> list[HnaviJob]:
-        """List available jobs, optionally filtered by tag.
+    def list_jobs(self, category: str | None = None, include_saas: bool = False) -> list[HnaviJob]:
+        """List available jobs, optionally filtered by category.
 
         Args:
-            tag_filter: Filter jobs by tag (default: "AI")
+            category: Filter by category tag (e.g., "システム", "ホームページ", "動画制作")
+                     If None, returns all jobs.
+            include_saas: If True, also fetch jobs from the SaaS tab
 
         Returns:
             List of job listings
@@ -150,15 +152,34 @@ class HnaviClient:
         self.page.goto(f"{self.BASE_URL}/jobs")
         self.page.wait_for_load_state("networkidle")
 
+        jobs = self._parse_job_cards(category)
+
+        # Also fetch SaaS jobs if requested
+        if include_saas:
+            self.page.goto(f"{self.BASE_URL}/jobs?saas=saas")
+            self.page.wait_for_load_state("networkidle")
+            jobs.extend(self._parse_job_cards(category))
+
+        return jobs
+
+    def _parse_job_cards(self, category: str | None = None) -> list[HnaviJob]:
+        """Parse job cards from the current page.
+
+        Args:
+            category: Optional category filter
+
+        Returns:
+            List of HnaviJob objects
+        """
         jobs = []
 
-        # Find job listings on the page
-        job_elements = self.page.query_selector_all(".job-card, .job-item, [class*='job']")
+        # Job cards are in div.card.mb-4.shadow containers
+        job_cards = self.page.query_selector_all("div.card.mb-4.shadow.position-relative")
 
-        for elem in job_elements:
+        for card in job_cards:
             try:
-                # Extract job ID from link
-                link = elem.query_selector("a[href*='/jobs/']")
+                # Extract job URL ID from the card-body link
+                link = card.query_selector("a.link-dark.card-body")
                 if not link:
                     continue
 
@@ -167,36 +188,45 @@ class HnaviClient:
                 if not match:
                     continue
 
-                job_id = match.group(1)
-                title = link.inner_text().strip()
+                url_id = match.group(1)
 
-                # Extract tags
-                tag_elements = elem.query_selector_all(".tag, .label, [class*='tag']")
-                tags = [t.inner_text().strip() for t in tag_elements]
+                # Extract the display No. (e.g., "No. 202604030016")
+                no_elem = card.query_selector("div.ms-3")
+                display_no = None
+                if no_elem:
+                    no_text = no_elem.inner_text().strip()
+                    no_match = re.search(r"No\.\s*(\d+)", no_text)
+                    if no_match:
+                        display_no = no_match.group(1)
 
-                # Filter by tag if specified
-                if tag_filter and tag_filter not in tags:
+                # Extract title from div.title
+                title_elem = card.query_selector("div.title")
+                title = title_elem.inner_text().strip() if title_elem else ""
+
+                # Extract category tag (e.g., システム, ホームページ)
+                tag_elem = card.query_selector("span.badge.me-2")
+                tag = tag_elem.inner_text().strip() if tag_elem else None
+
+                # Filter by category if specified
+                if category and tag != category:
                     continue
 
-                # Extract budget and deadline if available
-                budget = None
+                # Extract deadline from text-danger div (e.g., "〆 2026年4月6日 17:00")
                 deadline = None
-                budget_elem = elem.query_selector("[class*='budget'], [class*='price']")
-                if budget_elem:
-                    budget = budget_elem.inner_text().strip()
-
-                deadline_elem = elem.query_selector("[class*='deadline'], [class*='date']")
+                deadline_elem = card.query_selector("div.text-danger")
                 if deadline_elem:
-                    deadline = deadline_elem.inner_text().strip()
+                    deadline_text = deadline_elem.inner_text().strip()
+                    # Remove the 〆 prefix
+                    deadline = deadline_text.replace("〆", "").strip()
 
                 jobs.append(
                     HnaviJob(
-                        id=job_id,
+                        id=display_no or url_id,
                         title=title,
-                        budget=budget,
+                        budget=None,  # Budget not shown on list page
                         deadline=deadline,
-                        tags=tags,
-                        url=f"{self.BASE_URL}/jobs/{job_id}",
+                        tags=[tag] if tag else [],
+                        url=f"{self.BASE_URL}/jobs/{url_id}",
                     )
                 )
             except Exception:
