@@ -238,7 +238,7 @@ class HnaviClient:
         """Get detailed information about a job.
 
         Args:
-            job_id: The job ID
+            job_id: The job ID (URL ID like 15995, or display No. like 202604020007)
 
         Returns:
             Dict with job details
@@ -247,21 +247,98 @@ class HnaviClient:
         self.page.goto(f"{self.BASE_URL}/jobs/{job_id}")
         self.page.wait_for_load_state("networkidle")
 
-        # Extract all visible text content from the main content area
-        content = {}
+        content: dict = {
+            "url_id": job_id,
+            "url": f"{self.BASE_URL}/jobs/{job_id}",
+        }
+
+        # Get display No. (e.g., "No. 202604020007")
+        no_elem = self.page.query_selector("div.ms-3")
+        if no_elem:
+            no_text = no_elem.inner_text().strip()
+            no_match = re.search(r"No\.\s*(\d+)", no_text)
+            if no_match:
+                content["no"] = no_match.group(1)
+
+        # Get status badge (募集中, etc.)
+        status_elem = self.page.query_selector("div.badge.min-w-140px")
+        if status_elem:
+            content["status"] = status_elem.inner_text().strip()
+
+        # Get deadline (〆 2026年4月6日 14:30)
+        deadline_elem = self.page.query_selector("div.text-danger")
+        if deadline_elem:
+            deadline_text = deadline_elem.inner_text().strip()
+            content["deadline"] = deadline_text.replace("〆", "").strip()
+
+        # Get category tag (AI, システム, etc.)
+        tag_elem = self.page.query_selector("span.badge.me-2")
+        if tag_elem:
+            content["category"] = tag_elem.inner_text().strip()
 
         # Get title
-        title_elem = self.page.query_selector("h1, .job-title, [class*='title']")
+        title_elem = self.page.query_selector("div.title")
         if title_elem:
             content["title"] = title_elem.inner_text().strip()
 
-        # Get the main content
-        main_elem = self.page.query_selector("main, .content, .job-detail, article")
-        if main_elem:
-            content["description"] = main_elem.inner_text().strip()
+        # Get max companies (上限企業数: 10社)
+        max_companies_section = self.page.query_selector("div.bg-light.text-secondary.fw-bold.py-1.px-3")
+        if max_companies_section and "上限企業数" in max_companies_section.inner_text():
+            parent = max_companies_section.evaluate_handle("el => el.parentElement")
+            if parent:
+                text = parent.inner_text().strip()
+                # Extract the number after "上限企業数"
+                match = re.search(r"上限企業数\s*(\d+社)", text)
+                if match:
+                    content["max_companies"] = match.group(1)
 
-        content["id"] = job_id
-        content["url"] = f"{self.BASE_URL}/jobs/{job_id}"
+        # Get company info cards (会社規模, 会社拠点, 企業HPの有無)
+        info_cards = self.page.query_selector_all("div.card.shadow.h-100 div.text-center")
+        for card in info_cards:
+            try:
+                label_elem = card.query_selector("div.fw-bold")
+                value_elem = card.query_selector("div:not(.fw-bold)")
+                if label_elem and value_elem:
+                    label = label_elem.inner_text().strip()
+                    value = value_elem.inner_text().strip()
+                    if label == "会社規模":
+                        content["company_size"] = value
+                    elif label == "会社拠点":
+                        content["company_location"] = value
+                    elif label == "企業HPの有無":
+                        content["has_website"] = value
+            except Exception:
+                continue
+
+        # Get entry conditions (エントリー条件)
+        conditions = []
+        condition_items = self.page.query_selector_all("div.pre-wrap.text-break.w-100")
+        for item in condition_items:
+            text = item.inner_text().strip()
+            if text:
+                conditions.append(text)
+        if conditions:
+            content["entry_conditions"] = conditions
+
+        # Get inquiry content (お問い合わせ時の内容)
+        inquiry_sections = self.page.query_selector_all("div.card-body.px-md-5")
+        for section in inquiry_sections:
+            headers = section.query_selector_all("div.fw-bold.mb-2.bg-light.text-secondary.py-1.px-3")
+            for header in headers:
+                header_text = header.inner_text().strip()
+                # Get the next sibling pre-wrap div
+                content_div = header.evaluate_handle(
+                    "el => el.nextElementSibling"
+                )
+                if content_div:
+                    try:
+                        content_text = content_div.inner_text().strip()
+                        if header_text == "お問い合わせ時の内容":
+                            content["inquiry_content"] = content_text
+                        elif header_text == "発注ナビ担当者のヒアリング内容":
+                            content["hearing_content"] = content_text
+                    except Exception:
+                        pass
 
         return content
 

@@ -178,15 +178,70 @@ def hnavi_jobs(
 
         if job_id:
             # Show job details
-            job = client.get_job(job_id)
+            # If job_id looks like a display No. (12 digits), find the URL ID first
+            if len(job_id) == 12 and job_id.isdigit():
+                # Search for the job to get URL ID
+                all_jobs = client.list_jobs(include_saas=True)
+                url_id = None
+                for j in all_jobs:
+                    if j.id == job_id:
+                        url_id = j.url.split("/")[-1]
+                        break
+                if not url_id:
+                    err_console.print(f"[bold red]Error:[/bold red] Job No. {job_id} not found")
+                    raise typer.Exit(ExitCode.NOT_FOUND)
+                job = client.get_job(url_id)
+            else:
+                job = client.get_job(job_id)
 
             if json_output:
                 console.print_json(json.dumps(job))
             else:
+                # Header
                 console.print(f"\n[bold]{job.get('title', 'Job ' + job_id)}[/bold]")
-                console.print(f"[dim]URL: {job.get('url')}[/dim]\n")
-                if job.get("description"):
-                    console.print(job["description"][:2000])  # Truncate long descriptions
+                console.print(f"[dim]No. {job.get('no', job_id)} | {job.get('url')}[/dim]\n")
+
+                # Status line
+                status_parts = []
+                if job.get("status"):
+                    status_parts.append(f"[red]{job['status']}[/red]")
+                if job.get("deadline"):
+                    status_parts.append(f"〆 {job['deadline']}")
+                if job.get("category"):
+                    status_parts.append(f"[cyan]{job['category']}[/cyan]")
+                if status_parts:
+                    console.print(" | ".join(status_parts))
+
+                # Company info
+                info_parts = []
+                if job.get("max_companies"):
+                    info_parts.append(f"上限: {job['max_companies']}")
+                if job.get("company_size"):
+                    info_parts.append(f"規模: {job['company_size']}")
+                if job.get("company_location"):
+                    info_parts.append(f"拠点: {job['company_location']}")
+                if job.get("has_website"):
+                    info_parts.append(f"HP: {job['has_website']}")
+                if info_parts:
+                    console.print(" | ".join(info_parts))
+
+                # Entry conditions
+                if job.get("entry_conditions"):
+                    console.print("\n[bold]エントリー条件[/bold]")
+                    for i, cond in enumerate(job["entry_conditions"], 1):
+                        console.print(f"  {i}. {cond}")
+
+                # Inquiry content
+                if job.get("inquiry_content"):
+                    console.print(f"\n[bold]お問い合わせ内容[/bold]")
+                    console.print(f"  {job['inquiry_content']}")
+
+                # Hearing content
+                if job.get("hearing_content"):
+                    console.print(f"\n[bold]ヒアリング内容[/bold]")
+                    # Indent each line
+                    for line in job["hearing_content"].split("\n"):
+                        console.print(f"  {line}")
         else:
             # List jobs
             jobs = client.list_jobs(category=category, include_saas=saas)
