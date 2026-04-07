@@ -404,20 +404,17 @@ class HnaviClient:
         """
         self._ensure_logged_in()
         self.page.goto(f"{self.BASE_URL}/negotiations")
-        self.page.wait_for_load_state("domcontentloaded")
-        self.page.wait_for_timeout(1000)
+        self.page.wait_for_load_state("networkidle")
 
         negotiations = []
 
-        # Find negotiation items
-        neg_elements = self.page.query_selector_all(
-            ".negotiation-item, .negotiation-card, [class*='negotiation'], tr[data-id]"
-        )
+        # Cards use the same structure as job listings
+        cards = self.page.query_selector_all("div.card.mb-4.shadow.position-relative")
 
-        for elem in neg_elements:
+        for card in cards:
             try:
-                # Extract negotiation ID from link
-                link = elem.query_selector("a[href*='/negotiations/']")
+                # Extract negotiation ID from the card-body link
+                link = card.query_selector("a.link-dark.card-body")
                 if not link:
                     continue
 
@@ -427,25 +424,30 @@ class HnaviClient:
                     continue
 
                 neg_id = match.group(1)
-                title = link.inner_text().strip()
 
-                # Extract company name
+                # Extract title from div.title
+                title_elem = card.query_selector("div.title")
+                title = title_elem.inner_text().strip() if title_elem else ""
+
+                # Extract company name from card content (社名：xxx)
                 company = None
-                company_elem = elem.query_selector("[class*='company'], [class*='client']")
-                if company_elem:
-                    company = company_elem.inner_text().strip()
+                card_text = card.inner_text()
+                company_match = re.search(r"社名：(.+?)(?:\n|$)", card_text)
+                if company_match:
+                    company = company_match.group(1).strip()
 
-                # Extract status
+                # Extract status badge (コンタクト中, etc.)
                 status = None
-                status_elem = elem.query_selector("[class*='status'], .badge")
+                status_elem = card.query_selector("div.badge.min-w-140px")
                 if status_elem:
                     status = status_elem.inner_text().strip()
 
-                # Extract last message date
+                # Extract introduction date (紹介日時：xxx)
                 date = None
-                date_elem = elem.query_selector("[class*='date'], time")
+                date_elem = card.query_selector("div.text-primary")
                 if date_elem:
-                    date = date_elem.inner_text().strip()
+                    date_text = date_elem.inner_text().strip()
+                    date = date_text.replace("紹介日時：", "").strip()
 
                 negotiations.append(
                     HnaviNegotiation(
