@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.19.0 (2026-04-07)
+
+### Features
+
+- **sales**: Include job details in negotiation view
+  ([`1a83eb4`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1a83eb450bee05eb75cfa27b487348584cf91785))
+
+get_negotiation now also fetches /negotiations/{id}/job to include project details: inquiry content,
+  hearing notes, budget, delivery, category, max companies, entry conditions.
+
+Extracted _parse_job_detail_page as shared parser for both get_job and get_negotiation job pages
+  (identical HTML structure).
+
+
 ## v0.18.2 (2026-04-07)
 
 ### Bug Fixes
