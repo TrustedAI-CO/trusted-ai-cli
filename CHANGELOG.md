@@ -1,11 +1,38 @@
 # CHANGELOG
 
 
-## v0.18.1.1 (2026-04-07)
+## v0.18.2 (2026-04-07)
 
-### Fixed
+### Bug Fixes
 
-- **sales**: Fix Hnavi negotiations listing returning empty results by using correct CSS selectors matching actual page structure
+- **sales**: Detect not-found jobs, extract budget/delivery fields
+  ([`26fe2b7`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/26fe2b73d8780547bc123a4661d9c468a2d0b3ee))
+
+- get_job now raises RuntimeError on "Not Found" pages instead of returning an empty dict (e.g. when
+  passing a negotiation ID) - Extract budget (予算) and delivery (納期) from job detail pages, handling
+  the empty spacer div between header and content - Display budget/delivery in CLI output
+
+- **sales**: Rewrite get_negotiation with correct selectors
+  ([`35c3ea7`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/35c3ea7ba26dbaba44ea7524fb85efc357871ae1))
+
+Negotiation detail page was returning almost no data because selectors were guesses. Now correctly
+  extracts: - Title, No., status from job link and header - Company info: name, contact person,
+  address, email, phone - Self introduction text - Assigned member and plan type - Messages from
+  div.negotiation-messages (skipping deleted ones) - Read status badges per message
+
+- **sales**: Use correct selectors for Hnavi negotiations page
+  ([`c9c9618`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c9c96187fa9dbf8e6a2f0f50ba623320a0689cd4))
+
+The negotiations page uses the same card layout as jobs (div.card.mb-4.shadow.position-relative) but
+  the code was using guessed selectors (.negotiation-item, [class*='negotiation']) that didn't match
+  any elements, returning empty results.
+
+### Chores
+
+- Bump version and changelog (v0.18.1.1)
+  ([`35a4f24`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/35a4f242a25ccba548283e258119f18ba66c025a))
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
 
 
 ## v0.18.1 (2026-04-05)
@@ -13,8 +40,12 @@
 ### Documentation
 
 - **sales**: Add company context references to skill
-  - Add company-profile.md with team credentials, case studies
-  - Add entry-guidelines.md with tone, templates, NG words
+  ([`da0222f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/da0222fc81ad803bf9dcede5d7fd6f5ecc34c07a))
+
+- Add company-profile.md with team credentials, case studies - Add entry-guidelines.md with tone,
+  templates, NG words - Update SKILL.md to reference the guidelines
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
 
 
 ## v0.18.0 (2026-04-04)
