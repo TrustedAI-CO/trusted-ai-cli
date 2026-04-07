@@ -304,19 +304,39 @@ def hnavi_active(
                 console.print_json(json.dumps(neg))
             else:
                 console.print(f"\n[bold]{neg.get('title', 'Negotiation ' + neg_id)}[/bold]")
+                if neg.get("no"):
+                    console.print(f"[dim]No. {neg['no']} | {neg.get('url')}[/dim]")
+                else:
+                    console.print(f"[dim]{neg.get('url')}[/dim]")
+
+                # Status
+                if neg.get("status"):
+                    console.print(f"[cyan]{neg['status']}[/cyan]")
+
+                # Company info
                 if neg.get("company"):
-                    console.print(f"Company: {neg['company']}")
-                console.print(f"[dim]URL: {neg.get('url')}[/dim]\n")
+                    console.print(f"\n[bold]発注会社[/bold]")
+                    console.print(f"  会社名: {neg['company']}")
+                    if neg.get("contact_person"):
+                        console.print(f"  発注者: {neg['contact_person']}")
+                    if neg.get("company_address"):
+                        console.print(f"  住所: {neg['company_address']}")
+                    if neg.get("email"):
+                        console.print(f"  Email: {neg['email']}")
+                    if neg.get("phone"):
+                        console.print(f"  TEL: {neg['phone']}")
 
                 # Show messages
                 messages = neg.get("messages", [])
                 if messages:
-                    console.print("[bold]Messages:[/bold]\n")
+                    console.print(f"\n[bold]メッセージ ({len(messages)}件)[/bold]\n")
                     for msg in messages:
-                        console.print(f"[cyan]{msg['sender']}[/cyan] ({msg.get('date', '—')})")
-                        console.print(f"  {msg['content']}\n")
+                        console.print(f"[cyan]{msg['sender']}[/cyan] [dim]({msg.get('date', '—')})[/dim]")
+                        for line in msg["content"].split("\n"):
+                            console.print(f"  {line}")
+                        console.print()
                 else:
-                    console.print("[dim]No messages found.[/dim]")
+                    console.print("\n[dim]No messages found.[/dim]")
         else:
             # List negotiations
             negotiations = client.list_negotiations()

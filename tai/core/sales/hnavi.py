@@ -495,50 +495,127 @@ class HnaviClient:
         """
         self._ensure_logged_in()
         self.page.goto(f"{self.BASE_URL}/negotiations/{neg_id}")
-        self.page.wait_for_load_state("domcontentloaded")
-        self.page.wait_for_timeout(1000)
+        self.page.wait_for_load_state("networkidle")
 
-        result = {
+        result: dict = {
             "id": neg_id,
             "url": f"{self.BASE_URL}/negotiations/{neg_id}",
             "messages": [],
         }
 
-        # Get title/project name
-        title_elem = self.page.query_selector("h1, .negotiation-title, [class*='title']")
-        if title_elem:
-            result["title"] = title_elem.inner_text().strip()
+        # Get status badge (コンタクト中, 商談中, etc.)
+        status_elem = self.page.query_selector("div.fs-3.fw-bold + div.badge")
+        if status_elem:
+            result["status"] = status_elem.inner_text().strip()
 
-        # Get company info
-        company_elem = self.page.query_selector("[class*='company'], [class*='client']")
-        if company_elem:
-            result["company"] = company_elem.inner_text().strip()
+        # Get title and No. from the job link
+        job_link = self.page.query_selector(f'a[href="/negotiations/{neg_id}/job"]')
+        if job_link:
+            link_text = job_link.inner_text().strip()
+            # Format: "AIを活用した...（202601090010）"
+            title_match = re.match(r"(.+?)（(\d+)）", link_text)
+            if title_match:
+                result["title"] = title_match.group(1).strip()
+                result["no"] = title_match.group(2)
+            else:
+                result["title"] = link_text
 
-        # Get messages
-        message_elements = self.page.query_selector_all(
-            ".message, .message-item, [class*='message'], .chat-item"
+        # Get company info from the card body
+        card_body = self.page.query_selector("div.card.mt-4 div.card-body")
+        if card_body:
+            card_text = card_body.inner_text()
+            info_patterns = {
+                "company": r"会社名：(.+?)(?:\n|$)",
+                "contact_person": r"発注者名：(.+?)(?:\n|$)",
+                "company_address": r"会社住所：(.+?)(?:\n|$)",
+                "email": r"メールアドレス：(.+?)(?:\n|$)",
+                "phone": r"電話番号：(.+?)(?:\n|$)",
+            }
+            for field, pattern in info_patterns.items():
+                match = re.search(pattern, card_text)
+                if match:
+                    result[field] = match.group(1).strip()
+
+            # Get plan info
+            plan_match = re.search(r"本案件の利用プラン：(.+?)(?:\n|$)", card_text)
+            if plan_match:
+                result["plan"] = plan_match.group(1).strip()
+
+        # Get self introduction text
+        self_intro_elem = self.page.query_selector("div.untruncated.pre-wrap")
+        if not self_intro_elem:
+            self_intro_elem = self.page.query_selector("div.truncated.pre-wrap")
+        if self_intro_elem:
+            text = self_intro_elem.inner_text().strip()
+            # Remove "もっと見る" / "少なく表示する" links
+            text = re.sub(r"(もっと見る|少なく表示する)\s*$", "", text).strip()
+            if text:
+                result["self_introduction"] = text
+
+        # Get assigned member
+        member_elem = self.page.query_selector(
+            "div.fw-bold:has-text('担当者') + div + div.pre-wrap"
         )
+        if not member_elem:
+            # Fallback: find by looking for text after 担当者 heading
+            body_text = card_body.inner_text() if card_body else ""
+            member_match = re.search(r"の担当者\n.+\n(.+?)(?:\n|$)", body_text)
+            if member_match:
+                result["assigned_member"] = member_match.group(1).strip()
 
-        for msg_elem in message_elements:
-            try:
-                # Get sender
-                sender_elem = msg_elem.query_selector("[class*='sender'], [class*='author'], .name")
-                sender = sender_elem.inner_text().strip() if sender_elem else "Unknown"
+        # Get messages from div.negotiation-messages
+        msg_container = self.page.query_selector("div.negotiation-messages")
+        if msg_container:
+            # Each message block: header (d-flex) + content (mt-2)
+            # Messages are separated by <hr>
+            headers = msg_container.query_selector_all(
+                "div.d-flex.align-items-center.flex-wrap"
+            )
+            for header in headers:
+                try:
+                    # Extract sender name and company from fw-bold elements
+                    bolds = header.query_selector_all("div.fw-bold.pe-2")
+                    parts = [b.inner_text().strip() for b in bolds]
 
-                # Get content
-                content_elem = msg_elem.query_selector("[class*='content'], [class*='body'], p")
-                content = content_elem.inner_text().strip() if content_elem else ""
+                    sender = ""
+                    date = None
+                    if len(parts) >= 3:
+                        sender = f"{parts[1]} {parts[0]}"  # Company + Name
+                        date = parts[2]
+                    elif len(parts) >= 2:
+                        sender = parts[0]
+                        date = parts[1]
+                    elif parts:
+                        sender = parts[0]
 
-                # Get date
-                date_elem = msg_elem.query_selector("[class*='date'], time, .timestamp")
-                date = date_elem.inner_text().strip() if date_elem else None
+                    # Get read status
+                    badge = header.query_selector("div.badge.rounded-pill")
+                    read_status = badge.inner_text().strip() if badge else None
 
-                if content:
-                    result["messages"].append(
-                        HnaviMessage(sender=sender, content=content, date=date).to_dict()
+                    # Get message content from next sibling div.mt-2
+                    content_div = header.evaluate_handle(
+                        "el => el.nextElementSibling"
                     )
-            except Exception:
-                continue
+                    content = ""
+                    if content_div:
+                        # Check for deleted message
+                        deleted = content_div.query_selector("div.text-secondary")
+                        if deleted and "削除されました" in deleted.inner_text():
+                            continue
+                        # Get actual content from pre-wrap div
+                        pre_wrap = content_div.query_selector("div.pre-wrap")
+                        if pre_wrap:
+                            content = pre_wrap.inner_text().strip()
+
+                    if content:
+                        msg = HnaviMessage(
+                            sender=sender, content=content, date=date
+                        ).to_dict()
+                        if read_status:
+                            msg["read_status"] = read_status
+                        result["messages"].append(msg)
+                except Exception:
+                    continue
 
         return result
 
