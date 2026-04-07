@@ -288,28 +288,16 @@ class HnaviClient:
 
         return jobs
 
-    def get_job(self, job_id: str) -> dict:
-        """Get detailed information about a job.
+    def _parse_job_detail_page(self) -> dict:
+        """Parse job detail fields from the current page.
 
-        Args:
-            job_id: The job ID (URL ID like 15995, or display No. like 202604020007)
+        Works for both /jobs/{id} and /negotiations/{id}/job pages
+        since they share the same HTML structure.
 
         Returns:
-            Dict with job details
+            Dict with job detail fields
         """
-        self._ensure_logged_in()
-        self.page.goto(f"{self.BASE_URL}/jobs/{job_id}")
-        self.page.wait_for_load_state("networkidle")
-
-        # Detect "Not Found" pages
-        not_found = self.page.query_selector("div.fs-3.fw-bold")
-        if not_found and "Not Found" in not_found.inner_text():
-            raise RuntimeError(f"Job {job_id} not found. Check the ID — negotiation IDs are different from job IDs.")
-
-        content: dict = {
-            "url_id": job_id,
-            "url": f"{self.BASE_URL}/jobs/{job_id}",
-        }
+        content: dict = {}
 
         # Get display No. (e.g., "No. 202604020007")
         no_elem = self.page.query_selector("div.ms-3")
@@ -325,10 +313,11 @@ class HnaviClient:
             content["status"] = status_elem.inner_text().strip()
 
         # Get deadline (〆 2026年4月6日 14:30)
-        deadline_elem = self.page.query_selector("div.text-danger")
+        deadline_elem = self.page.query_selector("div.text-danger, div.text-primary")
         if deadline_elem:
             deadline_text = deadline_elem.inner_text().strip()
-            content["deadline"] = deadline_text.replace("〆", "").strip()
+            if "〆" in deadline_text:
+                content["deadline"] = deadline_text.replace("〆", "").strip()
 
         # Get category tag (AI, システム, etc.)
         tag_elem = self.page.query_selector("span.badge.me-2")
@@ -346,12 +335,11 @@ class HnaviClient:
             parent = max_companies_section.evaluate_handle("el => el.parentElement")
             if parent:
                 text = parent.inner_text().strip()
-                # Extract the number after "上限企業数"
                 match = re.search(r"上限企業数\s*(\d+社)", text)
                 if match:
                     content["max_companies"] = match.group(1)
 
-        # Get company info cards (会社規模, 会社拠点, 企業HPの有無)
+        # Get company info cards (会社規模, 会社拠点/会社住所, 企業HPの有無)
         info_cards = self.page.query_selector_all("div.card.shadow.h-100 div.text-center")
         for card in info_cards:
             try:
@@ -362,7 +350,7 @@ class HnaviClient:
                     value = value_elem.inner_text().strip()
                     if label == "会社規模":
                         content["company_size"] = value
-                    elif label == "会社拠点":
+                    elif label in ("会社拠点", "会社住所"):
                         content["company_location"] = value
                     elif label == "企業HPの有無":
                         content["has_website"] = value
@@ -390,6 +378,8 @@ class HnaviClient:
             "予算": "budget",
             "納期": "delivery",
             "カテゴリ": None,  # already extracted above
+            "エントリー条件": None,  # already extracted above
+            "上限企業数": None,  # already extracted above
         }
         for header in all_headers:
             try:
@@ -414,6 +404,29 @@ class HnaviClient:
             except Exception:
                 continue
 
+        return content
+
+    def get_job(self, job_id: str) -> dict:
+        """Get detailed information about a job.
+
+        Args:
+            job_id: The job ID (URL ID like 15995, or display No. like 202604020007)
+
+        Returns:
+            Dict with job details
+        """
+        self._ensure_logged_in()
+        self.page.goto(f"{self.BASE_URL}/jobs/{job_id}")
+        self.page.wait_for_load_state("networkidle")
+
+        # Detect "Not Found" pages
+        not_found = self.page.query_selector("div.fs-3.fw-bold")
+        if not_found and "Not Found" in not_found.inner_text():
+            raise RuntimeError(f"Job {job_id} not found. Check the ID — negotiation IDs are different from job IDs.")
+
+        content = self._parse_job_detail_page()
+        content["url_id"] = job_id
+        content["url"] = f"{self.BASE_URL}/jobs/{job_id}"
         return content
 
     def list_negotiations(self) -> list[HnaviNegotiation]:
@@ -485,15 +498,25 @@ class HnaviClient:
         return negotiations
 
     def get_negotiation(self, neg_id: str) -> dict:
-        """Get negotiation details including messages.
+        """Get negotiation details including messages and job info.
+
+        Fetches both /negotiations/{id} (contact info, messages) and
+        /negotiations/{id}/job (project details, budget, requirements).
 
         Args:
             neg_id: Negotiation ID
 
         Returns:
-            Dict with negotiation details and messages
+            Dict with negotiation details, job info, and messages
         """
         self._ensure_logged_in()
+
+        # First, get job details from the linked job page
+        self.page.goto(f"{self.BASE_URL}/negotiations/{neg_id}/job")
+        self.page.wait_for_load_state("networkidle")
+        job_detail = self._parse_job_detail_page()
+
+        # Then get negotiation-specific info (contact, messages)
         self.page.goto(f"{self.BASE_URL}/negotiations/{neg_id}")
         self.page.wait_for_load_state("networkidle")
 
@@ -616,6 +639,11 @@ class HnaviClient:
                         result["messages"].append(msg)
                 except Exception:
                     continue
+
+        # Merge job details (don't overwrite negotiation-specific fields)
+        for key, value in job_detail.items():
+            if key not in result:
+                result[key] = value
 
         return result
 

@@ -326,6 +326,23 @@ def hnavi_active(
                     if neg.get("phone"):
                         console.print(f"  TEL: {neg['phone']}")
 
+                # Job details (from /negotiations/{id}/job)
+                if neg.get("budget") or neg.get("delivery"):
+                    console.print()
+                    if neg.get("budget"):
+                        console.print(f"[bold]予算:[/bold] {neg['budget']}")
+                    if neg.get("delivery"):
+                        console.print(f"[bold]納期:[/bold] {neg['delivery']}")
+
+                if neg.get("inquiry_content"):
+                    console.print(f"\n[bold]お問い合わせ内容[/bold]")
+                    console.print(f"  {neg['inquiry_content']}")
+
+                if neg.get("hearing_content"):
+                    console.print(f"\n[bold]ヒアリング内容[/bold]")
+                    for line in neg["hearing_content"].split("\n"):
+                        console.print(f"  {line}")
+
                 # Show messages
                 messages = neg.get("messages", [])
                 if messages:
