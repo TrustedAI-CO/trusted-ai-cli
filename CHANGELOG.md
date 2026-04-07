@@ -1,6 +1,13 @@
 # CHANGELOG
 
 
+## v0.18.1.1 (2026-04-07)
+
+### Fixed
+
+- **sales**: Fix Hnavi negotiations listing returning empty results by using correct CSS selectors matching actual page structure
+
+
 ## v0.18.1 (2026-04-05)
 
 ### Documentation
