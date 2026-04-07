@@ -301,6 +301,11 @@ class HnaviClient:
         self.page.goto(f"{self.BASE_URL}/jobs/{job_id}")
         self.page.wait_for_load_state("networkidle")
 
+        # Detect "Not Found" pages
+        not_found = self.page.query_selector("div.fs-3.fw-bold")
+        if not_found and "Not Found" in not_found.inner_text():
+            raise RuntimeError(f"Job {job_id} not found. Check the ID — negotiation IDs are different from job IDs.")
+
         content: dict = {
             "url_id": job_id,
             "url": f"{self.BASE_URL}/jobs/{job_id}",
@@ -374,25 +379,40 @@ class HnaviClient:
         if conditions:
             content["entry_conditions"] = conditions
 
-        # Get inquiry content (お問い合わせ時の内容)
-        inquiry_sections = self.page.query_selector_all("div.card-body.px-md-5")
-        for section in inquiry_sections:
-            headers = section.query_selector_all("div.fw-bold.mb-2.bg-light.text-secondary.py-1.px-3")
-            for header in headers:
+        # Get all labeled sections (bg-light headers with next sibling content)
+        all_headers = self.page.query_selector_all(
+            "div.fw-bold.mb-2.bg-light.text-secondary.py-1.px-3, "
+            "div.fw-bold.mt-4.mb-2.bg-light.text-secondary.py-1.px-3"
+        )
+        header_map = {
+            "お問い合わせ時の内容": "inquiry_content",
+            "発注ナビ担当者のヒアリング内容": "hearing_content",
+            "予算": "budget",
+            "納期": "delivery",
+            "カテゴリ": None,  # already extracted above
+        }
+        for header in all_headers:
+            try:
                 header_text = header.inner_text().strip()
-                # Get the next sibling pre-wrap div
-                content_div = header.evaluate_handle(
-                    "el => el.nextElementSibling"
-                )
-                if content_div:
-                    try:
-                        content_text = content_div.inner_text().strip()
-                        if header_text == "お問い合わせ時の内容":
-                            content["inquiry_content"] = content_text
-                        elif header_text == "発注ナビ担当者のヒアリング内容":
-                            content["hearing_content"] = content_text
-                    except Exception:
-                        pass
+                field = header_map.get(header_text)
+                if field is None:
+                    continue
+                # Try next sibling; if empty, try the one after (some sections
+                # have an empty <div></div> spacer between header and content)
+                text = ""
+                sibling = header.evaluate_handle("el => el.nextElementSibling")
+                if sibling:
+                    text = sibling.inner_text().strip()
+                if not text:
+                    sibling = header.evaluate_handle(
+                        "el => el.nextElementSibling?.nextElementSibling"
+                    )
+                    if sibling:
+                        text = sibling.inner_text().strip()
+                if text:
+                    content[field] = text
+            except Exception:
+                continue
 
         return content
 

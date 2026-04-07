@@ -225,6 +225,14 @@ def hnavi_jobs(
                 if info_parts:
                     console.print(" | ".join(info_parts))
 
+                # Budget and delivery
+                if job.get("budget") or job.get("delivery"):
+                    console.print()
+                    if job.get("budget"):
+                        console.print(f"[bold]予算:[/bold] {job['budget']}")
+                    if job.get("delivery"):
+                        console.print(f"[bold]納期:[/bold] {job['delivery']}")
+
                 # Entry conditions
                 if job.get("entry_conditions"):
                     console.print("\n[bold]エントリー条件[/bold]")
