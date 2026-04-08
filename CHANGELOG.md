@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## v0.20.0 (2026-04-08)
+
+### Added
+
+- **browser**: `tai browser install` command to download, build, and install the gstack browse
+  tool for QA automation. Downloads source to a temp directory, builds with Bun, copies only the
+  compiled binary to `~/.tai/tools/browse/`, and creates a symlink for the `/qa` skill.
+- **browser**: `tai browser status` command to check browse tool installation status.
+- **browser**: `BrowserError` and `BunNotFoundError` error types with helpful install hints.
+
 ## v0.19.0 (2026-04-07)
 
 ### Features
