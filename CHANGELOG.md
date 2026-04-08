@@ -3,13 +3,37 @@
 
 ## v0.20.0 (2026-04-08)
 
-### Added
+### Features
 
-- **browser**: `tai browser install` command to download, build, and install the gstack browse
-  tool for QA automation. Downloads source to a temp directory, builds with Bun, copies only the
-  compiled binary to `~/.tai/tools/browse/`, and creates a symlink for the `/qa` skill.
-- **browser**: `tai browser status` command to check browse tool installation status.
-- **browser**: `BrowserError` and `BunNotFoundError` error types with helpful install hints.
+- **browser**: Add browser install command for gstack browse tool
+  ([#73](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/73),
+  [`506adfb`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/506adfb137bbbd66aa4d9b71b9f83669160668cc))
+
+* feat(browser): add browser install command for gstack browse tool
+
+Downloads the gstack browse source to a temp directory, builds the binary with Bun, copies only the
+  compiled binary to ~/.tai/tools/browse/, and creates a symlink so the /qa skill can find it. The
+  gstack source is cleaned up after building — no external dependency left behind.
+
+New commands: tai browser install [--ref main] tai browser status [--json]
+
+* 0.20.0
+
+Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>
+
+* fix(browser): address review — remove redundant bun check, consistent JSON handling
+
+- Remove _check_bun() CLI guard; let install_browse() raise BunNotFoundError caught by the existing
+  BrowserError handler (single source of truth) - Move check_bun/get_browser_status to top-level
+  imports (lightweight fns) - Drop --json flag on status; use global ctx.obj.json_output
+  consistently
+
+---------
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com>
+
 
 ## v0.19.0 (2026-04-07)
 
