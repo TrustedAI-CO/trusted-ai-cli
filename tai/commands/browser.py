@@ -7,24 +7,13 @@ import json
 import typer
 from rich.console import Console
 
-from tai.core.errors import BrowserError, BunNotFoundError, ExitCode, handle_error
+from tai.core.browser_setup import check_bun, get_browser_status
+from tai.core.errors import BrowserError, handle_error
 
 app = typer.Typer(name="browser", help="Install and manage the gstack browse tool.")
 
 console = Console()
 err_console = Console(stderr=True)
-
-
-def _check_bun() -> None:
-    """Exit early when bun is not installed."""
-    from tai.core.browser_setup import check_bun
-
-    if not check_bun():
-        err_console.print(
-            "[bold red]Error:[/bold red] Bun is not installed.\n"
-            "[dim]Install with: curl -fsSL https://bun.sh/install | bash[/dim]"
-        )
-        raise typer.Exit(ExitCode.NOT_FOUND)
 
 
 @app.command("install")
@@ -33,8 +22,6 @@ def browser_install(
     ref: str = typer.Option("main", "--ref", help="Git ref to install (branch, tag, or commit)."),
 ) -> None:
     """Download, build, and install the gstack browse binary."""
-    _check_bun()
-
     json_output = getattr(ctx.obj, "json_output", False)
 
     try:
@@ -59,13 +46,10 @@ def browser_install(
 @app.command("status")
 def browser_status(
     ctx: typer.Context,
-    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Show installation status of the browse tool."""
-    from tai.core.browser_setup import check_bun, get_browser_status
-
+    json_output = getattr(ctx.obj, "json_output", False)
     status = get_browser_status()
-    json_output = json_flag or getattr(ctx.obj, "json_output", False)
 
     if json_output:
         console.print_json(json.dumps({

@@ -9,7 +9,7 @@ from typer.testing import CliRunner
 
 from tai.core.browser_setup import BrowserStatus
 from tai.core.context import AppContext
-from tai.core.errors import BrowserError
+from tai.core.errors import BrowserError, BunNotFoundError
 from tai.main import app
 
 runner = CliRunner()
@@ -21,35 +21,30 @@ def _ctx(**overrides) -> AppContext:
     return AppContext(**defaults)
 
 
-# All patches target tai.core.browser_setup because browser.py lazy-imports from there.
-
 # ── install ──────────────────────────────────────────────────────────────────
 
 
 def test_browser_install_success():
     binary = Path("/fake/browse")
-    with (
-        patch("tai.core.browser_setup.check_bun", return_value=True),
-        patch("tai.core.browser_setup.install_browse", return_value=binary),
-    ):
+    with patch("tai.core.browser_setup.install_browse", return_value=binary):
         result = runner.invoke(app, ["browser", "install"], obj=_ctx())
         assert result.exit_code == 0
         assert "installed successfully" in result.output
 
 
 def test_browser_install_no_bun():
-    with patch("tai.core.browser_setup.check_bun", return_value=False):
+    with patch(
+        "tai.core.browser_setup.install_browse",
+        side_effect=BunNotFoundError(),
+    ):
         result = runner.invoke(app, ["browser", "install"], obj=_ctx())
         assert result.exit_code != 0
 
 
 def test_browser_install_failure():
-    with (
-        patch("tai.core.browser_setup.check_bun", return_value=True),
-        patch(
-            "tai.core.browser_setup.install_browse",
-            side_effect=BrowserError("clone failed", hint="check network"),
-        ),
+    with patch(
+        "tai.core.browser_setup.install_browse",
+        side_effect=BrowserError("clone failed", hint="check network"),
     ):
         result = runner.invoke(app, ["browser", "install"], obj=_ctx())
         assert result.exit_code != 0
@@ -57,10 +52,7 @@ def test_browser_install_failure():
 
 def test_browser_install_json():
     binary = Path("/fake/browse")
-    with (
-        patch("tai.core.browser_setup.check_bun", return_value=True),
-        patch("tai.core.browser_setup.install_browse", return_value=binary),
-    ):
+    with patch("tai.core.browser_setup.install_browse", return_value=binary):
         result = runner.invoke(app, ["browser", "install"], obj=_ctx(json_output=True))
         assert result.exit_code == 0
         assert '"status": "ok"' in result.output
@@ -72,8 +64,8 @@ def test_browser_install_json():
 def test_browser_status_installed():
     status = BrowserStatus(installed=True, binary_path=Path("/fake/browse"), version="0.15")
     with (
-        patch("tai.core.browser_setup.get_browser_status", return_value=status),
-        patch("tai.core.browser_setup.check_bun", return_value=True),
+        patch("tai.commands.browser.get_browser_status", return_value=status),
+        patch("tai.commands.browser.check_bun", return_value=True),
     ):
         result = runner.invoke(app, ["browser", "status"], obj=_ctx())
         assert result.exit_code == 0
@@ -83,8 +75,8 @@ def test_browser_status_installed():
 def test_browser_status_not_installed():
     status = BrowserStatus(installed=False, binary_path=None, version=None)
     with (
-        patch("tai.core.browser_setup.get_browser_status", return_value=status),
-        patch("tai.core.browser_setup.check_bun", return_value=False),
+        patch("tai.commands.browser.get_browser_status", return_value=status),
+        patch("tai.commands.browser.check_bun", return_value=False),
     ):
         result = runner.invoke(app, ["browser", "status"], obj=_ctx())
         assert result.exit_code == 0
@@ -93,7 +85,7 @@ def test_browser_status_not_installed():
 
 def test_browser_status_json():
     status = BrowserStatus(installed=True, binary_path=Path("/fake/browse"), version="0.15")
-    with patch("tai.core.browser_setup.get_browser_status", return_value=status):
-        result = runner.invoke(app, ["browser", "status", "--json"], obj=_ctx())
+    with patch("tai.commands.browser.get_browser_status", return_value=status):
+        result = runner.invoke(app, ["browser", "status"], obj=_ctx(json_output=True))
         assert result.exit_code == 0
         assert '"installed": true' in result.output
