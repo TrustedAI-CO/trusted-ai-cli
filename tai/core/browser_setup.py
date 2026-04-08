@@ -1,9 +1,9 @@
 """Install and manage the gstack browse tool for QA automation.
 
-Downloads the browse source from garrytan/gstack, builds the binary
-with Bun, and places it where the /qa skill expects it.  The gstack
-source is fetched into a temporary directory and cleaned up after the
-build — only the compiled binary is kept.
+Downloads gstack, builds the browse binary with Bun, and copies the
+full browse directory (source + dist + node_modules) to ~/.tai/tools/browse/.
+The browse binary is a thin CLI client that spawns a Bun server process,
+so it needs the source tree and dependencies at runtime.
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ from tai.core.errors import BrowserError, BunNotFoundError
 _log = logging.getLogger(__name__)
 
 BROWSE_DIR = Path.home() / ".tai" / "tools" / "browse"
-BROWSE_BINARY = BROWSE_DIR / "browse"
+BROWSE_BINARY = BROWSE_DIR / "dist" / "browse"
 SKILL_LINK = Path.home() / ".claude" / "skills" / "tai" / "browse"
 GSTACK_REPO = "https://github.com/garrytan/gstack.git"
 
@@ -48,10 +48,12 @@ def check_browse_binary() -> Path | None:
 
 
 def install_browse(ref: str = "main") -> Path:
-    """Fetch gstack browse source, build the binary, and install it.
+    """Fetch gstack, build the browse tool, and install it.
 
-    The full gstack repo is shallow-cloned to a temp directory.  Only
-    ``browse/dist/browse`` is copied out; everything else is deleted.
+    The full gstack repo is shallow-cloned to a temp directory.  The
+    ``browse/`` subtree (source, dist, node_modules) is copied to
+    ``~/.tai/tools/browse/`` so the server can run at runtime.  The rest
+    of gstack is discarded.
 
     Raises ``BunNotFoundError`` when Bun is missing and ``BrowserError``
     on any subprocess or filesystem failure.
@@ -78,19 +80,29 @@ def install_browse(ref: str = "main") -> Path:
             error_message="bun run build failed in gstack",
         )
 
-        src_binary = clone_dir / "browse" / "dist" / "browse"
+        src_browse = clone_dir / "browse"
+        src_binary = src_browse / "dist" / "browse"
         if not src_binary.exists():
             raise BrowserError(
                 "Browse binary not found after build",
                 hint=f"Expected at {src_binary}",
             )
 
-        BROWSE_DIR.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(src_binary, BROWSE_BINARY)
-        BROWSE_BINARY.chmod(0o755)
+        # Copy the full browse/ tree (src + dist + node_modules).
+        # The binary is a thin CLI; it needs server.ts + playwright at runtime.
+        if BROWSE_DIR.exists():
+            shutil.rmtree(BROWSE_DIR)
+        BROWSE_DIR.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(src_browse, BROWSE_DIR)
+
+        # Also copy node_modules from the gstack root (playwright lives there)
+        src_modules = clone_dir / "node_modules"
+        dst_modules = BROWSE_DIR / "node_modules"
+        if src_modules.exists() and not dst_modules.exists():
+            shutil.copytree(src_modules, dst_modules)
 
     _ensure_skill_link()
-    _log.info("Browse binary installed at %s", BROWSE_BINARY)
+    _log.info("Browse tool installed at %s", BROWSE_DIR)
     return BROWSE_BINARY
 
 
@@ -108,16 +120,17 @@ def get_browser_status() -> BrowserStatus:
 
 
 def _ensure_skill_link() -> None:
-    """Create a ``dist/browse`` tree under the skill path so /qa finds it."""
-    dist_dir = SKILL_LINK / "dist"
-    dist_dir.mkdir(parents=True, exist_ok=True)
+    """Symlink the skill path to BROWSE_DIR so /qa finds the binary."""
+    SKILL_LINK.parent.mkdir(parents=True, exist_ok=True)
 
-    link_target = dist_dir / "browse"
-    if link_target.is_symlink() or link_target.exists():
-        link_target.unlink()
+    if SKILL_LINK.is_symlink() or SKILL_LINK.exists():
+        if SKILL_LINK.is_symlink():
+            SKILL_LINK.unlink()
+        else:
+            shutil.rmtree(SKILL_LINK)
 
-    link_target.symlink_to(BROWSE_BINARY)
-    _log.info("Skill link created: %s -> %s", link_target, BROWSE_BINARY)
+    SKILL_LINK.symlink_to(BROWSE_DIR)
+    _log.info("Skill link created: %s -> %s", SKILL_LINK, BROWSE_DIR)
 
 
 def _read_version() -> str | None:
