@@ -38,7 +38,9 @@ def test_check_bun_not_found():
 
 
 def test_check_browse_binary_exists(tmp_path: Path):
-    binary = tmp_path / "browse"
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    binary = dist / "browse"
     binary.write_text("#!/bin/sh\necho hi")
     binary.chmod(0o755)
 
@@ -47,12 +49,14 @@ def test_check_browse_binary_exists(tmp_path: Path):
 
 
 def test_check_browse_binary_not_exists(tmp_path: Path):
-    with patch("tai.core.browser_setup.BROWSE_BINARY", tmp_path / "nope"):
+    with patch("tai.core.browser_setup.BROWSE_BINARY", tmp_path / "dist" / "nope"):
         assert check_browse_binary() is None
 
 
 def test_check_browse_binary_not_executable(tmp_path: Path):
-    binary = tmp_path / "browse"
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    binary = dist / "browse"
     binary.write_text("data")
     binary.chmod(0o644)
 
@@ -71,14 +75,17 @@ def test_install_browse_no_bun():
 
 def test_install_browse_success(tmp_path: Path):
     browse_dir = tmp_path / "browse_out"
-    browse_binary = browse_dir / "browse"
+    browse_binary = browse_dir / "dist" / "browse"
     skill_link = tmp_path / "skill" / "browse"
 
-    # Simulate the gstack build producing a binary in the tempdir
+    # Simulate the gstack build producing a browse tree in the tempdir
     def fake_run(cmd, *, cwd=None, error_message):
         if cmd[0] == "git" and "clone" in cmd:
             clone_target = Path(cmd[-1])
-            dist = clone_target / "browse" / "dist"
+            browse_src = clone_target / "browse"
+            (browse_src / "src").mkdir(parents=True)
+            (browse_src / "src" / "server.ts").write_text("// server")
+            dist = browse_src / "dist"
             dist.mkdir(parents=True)
             (dist / "browse").write_text("#!/bin/sh\necho ok")
             (dist / "browse").chmod(0o755)
@@ -94,6 +101,7 @@ def test_install_browse_success(tmp_path: Path):
         result = install_browse(ref="main")
         assert result == browse_binary
         assert browse_binary.exists()
+        assert (browse_dir / "src" / "server.ts").exists()
 
 
 def test_install_browse_clone_fails():
@@ -153,39 +161,35 @@ def test_install_browse_binary_missing_after_build():
 def test_ensure_skill_link(tmp_path: Path):
     from tai.core.browser_setup import _ensure_skill_link
 
-    binary = tmp_path / "browse"
-    binary.write_text("binary")
+    browse_dir = tmp_path / "browse_tool"
+    browse_dir.mkdir()
     skill_link = tmp_path / "skill" / "browse"
 
     with (
-        patch("tai.core.browser_setup.BROWSE_BINARY", binary),
+        patch("tai.core.browser_setup.BROWSE_DIR", browse_dir),
         patch("tai.core.browser_setup.SKILL_LINK", skill_link),
     ):
         _ensure_skill_link()
-        link = skill_link / "dist" / "browse"
-        assert link.is_symlink()
-        assert link.resolve() == binary.resolve()
+        assert skill_link.is_symlink()
+        assert skill_link.resolve() == browse_dir.resolve()
 
 
 def test_ensure_skill_link_replaces_existing(tmp_path: Path):
     from tai.core.browser_setup import _ensure_skill_link
 
-    binary = tmp_path / "browse"
-    binary.write_text("new-binary")
+    browse_dir = tmp_path / "browse_tool"
+    browse_dir.mkdir()
     skill_link = tmp_path / "skill" / "browse"
-    dist = skill_link / "dist"
-    dist.mkdir(parents=True)
-    old_link = dist / "browse"
-    old_link.write_text("old")
+    skill_link.parent.mkdir(parents=True)
+    skill_link.symlink_to(tmp_path / "old_target")
 
     with (
-        patch("tai.core.browser_setup.BROWSE_BINARY", binary),
+        patch("tai.core.browser_setup.BROWSE_DIR", browse_dir),
         patch("tai.core.browser_setup.SKILL_LINK", skill_link),
     ):
         _ensure_skill_link()
-        link = dist / "browse"
-        assert link.is_symlink()
-        assert link.resolve() == binary.resolve()
+        assert skill_link.is_symlink()
+        assert skill_link.resolve() == browse_dir.resolve()
 
 
 # ── get_browser_status ───────────────────────────────────────────────────────
