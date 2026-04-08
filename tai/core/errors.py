@@ -95,6 +95,20 @@ class TypstCompileError(TypstError):
         super().__init__("Typst compilation failed", hint=stderr)
 
 
+class BrowserError(TaiError):
+    """Base for browser tool errors."""
+
+
+class BunNotFoundError(BrowserError):
+    exit_code: int = ExitCode.NOT_FOUND
+
+    def __init__(self) -> None:
+        super().__init__(
+            "Bun not found in PATH",
+            hint="Install: curl -fsSL https://bun.sh/install | bash",
+        )
+
+
 class MermaidError(TaiError):
     """Mermaid diagram rendering failed."""
 
