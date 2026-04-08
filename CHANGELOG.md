@@ -1,6 +1,21 @@
 # CHANGELOG
 
 
+## v0.20.1 (2026-04-08)
+
+### Bug Fixes
+
+- **browser**: Copy full browse tree, not just the binary
+  ([#74](https://github.com/TrustedAI-CO/trusted-ai-cli/pull/74),
+  [`d4d06a0`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d4d06a0191f5f1be5dd65cece8b5206000db86de))
+
+The browse binary is a thin CLI client that spawns a Bun server process (server.ts + playwright).
+  Copying only the binary left it unable to find server.ts at runtime. Now copies the full browse/
+  directory (src + dist + node_modules) so the server can start.
+
+Co-authored-by: Tran Thien <tran.thien@trusted-ai.co>
+
+
 ## v0.20.0 (2026-04-08)
 
 ### Features
