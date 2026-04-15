@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.21.0 (2026-04-15)
+
+### Features
+
+- **skills**: Add team and next skills to bundled collection
+  ([`032cba2`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/032cba2b44fde199d9af3d8b99bfc09ef453db3d))
+
+Add two missing skills that were only available as installed personal skills but not distributed via
+  `tai claude setup-skills`: - team: parallel team orchestrator for phase implementation - next:
+  "what's next" dashboard for pipeline status
+
+
 ## v0.20.1 (2026-04-08)
 
 ### Bug Fixes
