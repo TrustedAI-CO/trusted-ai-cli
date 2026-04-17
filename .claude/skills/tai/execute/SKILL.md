@@ -154,10 +154,27 @@ For each wave, in order:
 
 ### 1A. Route and Dispatch Subagents (parallel within wave)
 
-Each coding subagent is dispatched to an external AI CLI (Codex or Gemini) via
-`tai agent run`. The orchestrator (you) stays in Claude Code for coordination.
+Coding subagents are routed to the best backend based on **complexity first,
+then file type**. The orchestrator (you) stays in Claude Code for coordination.
 
-**Backend routing rules — decide per task:**
+**Step 1: Complexity gate — decide Claude vs external CLI:**
+
+| Complexity signal | Route to | Reason |
+|-------------------|----------|--------|
+| Task touches 5+ files across multiple modules | **Claude Code** (`Agent()`) | Needs deep cross-file reasoning |
+| Task involves architectural wiring (new module, new API layer, DI setup) | **Claude Code** (`Agent()`) | Needs codebase-wide context |
+| Task requires reading 3+ existing files to understand context before writing | **Claude Code** (`Agent()`) | External CLIs have limited context |
+| Task has complex dependencies on prior tasks (shared types, interfaces) | **Claude Code** (`Agent()`) | Needs access to full conversation context |
+| Task is a refactor that changes signatures used by other modules | **Claude Code** (`Agent()`) | Blast radius requires careful reasoning |
+| Task is straightforward CRUD, single-file, or well-scoped feature | **External CLI** (codex/gemini) | Fast, parallel, cost-effective |
+| Task is adding tests for existing code | **External CLI** (codex/gemini) | Mechanical, well-scoped |
+| Task is config, docs, or boilerplate | **External CLI** (codex/gemini) | Simple, no deep reasoning needed |
+
+**Heuristic shortcut:** If the task's `files` list has ≤ 3 files AND `depends_on`
+references ≤ 1 prior task AND the acceptance criteria don't mention cross-module
+integration → route to external CLI. Otherwise → Claude Code.
+
+**Step 2: For external CLI tasks, pick backend by file type:**
 
 | Signal | Backend | Reason |
 |--------|---------|--------|
@@ -168,7 +185,7 @@ Each coding subagent is dispatched to an external AI CLI (Codex or Gemini) via
 | Task involves test writing only | **codex** | Faster execution |
 | Task involves docs, markdown, config only | **codex** | Faster execution |
 
-**Routing algorithm (apply in order):**
+**File-type routing algorithm (apply in order):**
 1. Collect all file extensions from the task's `files` list
 2. Classify each as `backend` or `frontend` using the table above
 3. If majority frontend → `gemini`; otherwise → `codex`

@@ -136,6 +136,11 @@ Show the user what you're about to launch:
 ║    eng-3: 2.3 RAG ingestion pipeline                        ║
 ║    eng-4: 2.4 Frontend training UI                          ║
 ╠═══════════════════════════════════════════════════════════╣
+║  Orchestration: Claude Code (team lead, engineers, review)   ║
+║  Coding agents: routed per task complexity + file type        ║
+║    Complex (5+ files, cross-module) → Claude Code            ║
+║    Backend (.py, .go, .sql)         → Codex (fallback: Gemini)║
+║    Frontend (.tsx, .css, .vue)      → Gemini (fallback: Codex)║
 ║  Engineer: /tai-plan-eng → /tai-execute → /tai-ship          ║
 ║  Reviewer: /tai-review    QA: /tai-qa-only                   ║
 ╚═══════════════════════════════════════════════════════════╝
