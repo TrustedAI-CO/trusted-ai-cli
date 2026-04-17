@@ -425,9 +425,15 @@ Do NOT start coding until the plan is reviewed and approved.
 
 ### 2. Execute: run /tai-execute
 Run `/tai-execute` on the plan produced by step 1. This breaks the plan
-into tasks, implements each via fresh-context subagents, and produces
-committed code. Do NOT write implementation code manually — let
-/tai-execute handle it.
+into tasks and dispatches each coding task to an external AI CLI (Codex or
+Gemini) via `tai agent run`. The routing is automatic — /tai-execute picks
+the best backend based on file types in each task:
+- Backend code (.py, .go, .rs, .sql, config) → Codex
+- Frontend code (.ts, .tsx, .jsx, .css, .vue) → Gemini
+- Mixed or ambiguous → Codex (default)
+If a backend fails, /tai-execute retries with the other backend automatically.
+
+Do NOT write implementation code manually — let /tai-execute handle it.
 
 ### 3. Ship: run /tai-ship
 Run `/tai-ship` to ship your work. /tai-ship handles the FULL pre-PR
@@ -456,23 +462,33 @@ Then **stay alive and wait for review feedback**. You are a persistent
 team agent — you will receive messages from the team lead with review
 findings or QA bugs to fix. Do NOT exit after creating the PR.
 
-### 6. Review → Fix loop (via SendMessage)
+### 5. Review → Fix loop (via SendMessage)
 1. Team lead sends you review findings via SendMessage
-2. Read the findings, fix ALL issues in your worktree
-3. Push the fixes and verify CI green
-4. Send confirmation back:
+2. For small fixes (< 20 lines): fix directly in your worktree
+3. For larger fixes: dispatch to external backend via `tai agent run`:
+   ```bash
+   tai agent run \
+     --backend {codex_or_gemini} \
+     --dir "../eng-{slug}" \
+     "Fix the following review issues in {files}: {findings}"
+   ```
+   Use the same routing rules as /tai-execute (backend vs frontend files).
+   If the first backend fails, retry with the other.
+4. Push the fixes and verify CI green
+5. Send confirmation back:
    ```
    SendMessage(
      to: "team-lead",
      content: "Review fixes pushed. CI: {status}. Changes: {summary}"
    )
    ```
-5. Wait for team lead to re-review or send more feedback
-6. Repeat until team lead confirms review passed
+6. Wait for team lead to re-review or send more feedback
+7. Repeat until team lead confirms review passed
 
-### 7. QA → Fix loop (via SendMessage)
-Same pattern as review. Team lead sends QA bug report, you fix
-in your worktree, push, and confirm via SendMessage.
+### 6. QA → Fix loop (via SendMessage)
+Same pattern as review. Team lead sends QA bug report, you dispatch fixes
+to the appropriate backend via `tai agent run`, push, and confirm via
+SendMessage.
 
 Once QA is clean → team lead merges your PR.
 
@@ -493,6 +509,7 @@ confirms your PR has been merged.
 - Use conventional commits: feat({scope}): {description}
 - After merge, verify main CI stays green
 - Address ALL review feedback before requesting re-review
+- Coding work is dispatched to Codex/Gemini — you coordinate, not hand-code
 ```
 
 ---

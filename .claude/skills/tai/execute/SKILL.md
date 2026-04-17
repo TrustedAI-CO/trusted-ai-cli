@@ -152,31 +152,88 @@ Before starting, display the plan:
 
 For each wave, in order:
 
-### 1A. Dispatch Subagents (parallel within wave)
+### 1A. Route and Dispatch Subagents (parallel within wave)
 
-For each task in the wave, use the **Agent tool** with `run_in_background: true`:
+Each coding subagent is dispatched to an external AI CLI (Codex or Gemini) via
+`tai agent run`. The orchestrator (you) stays in Claude Code for coordination.
 
+**Backend routing rules — decide per task:**
+
+| Signal | Backend | Reason |
+|--------|---------|--------|
+| Task files are `.py`, `.go`, `.rs`, `.sql`, `Dockerfile`, `*.yaml`/`*.toml` config | **codex** | Strongest at backend/systems code |
+| Task files are `.ts`, `.tsx`, `.jsx`, `.css`, `.scss`, `.html`, `.vue`, `.svelte` | **gemini** | Strongest at frontend/UI code |
+| Task files are mixed backend + frontend | **codex** | Default tiebreaker |
+| Task involves DB migrations, schema changes | **codex** | Better at SQL/ORM |
+| Task involves test writing only | **codex** | Faster execution |
+| Task involves docs, markdown, config only | **codex** | Faster execution |
+
+**Routing algorithm (apply in order):**
+1. Collect all file extensions from the task's `files` list
+2. Classify each as `backend` or `frontend` using the table above
+3. If majority frontend → `gemini`; otherwise → `codex`
+4. If classification is ambiguous (50/50 split) → `codex` (default)
+
+**Dispatch via `tai agent run`:**
+
+Write the subagent prompt to a temp file, then dispatch:
+
+```bash
+# Write prompt to file (avoids shell escaping issues)
+cat > "/tmp/tai-task-{task_id}-prompt.md" << 'PROMPTEOF'
+{subagent_prompt_from_template_below}
+PROMPTEOF
+
+# Dispatch to routed backend (run in background via &)
+tai --json agent run \
+  --backend {codex_or_gemini} \
+  --dir "{repo_root}" \
+  --timeout 300 \
+  "$(cat /tmp/tai-task-{task_id}-prompt.md)" \
+  > "$HOME/.tai-skills/projects/$_SLUG/task-{task_id}-result.json" 2>&1 &
 ```
-Agent(
-  description: "Execute task: {task_name}",
-  prompt: <see Subagent Prompt Template below>,
-  run_in_background: true
-)
+
+Launch all tasks in the wave as background processes, then wait:
+
+```bash
+wait  # blocks until all background jobs finish
 ```
+
+**Fallback chain — if a task fails, retry with the other backend:**
+
+After collecting results (Step 1B), for each task with `status: "error"`:
+1. Check the result JSON: if `exit_code` is non-zero or output contains
+   clear failure indicators (timeout, crash, empty output)
+2. Re-dispatch to the **other backend** (codex→gemini or gemini→codex)
+3. Mark the fallback attempt in the state file: `"fallback_backend": "{other}"`
+4. If the fallback also fails → mark task as FAILED (no further retries)
+
+Only retry once via fallback. The goal is resilience, not infinite loops.
 
 Wait for all agents in the wave to complete before proceeding to the next wave.
 
 ### 1B. Collect Results
 
-After all subagents in a wave return, read their per-task summary files:
+After all background jobs finish, read both the agent result and the per-task summary:
 
 ```bash
+# 1. Check agent-level result (did the CLI itself succeed?)
+cat "$HOME/.tai-skills/projects/$_SLUG/task-{task_id}-result.json" 2>/dev/null
+
+# 2. Check task-level summary (did the subagent complete its work?)
 cat "$HOME/.tai-skills/projects/$_SLUG/task-{task_id}-summary.md" 2>/dev/null
 ```
 
+**Result interpretation:**
+- Agent result has `"status": "success"` AND summary has `status: done` → task complete
+- Agent result has `"status": "success"` BUT summary has `status: failed` → subagent ran but task failed (code issue)
+- Agent result has `"status": "error"` or `"status": "timeout"` → agent-level failure, trigger fallback
+- No summary file exists → subagent crashed before writing summary, trigger fallback
+
 For each task, update the execution state:
 - If status is `done` → record commit hash, move to next
-- If status is `failed` → record error, check if downstream tasks should be skipped
+- If status is `failed` (code issue, not agent crash) → record error, check downstream tasks
+- If agent-level failure → trigger fallback chain (re-dispatch to other backend)
 - If status is `checkpoint_needed` → handle checkpoint (see Step 2)
 
 ### 1C. Update State File
