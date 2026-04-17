@@ -1,6 +1,20 @@
 # CHANGELOG
 
 
+## v0.22.0 (2026-04-17)
+
+### Features
+
+- **agent**: Add subagent command for Codex/Gemini CLI dispatch
+  ([`9167752`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/91677526e31990d00446a56210220123d731e6cb))
+
+Add `tai agent` command group that spawns AI coding agents (Codex, Gemini) as subprocesses. Includes
+  single-task execution, parallel dispatch from JSON files, and backend status checking.
+
+Update tai-execute and tai-team skills to route coding subagents to Codex/Gemini based on file type
+  (backend→codex, frontend→gemini) with automatic fallback chain on failure.
+
+
 ## v0.21.0 (2026-04-15)
 
 ### Features
