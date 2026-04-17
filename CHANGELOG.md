@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.23.0 (2026-04-17)
+
+### Features
+
+- **skills**: Add complexity gate — route complex tasks to Claude Code
+  ([`4ea17b1`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4ea17b13c34219db9d1f3cae14f5a9e5001d2948))
+
+Simple/well-scoped tasks route to Codex/Gemini, while complex tasks (5+ files, cross-module wiring,
+  deep context needed) stay in Claude Code for better reasoning. Updates both tai-execute and
+  tai-team skills.
+
+
 ## v0.22.0 (2026-04-17)
 
 ### Features
