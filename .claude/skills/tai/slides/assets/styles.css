@@ -1,0 +1,547 @@
+/* =========================================================
+   AI Solution Proposal — Design Tokens & Base Styles
+   Inspired by TrustedAI.co corporate aesthetic
+   ========================================================= */
+
+:root {
+  /* ---- TrustedAI design-system tokens (from site.css / colors_and_type.css) ---- */
+  --navy-900: #050A30;
+  --navy-800: #0A1640;
+  --navy-700: #1E2A63;
+  --navy-500: #3B4785;
+  --navy-300: #8891B8;
+  --navy-100: #DDE0EC;
+
+  /* Coral accent (from design system --coral-500) */
+  --coral-500: #E63946;
+  --coral-600: #B82B36;
+  --coral-soft: #FDECEE;
+
+  /* Alias used throughout deck */
+  --accent: var(--coral-500);
+  --accent-soft: var(--coral-soft);
+  --accent-700: var(--coral-600);
+
+  /* Grays */
+  --gray-50: #F5F7FA;
+  --gray-100: #EEF1F5;
+  --gray-200: #E2E6ED;
+
+  /* Indigo chip family (soft tinted chips) */
+  --indigo-soft: #EEF0FF;
+  --indigo-softer: #F4F6FF;
+
+  /* Semantic surfaces / text */
+  --bg-page: #FAFBFD;
+  --bg: #FAFBFD;
+  --bg-soft: #F5F7FA;
+  --surface: #FFFFFF;
+  --surface-2: #F0F1F5;
+  --fg-body: #2B3353;
+  --fg-muted: #6B7280;
+  --border-subtle: #E5E9F0;
+
+  --shadow-xs: 0 1px 2px rgba(10,22,64,0.04);
+  --shadow-sm: 0 1px 2px rgba(10,22,64,0.04), 0 4px 10px rgba(10,22,64,0.05);
+  --shadow-md: 0 2px 4px rgba(10,22,64,0.06), 0 12px 28px rgba(10,22,64,0.08);
+
+  --ink-900: #0A1640;
+  --ink-700: #2B3353;
+  --ink-500: #6B7280;
+  --ink-400: #9CA3AF;
+  --ink-300: #D1D5DB;
+  --border: #E5E7EB;
+  --border-soft: #EEEFF2;
+
+  /* Typography scale @ 1920x1080 */
+  --fs-display: 108px;
+  --fs-title: 68px;
+  --fs-subtitle: 44px;
+  --fs-h3: 36px;
+  --fs-body: 28px;
+  --fs-small: 22px;
+  --fs-micro: 18px;
+
+  /* Spacing */
+  --pad-x: 120px;
+  --pad-y: 90px;
+  --gap-title: 48px;
+  --gap-item: 28px;
+
+  /* Radii + shadow */
+  --r-sm: 8px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --shadow-card: 0 1px 2px rgba(10,22,64,0.04), 0 8px 24px rgba(10,22,64,0.06);
+  --shadow-lift: 0 2px 4px rgba(10,22,64,0.05), 0 16px 40px rgba(10,22,64,0.10);
+
+  /* Typography families — mirror design system --font-display / --font-body */
+  --font-display: 'Plus Jakarta Sans', 'Noto Sans JP', 'Inter', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', 'Noto Sans JP', 'Inter', system-ui, sans-serif;
+  --font-sans: var(--font-body);
+  --font-jp: 'Noto Sans JP', 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Deck-local overrides so the existing --ink-* tokens still work */
+  --ink-900: var(--navy-800);
+  --ink-700: var(--fg-body);
+  --ink-500: var(--fg-muted);
+  --ink-400: #9CA3AF;
+  --ink-300: #D1D5DB;
+  --border: var(--border-subtle);
+  --border-soft: var(--gray-100);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: #000;
+  color: var(--navy-800);
+  font-family: var(--font-body);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+deck-stage section {
+  background: var(--bg-page);
+  color: var(--navy-800);
+  font-family: var(--font-body);
+  overflow: hidden;
+  position: relative;
+}
+
+/* Grid texture background */
+.slide-grid-bg {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(10,22,64,0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(10,22,64,0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  pointer-events: none;
+  mask-image: radial-gradient(ellipse at 50% 40%, black 30%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 30%, transparent 85%);
+}
+
+.slide-pad {
+  position: absolute;
+  inset: 0;
+  padding: var(--pad-y) var(--pad-x);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============ Reusable primitives ============ */
+
+.eyebrow {
+  font-size: var(--fs-small);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--navy-900);
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.eyebrow::before {
+  content: "";
+  width: 28px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 2px;
+}
+.eyebrow.accent { color: var(--accent); }
+
+.eyebrow-muted {
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--navy-500);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--fs-title);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.05;
+  color: var(--navy-800);
+  text-wrap: pretty;
+  position: relative;
+  isolation: isolate;
+}
+
+.title .underline {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+.title .underline::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.05em;
+  height: 0.14em;
+  background: var(--accent);
+  border-radius: 2px;
+  z-index: -1;
+}
+.title .underline > * { position: relative; z-index: 1; }
+
+.subtitle {
+  font-size: var(--fs-subtitle);
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--ink-700);
+  letter-spacing: -0.01em;
+}
+
+.body {
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  color: var(--ink-500);
+  font-weight: 400;
+}
+
+.lead {
+  font-size: var(--fs-h3);
+  line-height: 1.4;
+  color: var(--ink-700);
+  font-weight: 400;
+}
+
+.small { font-size: var(--fs-small); color: var(--ink-500); line-height: 1.5; }
+.micro { font-size: var(--fs-micro); color: var(--ink-400); letter-spacing: 0.04em; }
+
+/* ============ Cards ============ */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-card);
+}
+
+.card-plain {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 40px;
+  box-shadow: var(--shadow-card);
+}
+
+/* Dark CTA card with offset "ghost" — direct port of design-system .stacked-card */
+.card-dark {
+  background: var(--navy-800);
+  color: #fff;
+  border-radius: 20px;
+  padding: 48px;
+  position: relative;
+  isolation: isolate;
+}
+
+/* White CTA button inside dark cards — matches design-system .btn-w */
+.btn-w {
+  background: #fff;
+  color: var(--navy-800);
+  border: 0;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  padding: 18px 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Icon in soft indigo circle — TrustedAI signature */
+.icon-chip {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--gray-50);
+  color: var(--navy-800);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.icon-chip.navy {
+  background: rgba(10,22,64,0.06);
+  color: var(--navy-800);
+}
+.icon-chip.accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.icon-chip svg { width: 34px; height: 34px; stroke-width: 1.8; }
+
+.icon-chip-sm {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--gray-50);
+  color: var(--navy-800);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+.icon-chip-sm.accent { background: var(--accent-soft); color: var(--accent); }
+.icon-chip-sm svg { width: 26px; height: 26px; stroke-width: 1.8; }
+
+/* Square rounded chip — matches design-system .info-card .chip */
+.chip-sq {
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: var(--gray-50);
+  color: var(--navy-800);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.chip-sq svg { width: 28px; height: 28px; stroke-width: 1.8; }
+
+/* ---- Button styles from design system ---- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 28px;
+  border-radius: 10px;
+  font-family: var(--font-display);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  border: 1px solid transparent;
+}
+.btn-primary { background: var(--navy-800); color: #fff; }
+.btn-secondary { background: #fff; color: var(--navy-800); border-color: var(--border-subtle); }
+.btn-ghost { background: #fff; color: var(--navy-800); border: 1px solid var(--border-subtle); }
+.btn-lg { padding: 20px 32px; font-size: 22px; }
+
+/* ============ Slide chrome ============ */
+
+.slide-chrome {
+  position: absolute;
+  left: var(--pad-x);
+  right: var(--pad-x);
+  bottom: 36px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+  color: var(--ink-400);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 500;
+  pointer-events: none;
+}
+.slide-chrome .logo {
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--navy-900);
+  text-transform: none;
+  font-size: 18px;
+}
+.slide-chrome .dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  margin: 0 10px;
+  vertical-align: middle;
+}
+
+/* ============ Utility ============ */
+
+.row { display: flex; }
+.col { display: flex; flex-direction: column; }
+.gap-16 { gap: 16px; } .gap-24 { gap: 24px; } .gap-32 { gap: 32px; } .gap-48 { gap: 48px; } .gap-64 { gap: 64px; }
+.grow { flex: 1; }
+.center { align-items: center; justify-content: center; }
+.between { justify-content: space-between; }
+.items-start { align-items: flex-start; }
+.items-center { align-items: center; }
+.items-end { align-items: flex-end; }
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--indigo-soft);
+  color: var(--navy-900);
+  font-size: var(--fs-small);
+  font-weight: 600;
+}
+.pill-accent {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.pill-navy {
+  background: rgba(10,22,64,0.06);
+  color: var(--navy-900);
+}
+.pill-outline {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--ink-700);
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink-500);
+  font-size: var(--fs-small);
+}
+.check::before {
+  content: "";
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--navy-900);
+  color: white;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+  background-size: 12px;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+}
+
+/* Bilingual text helpers */
+.jp { font-family: var(--font-jp); }
+.en-sub {
+  display: block;
+  font-size: 0.48em;
+  font-weight: 500;
+  color: var(--ink-500);
+  letter-spacing: 0.02em;
+  margin-top: 0.35em;
+  line-height: 1.2;
+  text-transform: none;
+}
+
+/* Logo mark */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--navy-900);
+}
+.brand-mark .dot {
+  width: 10px; height: 10px;
+  background: var(--accent);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+/* Decorative number */
+.big-num {
+  font-size: 280px;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 0.85;
+  color: var(--navy-900);
+  font-feature-settings: "tnum";
+}
+.big-num .unit {
+  font-size: 0.35em;
+  color: var(--accent);
+  margin-left: 0.1em;
+  font-weight: 700;
+}
+
+/* Timeline dot */
+.tl-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 4px solid #fff;
+  box-shadow: 0 0 0 2px var(--accent);
+  flex-shrink: 0;
+}
+.tl-dot.navy {
+  background: var(--navy-900);
+  box-shadow: 0 0 0 2px var(--navy-900);
+}
+
+/* Section-number chip */
+.section-num {
+  font-size: 240px;
+  font-weight: 800;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  color: var(--accent);
+  opacity: 0.15;
+  font-feature-settings: "tnum";
+}
+
+/* Table */
+.cmp-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: #fff;
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  font-size: var(--fs-body);
+}
+.cmp-table thead th {
+  background: var(--navy-900);
+  color: #fff;
+  text-align: left;
+  padding: 26px 32px;
+  font-weight: 600;
+  font-size: var(--fs-body);
+}
+.cmp-table tbody td {
+  padding: 24px 32px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--ink-700);
+  vertical-align: top;
+  line-height: 1.4;
+}
+.cmp-table tbody tr:last-child td { border-bottom: none; }
+.cmp-table tbody tr:nth-child(even) td { background: var(--bg-soft); }
+.cmp-table td.label { color: var(--navy-900); font-weight: 600; width: 22%; }
+.cmp-table td.highlight { color: var(--navy-900); font-weight: 500; }
+.cmp-table td.muted { color: var(--ink-400); }
+
+/* Roadmap bar */
+.roadmap-bar {
+  height: 56px;
+  border-radius: 10px;
+  background: var(--navy-900);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  font-weight: 600;
+  font-size: 20px;
+}
+.roadmap-bar.accent { background: var(--accent); }
+.roadmap-bar.soft { background: var(--surface-2); color: var(--navy-900); border: 1px solid var(--border); }
+
+/* Puzzle decoration */
+.puzzle-deco {
+  position: absolute;
+  right: -60px;
+  top: 40px;
+  width: 380px;
+  height: 380px;
+  opacity: 0.08;
+  pointer-events: none;
+}
+
+/* Speaker notes hidden */
+#speaker-notes { display: none; }

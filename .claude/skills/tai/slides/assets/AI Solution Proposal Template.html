@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <title>Slide Layout Template · 12 Types</title>
+  <meta name="viewport" content="width=1920, initial-scale=1" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Noto+Sans+JP:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <script src="deck-stage.js"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <deck-stage width="1920" height="1080">
+    <section data-label="01 Hero" id="s1"></section>
+    <section data-label="02 Divider" id="s2"></section>
+    <section data-label="03 Big Number" id="s3"></section>
+    <section data-label="04 Quote" id="s4"></section>
+    <section data-label="05 Card Grid (default)" id="s5"></section>
+    <section data-label="06 Card Grid (numbered)" id="s6"></section>
+    <section data-label="07 Card Grid (metric)" id="s7"></section>
+    <section data-label="08 Card Grid (profile)" id="s8"></section>
+    <section data-label="09 Card Grid (connected)" id="s9"></section>
+    <section data-label="10 Stat Row" id="s10"></section>
+    <section data-label="11 Split" id="s11"></section>
+    <section data-label="12 Table" id="s12"></section>
+    <section data-label="13 Timeline" id="s13"></section>
+    <section data-label="14 Chart (line)" id="s14"></section>
+    <section data-label="15 Chart (bar)" id="s15"></section>
+    <section data-label="16 Chart (donut)" id="s16"></section>
+    <section data-label="17 List" id="s17"></section>
+    <section data-label="18 Matrix" id="s18"></section>
+    <section data-label="19 Title+Content" id="s19"></section>
+    <section data-label="20 Two Column" id="s20"></section>
+    <section data-label="21 Blank" id="s21"></section>
+    <section data-label="22 Closing" id="s22"></section>
+  </deck-stage>
+
+  <script type="text/babel" src="icons.jsx"></script>
+  <script type="text/babel" src="slides-a.jsx"></script>
+  <script type="text/babel" src="slides-b.jsx"></script>
+  <script type="text/babel" src="slides-c.jsx"></script>
+  <script type="text/babel">
+    const TOTAL = 22;
+
+    function App() {
+      return (
+        <>
+          {/* Part A: hero, divider, big-number, quote, card-grid variants, stat-row */}
+          {ReactDOM.createPortal(<SlideHero num={1} total={TOTAL} />, document.getElementById("s1"))}
+          {ReactDOM.createPortal(<SlideDivider num={2} total={TOTAL} />, document.getElementById("s2"))}
+          {ReactDOM.createPortal(<SlideBigNumber num={3} total={TOTAL} />, document.getElementById("s3"))}
+          {ReactDOM.createPortal(<SlideQuote num={4} total={TOTAL} />, document.getElementById("s4"))}
+          {ReactDOM.createPortal(<SlideCardGrid num={5} total={TOTAL} cols={2} cardStyle="default" eyebrow="CARD GRID · DEFAULT · 2 COL" />, document.getElementById("s5"))}
+          {ReactDOM.createPortal(<SlideCardGrid num={6} total={TOTAL} cols={4} cardStyle="numbered" eyebrow="CARD GRID · NUMBERED · 4 COL" titleJp={<>Numbered <span className="underline">Cards</span></>} />, document.getElementById("s6"))}
+          {ReactDOM.createPortal(<SlideCardGrid num={7} total={TOTAL} cols={4} cardStyle="metric" eyebrow="CARD GRID · METRIC · 4 COL" titleJp={<>KPI <span className="underline">Dashboard</span></>} />, document.getElementById("s7"))}
+          {ReactDOM.createPortal(<SlideCardGrid num={8} total={TOTAL} cols={4} cardStyle="profile" eyebrow="CARD GRID · PROFILE · 4 COL" titleJp={<>Team <span className="underline">Profiles</span></>} />, document.getElementById("s8"))}
+          {ReactDOM.createPortal(<SlideCardGrid num={9} total={TOTAL} connected={true} eyebrow="CARD GRID · CONNECTED" titleJp={<>Connected <span className="underline">Flow</span></>} cards={[
+            { icon: "database", title: "Collect", desc: "Gather data from sources" },
+            { icon: "layers", title: "Process", desc: "Clean and structure data" },
+            { icon: "cpu", title: "Analyze", desc: "Run analysis and inference" },
+            { icon: "shield", title: "Validate", desc: "Quality check and review" },
+            { icon: "trend", title: "Deliver", desc: "Deliver results and iterate" },
+          ]} />, document.getElementById("s9"))}
+          {ReactDOM.createPortal(<SlideStatRow num={10} total={TOTAL} />, document.getElementById("s10"))}
+
+          {/* Part B: split, table, timeline, charts (3 types), list */}
+          {ReactDOM.createPortal(<SlideSplit num={11} total={TOTAL} />, document.getElementById("s11"))}
+          {ReactDOM.createPortal(<SlideTable num={12} total={TOTAL} />, document.getElementById("s12"))}
+          {ReactDOM.createPortal(<SlideTimeline num={13} total={TOTAL} />, document.getElementById("s13"))}
+          {ReactDOM.createPortal(<SlideChart num={14} total={TOTAL} chartType="line" eyebrow="CHART · LINE" titleJp={<>Line <span className="underline">Chart</span></>} />, document.getElementById("s14"))}
+          {ReactDOM.createPortal(<SlideChart num={15} total={TOTAL} chartType="bar" eyebrow="CHART · BAR" titleJp={<>Bar <span className="underline">Chart</span></>} summary={[
+            { label: "Highest", val: "240" },
+            { label: "Average", val: "164" },
+            { label: "Growth", val: "+38%", accent: true },
+          ]} />, document.getElementById("s15"))}
+          {ReactDOM.createPortal(<SlideChart num={16} total={TOTAL} chartType="donut" eyebrow="CHART · DONUT" titleJp={<>Donut <span className="underline">Chart</span></>} summary={[
+            { label: "Category A", val: "40%" },
+            { label: "Category B", val: "25%" },
+            { label: "Category C", val: "20%" },
+            { label: "Other", val: "15%" },
+          ]} />, document.getElementById("s16"))}
+          {ReactDOM.createPortal(<SlideList num={17} total={TOTAL} />, document.getElementById("s17"))}
+
+          {/* Part C: matrix, utility layouts, closing */}
+          {ReactDOM.createPortal(<SlideMatrix num={18} total={TOTAL} />, document.getElementById("s18"))}
+          {ReactDOM.createPortal(<SlideTitleContent num={19} total={TOTAL} />, document.getElementById("s19"))}
+          {ReactDOM.createPortal(<SlideTwoColumn num={20} total={TOTAL} />, document.getElementById("s20"))}
+          {ReactDOM.createPortal(<SlideBlank num={21} total={TOTAL} />, document.getElementById("s21"))}
+          {ReactDOM.createPortal(<SlideClosing num={22} total={TOTAL} />, document.getElementById("s22"))}
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.createElement("div")).render(<App />);
+  </script>
+</body>
+</html>
