@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.24.0 (2026-04-25)
+
+### Features
+
+- **skills**: Add tai-slides skill — presentation renderer
+  ([`a6fee01`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a6fee0109867ce33db046ae6e2b04866a2f4343f))
+
+24 layout types, bilingual JP/EN, deck-stage web component, single self-contained HTML output.
+  Design tokens from TrustedAI corporate aesthetic. Opens from file://, no server needed.
+
+
 ## v0.23.0 (2026-04-17)
 
 ### Features
