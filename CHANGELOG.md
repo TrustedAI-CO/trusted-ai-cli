@@ -1,6 +1,40 @@
 # CHANGELOG
 
 
+## v0.25.0 (2026-05-09)
+
+### Features
+
+- **codex**: Support Codex users without disrupting Claude setup
+  ([`ce48120`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ce4812097731873b5eea9ffbf7a7c9abaf9d9a3a))
+
+Codex already had execution support through tai agent, but setup and documentation were Claude-only.
+  This adds a dedicated Codex command group, platform-aware skill installation, safe AGENTS.md
+  generation, and best-effort post-update skill refresh while preserving existing Claude commands.
+
+Constraint: Existing Claude Code commands and post-update tuple contract must remain
+  backward-compatible
+
+Constraint: Repository AGENTS.md writes must not happen implicitly during update flows
+
+Rejected: Add Codex hook/auth parity | no stable in-repo contract or API surface exists to target
+
+Rejected: Auto-generate AGENTS.md during post-update | would write into arbitrary repositories
+  unexpectedly
+
+Confidence: high
+
+Scope-risk: moderate
+
+Directive: Do not make setup-agents overwrite unmanaged AGENTS.md without an explicit --force path
+
+Tested: uv run pytest (483 passed, 6 skipped, 83.33% coverage)
+
+Tested: uv run tai --json codex status
+
+Tested: uv build (succeeds with pre-existing duplicate package-data warnings)
+
+
 ## v0.24.0 (2026-04-25)
 
 ### Features
