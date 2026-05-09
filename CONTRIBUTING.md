@@ -29,6 +29,7 @@ tai/
 ├── core/            # Shared library (auth, config, errors, http, etc.)
 ├── commands/        # CLI command groups (one file per group)
 ├── hooks/           # Claude Code hooks (Node.js scripts)
+├── data/codex/      # Codex AGENTS.md template
 └── plugins/         # Entry-point plugin discovery
 tests/
 ├── conftest.py      # Shared fixtures
@@ -85,8 +86,13 @@ tests/
    ---
    ```
 2. Write the skill instructions in markdown below the frontmatter
-3. Run `tai claude setup-skills --force` to install it locally
-4. Test the skill in Claude Code with `/my-skill`
+3. Run `tai claude setup-skills --force` to install it for Claude Code
+4. Run `tai codex setup-skills --force` to install it for Codex
+5. Test the skill in Claude Code with `/my-skill` and verify Codex sees it under `~/.codex/skills/tai-my-skill`
+
+## Codex setup
+
+Use `tai codex status` to inspect local Codex integration. Use `tai codex setup-agents` to create a tai-managed `AGENTS.md`; it will not replace an unmanaged guide unless `--force` is supplied.
 
 ## Commit messages
 

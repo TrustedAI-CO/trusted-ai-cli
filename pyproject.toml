@@ -50,11 +50,13 @@ packages = ["tai"]
 "tai/hooks/lib" = "tai/hooks/lib"
 "tai/data/templates" = "tai/data/templates"
 "tai/data/brand" = "tai/data/brand"
+"tai/data/codex" = "tai/data/codex"
 "tai/templates/typst" = "tai/templates/typst"
 ".claude/skills/tai" = "tai/data/skills"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 addopts = "--cov=tai --cov-report=term-missing --cov-fail-under=80"
 
 [tool.coverage.run]

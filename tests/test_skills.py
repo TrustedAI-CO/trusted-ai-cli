@@ -13,6 +13,7 @@ from tai.core.skills import (
     parse_frontmatter,
     discover_skills,
     find_skill_source,
+    SkillTarget,
     skills_install_dir,
     prefixed_name,
     install_skills,
@@ -279,6 +280,12 @@ def test_skills_install_dir():
     """Install directory is ~/.claude/skills/."""
     result = skills_install_dir()
     assert result == Path.home() / ".claude" / "skills"
+
+
+def test_skills_install_dir_codex():
+    """Codex skills install to ~/.codex/skills/."""
+    result = skills_install_dir(SkillTarget.CODEX)
+    assert result == Path.home() / ".codex" / "skills"
 
 
 def test_prefixed_name():

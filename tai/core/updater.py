@@ -255,6 +255,8 @@ def run_post_update() -> tuple[bool, bool, bool, bool]:
 
     Returns (skills_ok, hooks_ok, templates_ok, style_ok).
     Style install silently skips when matplotlib is not installed.
+    Codex skills are refreshed on a best-effort basis when Codex is installed;
+    failures do not affect the legacy return tuple.
     """
     tai_bin = shutil.which("tai") or "tai"
 
@@ -279,6 +281,8 @@ def run_post_update() -> tuple[bool, bool, bool, bool]:
     except OSError as exc:
         _log.debug("Post-update setup-hooks failed: %s", exc)
         hooks_ok = False
+
+    _run_optional_codex_setup(tai_bin)
 
     try:
         templates_result = subprocess.run(
@@ -305,6 +309,27 @@ def run_post_update() -> tuple[bool, bool, bool, bool]:
         style_ok = False
 
     return skills_ok, hooks_ok, templates_ok, style_ok
+
+
+def _run_optional_codex_setup(tai_bin: str) -> None:
+    """Refresh Codex personal assets when Codex is available.
+
+    This intentionally installs only user-level skills. Repository-specific
+    AGENTS.md generation remains explicit via `tai codex setup-agents`.
+    """
+    if shutil.which("codex") is None:
+        return
+
+    try:
+        result = subprocess.run(
+            [tai_bin, "codex", "setup-skills", "--force"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            _log.debug("Post-update codex setup-skills failed: %s", result.stderr)
+    except OSError as exc:
+        _log.debug("Post-update codex setup-skills failed: %s", exc)
 
 
 # ── Startup update-check cache ───────────────────────────────────────────────

@@ -161,10 +161,22 @@ tai secret exec -- <cmd> [args]    # run a command with secrets injected as env 
 tai claude login                   # authenticate Claude Code with Anthropic
 tai claude logout                  # sign out Claude Code
 tai claude status                  # show Claude Code auth status
+tai claude setup-skills            # install tai skills into ~/.claude/skills
 tai claude setup-hooks             # install tai hooks into ~/.claude/settings.json
 tai claude setup-hooks --list      # preview available hooks without installing
 tai claude setup-hooks --remove    # remove tai-managed hooks
 tai claude setup-hooks --json      # JSON output (for scripting)
+```
+
+
+### Codex
+
+```
+tai codex status                   # show Codex binary, skills, and AGENTS.md status
+tai codex status --json            # machine-readable Codex setup status
+tai codex setup-skills --force     # install tai skills into ~/.codex/skills
+tai codex setup-agents             # create a tai-managed AGENTS.md in this repo
+tai codex setup-agents --force     # replace an unmanaged AGENTS.md intentionally
 ```
 
 ### AI / API

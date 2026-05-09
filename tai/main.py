@@ -21,7 +21,7 @@ from tai.core.config import load_config
 from tai.core.context import AppContext
 from tai.core.errors import ConfigError, TaiError, handle_error
 
-from tai.commands import secret, config, ai, api, claude, meetings, project, tasks, pdf, style, sales, browser, agent
+from tai.commands import secret, config, ai, api, claude, codex, meetings, project, tasks, pdf, style, sales, browser, agent
 from tai.commands.auth import login, logout, whoami
 from tai.commands.setup import setup
 from tai.commands.update import update
@@ -117,6 +117,7 @@ app.add_typer(config.app)
 app.add_typer(ai.app)
 app.add_typer(api.app)
 app.add_typer(claude.app)
+app.add_typer(codex.app)
 app.add_typer(project.app)
 app.add_typer(tasks.app)
 app.add_typer(meetings.app)

@@ -22,6 +22,7 @@ from tai.core.updater import (
     fetch_latest_release,
     install_wheel,
     load_cached_update,
+    run_post_update,
     save_update_cache,
 )
 
@@ -333,3 +334,54 @@ def test_clear_cache(tmp_path):
         clear_update_cache()
 
     assert not cache_file.exists()
+
+
+# ── post-update setup ────────────────────────────────────────────────────────
+
+
+def test_run_post_update_skips_codex_when_missing():
+    calls = []
+
+    def fake_which(cmd):
+        if cmd == "tai":
+            return "tai"
+        if cmd == "codex":
+            return None
+        return "/usr/bin/" + cmd
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        result = type("Result", (), {})()
+        result.returncode = 0
+        result.stderr = ""
+        result.stdout = ""
+        return result
+
+    with patch("shutil.which", side_effect=fake_which), patch("subprocess.run", side_effect=fake_run):
+        assert run_post_update() == (True, True, True, True)
+
+    assert not any(cmd[:2] == ["tai", "codex"] for cmd in calls)
+
+
+def test_run_post_update_refreshes_codex_skills_when_installed():
+    calls = []
+
+    def fake_which(cmd):
+        if cmd == "tai":
+            return "tai"
+        if cmd == "codex":
+            return "/usr/bin/codex"
+        return "/usr/bin/" + cmd
+
+    def fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        result = type("Result", (), {})()
+        result.returncode = 0
+        result.stderr = ""
+        result.stdout = ""
+        return result
+
+    with patch("shutil.which", side_effect=fake_which), patch("subprocess.run", side_effect=fake_run):
+        assert run_post_update() == (True, True, True, True)
+
+    assert ["tai", "codex", "setup-skills", "--force"] in calls

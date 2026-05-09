@@ -1,13 +1,21 @@
-"""Skill discovery, parsing, and installation to ~/.claude/skills/tai-<name>/."""
+"""Skill discovery, parsing, and installation for supported agent CLIs."""
 
 from __future__ import annotations
 
 import re
 import shutil
 from dataclasses import dataclass
+from enum import Enum
 from pathlib import Path
 
 SKILL_PREFIX = "tai"
+
+
+class SkillTarget(str, Enum):
+    """Supported personal skill install targets."""
+
+    CLAUDE = "claude"
+    CODEX = "codex"
 
 
 @dataclass(frozen=True)
@@ -106,9 +114,16 @@ def _find_repo_root() -> Path | None:
     return None
 
 
-def skills_install_dir() -> Path:
-    """Base directory for personal skills: ~/.claude/skills/."""
-    return Path.home() / ".claude" / "skills"
+def _coerce_target(target: SkillTarget | str) -> SkillTarget:
+    if isinstance(target, SkillTarget):
+        return target
+    return SkillTarget(target)
+
+
+def skills_install_dir(target: SkillTarget | str = SkillTarget.CLAUDE) -> Path:
+    """Base directory for personal skills on a supported agent platform."""
+    target = _coerce_target(target)
+    return Path.home() / f".{target.value}" / "skills"
 
 
 def prefixed_name(skill_name: str) -> str:
@@ -116,15 +131,19 @@ def prefixed_name(skill_name: str) -> str:
     return f"{SKILL_PREFIX}-{skill_name}"
 
 
-def install_skills(source_dir: Path, *, force: bool = False) -> InstallResult:
-    """Install skills to ~/.claude/skills/tai-<name>/.
+def install_skills(
+    source_dir: Path,
+    *,
+    force: bool = False,
+    target: SkillTarget | str = SkillTarget.CLAUDE,
+) -> InstallResult:
+    """Install bundled skills to the selected agent's personal skill directory.
 
-    Each skill gets its own top-level directory so Claude Code
-    discovers them as personal skills (e.g. tai-review, tai-ship).
-
-    When force=True, existing skills are overwritten.
+    Each skill gets its own top-level directory so agent CLIs discover them as
+    personal skills (e.g. tai-review, tai-ship). When force=True, existing
+    skills are overwritten.
     """
-    base = skills_install_dir()
+    base = skills_install_dir(target)
     base.mkdir(parents=True, exist_ok=True)
 
     skills = discover_skills(source_dir)
@@ -147,9 +166,13 @@ def install_skills(source_dir: Path, *, force: bool = False) -> InstallResult:
     return InstallResult(installed=installed, skipped=skipped)
 
 
-def installed_version(skill_name: str) -> str | None:
+def installed_version(
+    skill_name: str,
+    *,
+    target: SkillTarget | str = SkillTarget.CLAUDE,
+) -> str | None:
     """Read the version of an installed skill, or None if not installed."""
-    skill_md = skills_install_dir() / prefixed_name(skill_name) / "SKILL.md"
+    skill_md = skills_install_dir(target) / prefixed_name(skill_name) / "SKILL.md"
     if not skill_md.is_file():
         return None
     try:
@@ -159,9 +182,9 @@ def installed_version(skill_name: str) -> str | None:
         return None
 
 
-def is_installed() -> bool:
-    """Check if any tai skills are installed."""
-    base = skills_install_dir()
+def is_installed(*, target: SkillTarget | str = SkillTarget.CLAUDE) -> bool:
+    """Check if any tai skills are installed for the selected target."""
+    base = skills_install_dir(target)
     if not base.is_dir():
         return False
     return any(

@@ -1,6 +1,6 @@
 # tai — TrustedAI CLI
 
-Internal CLI for TrustedAI company tools and APIs. Links git repos to Notion projects, manages secrets, orchestrates tasks and meetings, and ships with 19 bundled Claude Code skills for plan reviews, QA, design audit, and shipping workflows.
+Internal CLI for TrustedAI company tools and APIs. Links git repos to Notion projects, manages secrets, orchestrates tasks and meetings, and ships with bundled Claude Code and Codex skills for plan reviews, QA, design audit, and shipping workflows.
 
 ## Install
 
@@ -45,6 +45,7 @@ tai tasks
 | `tai claude login` / `logout` / `status` | Claude Code authentication |
 | `tai claude setup-skills` | Install bundled Claude Code skills |
 | `tai claude setup-hooks` | Install Claude Code hooks for quality gates and session management |
+| `tai codex status` / `setup-skills` / `setup-agents` | Manage Codex CLI skills and AGENTS.md guidance |
 | `tai link` / `unlink` / `open` | Link repos to Notion projects |
 | `tai project new` / `status` | Create or inspect projects |
 | `tai tasks` / `add` / `done` | Manage Notion tasks |
@@ -98,6 +99,20 @@ Installed via `tai claude setup-hooks`. Adds quality gates, session management, 
 - **suggest-compact** — Suggests `/compact` at ~50 tool calls
 - **tmux-reminder** — Suggests tmux for long-running commands
 - **git-push-reminder** — Review changes before pushing
+
+
+
+## Codex
+
+Codex support installs the same bundled tai skills under `~/.codex/skills` and can generate a repository `AGENTS.md` guide for Codex sessions:
+
+```bash
+tai codex status                  # Show Codex binary, skills, and AGENTS.md status
+tai codex setup-skills --force    # Install/update bundled tai skills for Codex
+tai codex setup-agents            # Create a tai-managed AGENTS.md in this repo
+```
+
+`setup-agents` refuses to overwrite an unmanaged `AGENTS.md` unless `--force` is passed.
 
 ## Configuration
 
