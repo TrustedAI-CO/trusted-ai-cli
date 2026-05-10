@@ -203,3 +203,50 @@ def build_cred_copy_commands(
         cmds.append([scp, str(plan.local), f"{ssh_alias}:{plan.remote}"])
         cmds.append([ssh, ssh_alias, "chmod", "600", plan.remote])
     return cmds
+
+
+def build_remote_shred_command(
+    *,
+    ssh_alias: str,
+    remote_paths: list[str],
+    connect_timeout_s: int = 10,
+) -> list[str]:
+    """Best-effort wipe of secrets + repo trees on the remote box.
+
+    Uses a short ConnectTimeout so an unreachable box fails fast (the
+    container is about to be destroyed anyway). Caller should treat
+    failures as warnings, not hard errors.
+    """
+    import shlex
+    import shutil
+    ssh = shutil.which("ssh") or "ssh"
+    # Repo paths come from the saved state — quote them in case a
+    # basename has shell metachars. Well-known patterns (~, glob) need
+    # shell expansion so we write them inline rather than quoting.
+    quoted_repos = " ".join(shlex.quote(p) for p in remote_paths)
+    # `set +e` + explicit `exit 0`: any single rm failing must not stop
+    # the rest from running, and we want rc=0 so the destroy step still
+    # fires even if shred had problems.
+    script = (
+        "set +e; "
+        'rm -rf "$HOME/.claude" "$HOME/.codex"; '
+        "rm -f /tmp/trusted_ai_cli-*.whl; "
+        f"rm -rf {quoted_repos}; "
+        "exit 0"
+    )
+    return [
+        ssh,
+        "-o", f"ConnectTimeout={connect_timeout_s}",
+        "-o", "BatchMode=yes",
+        ssh_alias,
+        "bash", "-c", script,
+    ]
+
+
+def shred_paths_for_state(
+    *, repo_paths: list[str], remote_repo_root: str,
+) -> list[str]:
+    """Map local repo paths in the saved state to their remote counterparts."""
+    from pathlib import PurePosixPath
+    root = remote_repo_root.rstrip("/") or "/"
+    return [str(PurePosixPath(root) / Path(p).name) for p in repo_paths]

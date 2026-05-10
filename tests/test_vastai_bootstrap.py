@@ -107,3 +107,40 @@ def test_build_cred_copy_commands(tmp_path):
     assert any("scp" in part for part in cmds[1][:1])
     assert "chmod" in cmds[2]
     assert "600" in cmds[2]
+
+
+def test_shred_paths_for_state_uses_basename_under_remote_root():
+    paths = bootstrap.shred_paths_for_state(
+        repo_paths=["/Users/jack/Desktop/TGR_Project", "/tmp/other"],
+        remote_repo_root="/root",
+    )
+    assert paths == ["/root/TGR_Project", "/root/other"]
+
+
+def test_build_remote_shred_command_wipes_creds_wheel_and_repos():
+    cmd = bootstrap.build_remote_shred_command(
+        ssh_alias="vastai-quick-gpu",
+        remote_paths=["/root/TGR_Project"],
+    )
+    # Short ConnectTimeout so unreachable boxes fail fast.
+    assert "ConnectTimeout=10" in cmd
+    assert "BatchMode=yes" in cmd
+    assert "vastai-quick-gpu" in cmd
+    script = cmd[-1]
+    # `~` and glob must be left unquoted so bash expands them.
+    assert '"$HOME/.claude"' in script
+    assert '"$HOME/.codex"' in script
+    assert "/tmp/trusted_ai_cli-*.whl" in script
+    assert "/root/TGR_Project" in script
+    # Failures during shred must not abort the destroy.
+    assert "set +e" in script
+    assert "exit 0" in script
+
+
+def test_build_remote_shred_command_honors_custom_timeout():
+    cmd = bootstrap.build_remote_shred_command(
+        ssh_alias="vastai-quick-gpu",
+        remote_paths=[],
+        connect_timeout_s=3,
+    )
+    assert "ConnectTimeout=3" in cmd

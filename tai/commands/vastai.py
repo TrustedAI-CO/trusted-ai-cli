@@ -246,6 +246,12 @@ def down(
     alias: Optional[str] = typer.Argument(None, help="Alias to tear down. Omit with --all."),
     all_: bool = typer.Option(False, "--all", help="Tear down every recorded alias."),
     keep_key: bool = typer.Option(False, "--keep-key", help="Don't delete the generated SSH key."),
+    shred: bool = typer.Option(
+        True, "--shred/--no-shred",
+        help="Wipe secrets (~/.claude, ~/.codex, .env, repo trees) on the box "
+             "before destroying. --no-shred skips the SSH round-trip "
+             "(useful if the box is already unreachable).",
+    ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip confirmation."),
     json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON."),
 ) -> None:
@@ -277,6 +283,24 @@ def down(
     removed: list[dict] = []
     for a in targets:
         record = state_mod.load_state(a)
+        if shred:
+            host_alias = record.ssh_config_alias or ssh_config_mod.host_alias(a)
+            remote_paths = bootstrap_mod.shred_paths_for_state(
+                repo_paths=record.repo_paths,
+                remote_repo_root=record.remote_repo_root,
+            )
+            shred_cmd = bootstrap_mod.build_remote_shred_command(
+                ssh_alias=host_alias, remote_paths=remote_paths,
+            )
+            shred_result = subprocess.run(
+                shred_cmd, capture_output=True, text=True, check=False,
+            )
+            if shred_result.returncode != 0:
+                err_console.print(
+                    f"[yellow]Warning:[/yellow] remote shred failed for {a!r} "
+                    f"(continuing with destroy). "
+                    f"{(shred_result.stderr or shred_result.stdout or '').strip()[:200]}"
+                )
         try:
             provisioner.destroy_instance(record.instance_id)
         except TaiError as exc:
