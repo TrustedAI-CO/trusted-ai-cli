@@ -1,6 +1,33 @@
 # CHANGELOG
 
 
+## v0.26.0 (2026-05-10)
+
+### Features
+
+- **vastai**: Add vastai-quick-gpu skill + commands for spin-up/teardown
+  ([`0423e1f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0423e1f4cd4bb9179bec1b83c613f4771ff32c42))
+
+Adds a `tai vastai` command tree (`up`, `down`, `list`, `status`) and two agent-facing skills
+  (`vastai-quick-gpu`, `vastai-quick-gpu-clean`) that provision a temporary GPU dev box on vast.ai
+  end-to-end: search cheapest offer, create instance, attach a generated SSH key, write an SSH
+  config block, build + upload the local trusted-ai-cli wheel, run a remote bootstrap script (uv,
+  tai, claude-code, codex, skills), git-clone the user's repo over a forwarded agent, and rsync
+  uncommitted/opt-in gitignored paths. `down` tears it all back down.
+
+Bootstrap is hardened against issues seen during live testing: seeds ~/.ssh/known_hosts for
+  github/gitlab/bitbucket/azure, removes Ubuntu's libnode-dev/libnode72 before installing NodeSource
+  Node 20 (claude-code + codex need >= 18), and installs trusted-ai-cli from a wheel uploaded to
+  /tmp (the package is not on PyPI).
+
+`vastai destroy instance` is interactive and exits 0 on aborted prompt — pass `-y` so cleanup
+  actually runs instead of silently no-op'ing.
+
+Covered by 556 tests.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+
 ## v0.25.0 (2026-05-09)
 
 ### Features
