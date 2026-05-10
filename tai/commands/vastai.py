@@ -85,8 +85,9 @@ def up(
     ),
     tai_source: Optional[Path] = typer.Option(
         None, "--tai-source",
-        help="Path to a trusted-ai-cli source tree to build & ship to the box. "
-             "Defaults to walking up from cwd. Pass empty string to install from PyPI.",
+        help="Path to a local trusted-ai-cli source tree. If set, build a wheel "
+             "from there and ship it to the box (for testing uncommitted "
+             "changes). Default: install latest main from git+https.",
     ),
     yes: bool = typer.Option(False, "--yes", "-y", help="Skip price confirmation."),
     json_output: bool = typer.Option(False, "--json", help="Emit machine-readable JSON."),
@@ -139,19 +140,16 @@ def up(
             for cmd in bootstrap_mod.build_cred_copy_commands(ssh_alias=host_alias, plans=plans):
                 _run_or_raise(cmd)
 
-        # Resolve the trusted-ai-cli source so we can build a wheel and ship it.
-        # The package is not on PyPI, so without a wheel the remote install
-        # would fall back to PyPI and fail.
-        source_root: Path | None = None
-        if tai_source is not None:
-            tai_source_str = str(tai_source).strip()
-            if tai_source_str:
-                source_root = Path(tai_source_str).expanduser().resolve()
-        else:
-            source_root = bootstrap_mod.find_tai_source_root()
-
+        # By default the remote installs trusted-ai-cli from git+https
+        # (the repo is public, no auth needed). Pass --tai-source to ship a
+        # local wheel instead — useful for testing uncommitted changes.
         remote_wheel: str | None = None
-        if source_root and (source_root / "pyproject.toml").is_file():
+        if tai_source is not None and str(tai_source).strip():
+            source_root = Path(str(tai_source).strip()).expanduser().resolve()
+            if not (source_root / "pyproject.toml").is_file():
+                raise TaiError(
+                    f"--tai-source path has no pyproject.toml: {source_root}",
+                )
             import tempfile
             wheel_dir = Path(tempfile.mkdtemp(prefix="tai-wheel-"))
             wheel = bootstrap_mod.build_wheel(source_root, wheel_dir)

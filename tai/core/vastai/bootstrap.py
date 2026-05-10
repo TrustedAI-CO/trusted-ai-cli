@@ -60,17 +60,17 @@ echo "[tai] bootstrap done."
 """
 
 
+GIT_INSTALL_URL = "git+https://github.com/TrustedAI-CO/trusted-ai-cli.git"
+
+
 def render_install_script(wheel_remote_path: str | None = None) -> str:
     """Render the remote install script. If a remote wheel path is given,
-    install from that file; otherwise install from PyPI (currently fails)."""
+    install from that file; otherwise install the latest main from git
+    (the package is not on PyPI)."""
     if wheel_remote_path:
-        # Use uv (no fallback to pip — pip can't always install local wheels for tools).
         install_line = f'uv tool install --force "{wheel_remote_path}"'
     else:
-        install_line = (
-            "uv tool install --force trusted-ai-cli "
-            "|| pip install --user --upgrade trusted-ai-cli"
-        )
+        install_line = f'uv tool install --force "{GIT_INSTALL_URL}"'
     return _INSTALL_SCRIPT_TEMPLATE.format(install_line=install_line)
 
 
@@ -120,24 +120,6 @@ def build_install_command(ssh_alias: str) -> list[str]:
     import shutil
     ssh = shutil.which("ssh") or "ssh"
     return [ssh, ssh_alias, "bash", "-s"]
-
-
-def find_tai_source_root(start: Path | None = None) -> Path | None:
-    """Walk up from `start` (or cwd) for a pyproject.toml that names this package.
-
-    Returns the directory or None if not found.
-    """
-    start = (start or Path.cwd()).resolve()
-    for candidate in [start, *start.parents]:
-        pyproject = candidate / "pyproject.toml"
-        if pyproject.is_file():
-            try:
-                text = pyproject.read_text()
-            except OSError:
-                continue
-            if 'name = "trusted-ai-cli"' in text or "name = 'trusted-ai-cli'" in text:
-                return candidate
-    return None
 
 
 def build_wheel(source_root: Path, out_dir: Path) -> Path:

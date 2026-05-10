@@ -41,28 +41,14 @@ def test_install_script_removes_libnode_dev_before_nodesource_install():
 def test_render_install_script_uses_wheel_path_when_provided():
     s = bootstrap.render_install_script("/tmp/trusted_ai_cli-0.25.0-py3-none-any.whl")
     assert 'uv tool install --force "/tmp/trusted_ai_cli-0.25.0-py3-none-any.whl"' in s
-    # No PyPI fallback when shipping a wheel.
-    assert "pip install --user --upgrade trusted-ai-cli" not in s
+    # Wheel path takes precedence over the git default.
+    assert bootstrap.GIT_INSTALL_URL not in s
 
 
-def test_render_install_script_falls_back_to_pypi_without_wheel():
+def test_render_install_script_defaults_to_git_install():
     s = bootstrap.render_install_script(None)
-    assert "uv tool install --force trusted-ai-cli" in s
-    assert "pip install --user --upgrade trusted-ai-cli" in s
-
-
-def test_find_tai_source_root_walks_up(tmp_path):
-    nested = tmp_path / "a" / "b" / "c"
-    nested.mkdir(parents=True)
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "trusted-ai-cli"\n')
-    assert bootstrap.find_tai_source_root(nested) == tmp_path.resolve()
-
-
-def test_find_tai_source_root_skips_unrelated_pyproject(tmp_path):
-    nested = tmp_path / "a" / "b"
-    nested.mkdir(parents=True)
-    (tmp_path / "pyproject.toml").write_text('[project]\nname = "other-pkg"\n')
-    assert bootstrap.find_tai_source_root(nested) is None
+    assert f'uv tool install --force "{bootstrap.GIT_INSTALL_URL}"' in s
+    assert bootstrap.GIT_INSTALL_URL.startswith("git+https://github.com/")
 
 
 def test_build_wheel_upload_commands_returns_remote_path(tmp_path):
