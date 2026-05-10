@@ -174,7 +174,7 @@ class Provisioner:
             f"{instance.ssh_user}@{instance.ssh_host}",
             "echo ok",
         ]
-        deadline = time.monotonic() + 120
+        deadline = time.monotonic() + 240
         while time.monotonic() < deadline:
             result = self.runner(cmd)
             if result.returncode == 0 and "ok" in result.stdout:

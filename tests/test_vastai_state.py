@@ -27,6 +27,23 @@ def test_roundtrip(tmp_path):
     assert loaded.ssh_host == "ssh.vast.ai"
 
 
+def test_partial_save_without_ssh_details(tmp_path):
+    # Right after `vastai create instance` we have an id but no ssh
+    # endpoint yet. State must be persistable so a later failure is
+    # recoverable via `tai vastai down`.
+    partial = state.VastaiInstanceState(
+        alias="quick-gpu",
+        instance_id=99,
+        ssh_key_path="/tmp/key",
+        ssh_config_alias="vastai-quick-gpu",
+    )
+    state.save_state(partial, base=tmp_path)
+    loaded = state.load_state("quick-gpu", base=tmp_path)
+    assert loaded.instance_id == 99
+    assert loaded.ssh_host == ""
+    assert loaded.ssh_port == 0
+
+
 def test_load_missing_raises(tmp_path):
     with pytest.raises(TaiError):
         state.load_state("nope", base=tmp_path)

@@ -53,7 +53,18 @@ def _confirm(prompt: str, *, assume_yes: bool) -> bool:
         return False
 
 
-def _run_or_raise(cmd: list[str], *, stdin: str | None = None) -> str:
+def _run_or_raise(cmd: list[str], *, stdin: str | None = None, stream: bool = False) -> str:
+    """Run a subprocess. If stream=True, the child's stdout/stderr go straight
+    to the terminal so the user sees progress in real time; otherwise we
+    capture them and surface them in the error hint."""
+    if stream:
+        result = subprocess.run(cmd, input=stdin, text=True, check=False)
+        if result.returncode != 0:
+            raise TaiError(
+                f"Command failed: {' '.join(shlex.quote(c) for c in cmd)}",
+                hint="See output above.",
+            )
+        return ""
     result = subprocess.run(cmd, input=stdin, capture_output=True, text=True, check=False)
     if result.returncode != 0:
         raise TaiError(
@@ -61,6 +72,11 @@ def _run_or_raise(cmd: list[str], *, stdin: str | None = None) -> str:
             hint=(result.stderr or result.stdout or "").strip(),
         )
     return result.stdout
+
+
+def _step(message: str) -> None:
+    """Single-line progress marker on stderr (won't pollute --json stdout)."""
+    err_console.print(f"[dim]→[/dim] {message}")
 
 
 @app.command("up")
@@ -110,17 +126,46 @@ def up(
                 raise TaiError("Aborted by user.", hint="Re-run with --yes to skip confirmation.")
 
         provisioner = provision_mod.Provisioner()
+        _step("Generating SSH key")
         ssh_key = provision_mod.generate_ssh_key(chosen_alias)
         pub_key = (Path(str(ssh_key) + ".pub")).read_text().strip()
 
+        _step(f"Creating instance (offer {summary['id']})")
         instance_id = provisioner.create_instance(
             offer_id=int(summary["id"]),
             image=image,
             disk_gb=disk,
             alias=chosen_alias,
         )
+
+        # Persist the bare minimum *now* so any later failure (SSH timeout,
+        # bootstrap crash, network blip) is recoverable via `tai vastai down`.
+        host_alias = ssh_config_mod.host_alias(chosen_alias)
+        partial_record = state_mod.VastaiInstanceState(
+            alias=chosen_alias,
+            instance_id=instance_id,
+            ssh_key_path=str(ssh_key),
+            ssh_config_alias=host_alias,
+            image=image,
+            gpu=gpu,
+            disk_gb=disk,
+            region=region,
+            repo_paths=[str(p) for p in repo],
+        )
+        state_mod.save_state(partial_record)
+
+        _step(f"Attaching SSH key to instance {instance_id}")
         provisioner.attach_ssh_key(instance_id, pub_key)
+        _step("Waiting for SSH to come up (typically 30–90s, can take longer for big disks)")
         instance = provisioner.wait_for_ssh(instance_id)
+
+        # Update state with real ssh details now that we have them.
+        partial_record = partial_record.model_copy(update={
+            "ssh_host": instance.ssh_host,
+            "ssh_port": instance.ssh_port,
+            "ssh_user": instance.ssh_user,
+        })
+        state_mod.save_state(partial_record)
 
         block = ssh_config_mod.render_block(
             alias=chosen_alias,
@@ -131,11 +176,80 @@ def up(
         )
         ssh_config_mod.upsert_block(block, alias=chosen_alias)
 
+        _step("Smoke-testing SSH connection")
         provisioner.smoke_test_ssh(instance, ssh_key)
 
-        host_alias = ssh_config_mod.host_alias(chosen_alias)
+        # Sync repos FIRST so the user can connect + start coding the moment
+        # we print the Ready line. Bootstrap (uv, tai, claude, codex — ~2 min)
+        # comes after; the box is already usable for editing while it runs.
+        synced_repos: list[dict] = []
+        target = sync_mod.RemoteTarget(ssh_alias=host_alias)
+        for repo_path in repo:
+            repo_path = repo_path.expanduser().resolve()
+            if not repo_path.is_dir():
+                raise TaiError(f"Repo path not found: {repo_path}")
+            basename = repo_path.name
+            _step(f"Syncing repo {basename}")
+            entry: dict = {"local": str(repo_path), "remote": f"{target.remote_root}/{basename}"}
+            if sync_mod.is_git_repo(repo_path):
+                origin = sync_mod.remote_origin_url(repo_path)
+                if origin:
+                    branch = _run_or_raise(["git", "-C", str(repo_path), "rev-parse", "--abbrev-ref", "HEAD"]).strip()
+                    _step(f"  cloning {origin} (branch {branch})")
+                    _run_or_raise(sync_mod.build_clone_cmd(
+                        target=target, origin_url=origin, branch=branch, repo_basename=basename,
+                    ), stream=True)
+                    entry["origin"] = origin
+                files = sync_mod.uncommitted_files(repo_path)
+                wip_cmd = sync_mod.build_rsync_cmd(
+                    target=target, local_root=repo_path, files=files, repo_basename=basename,
+                )
+                if wip_cmd:
+                    _step(f"  rsyncing {len(files)} uncommitted file(s)")
+                    _run_or_raise(wip_cmd, stdin="\n".join(files) + "\n")
+                    entry["wip_files"] = len(files)
+            else:
+                cmd = sync_mod.build_rsync_ignored_cmd(
+                    target=target, local_root=repo_path.parent, include_path=repo_path.name, repo_basename=basename,
+                )
+                _run_or_raise(cmd)
+                entry["mode"] = "rsync_full"
+            for path in include_ignored:
+                cmd = sync_mod.build_rsync_ignored_cmd(
+                    target=target, local_root=repo_path, include_path=path, repo_basename=basename,
+                )
+                _run_or_raise(cmd)
+            synced_repos.append(entry)
+
+        record = partial_record.model_copy(update={
+            "repo_paths": [str(p["local"]) for p in synced_repos] or partial_record.repo_paths,
+        })
+        state_mod.save_state(record)
+
+        payload = {
+            "alias": chosen_alias,
+            "ssh_alias": host_alias,
+            "instance_id": instance_id,
+            "ssh_host": instance.ssh_host,
+            "ssh_port": instance.ssh_port,
+            "offer": summary,
+            "repos": synced_repos,
+            "vscode": f"code --remote ssh-remote+{host_alias} {target.remote_root}",
+            "ssh": f"ssh {host_alias}",
+        }
+
+        # Tell the user they can connect now, before the slow bootstrap.
+        if not json_output:
+            console.print(
+                f"\n[green]Ready to connect.[/green] "
+                f"[cyan]ssh {host_alias}[/cyan]  /  "
+                f"[cyan]code --remote ssh-remote+{host_alias} {target.remote_root}[/cyan]\n"
+                f"[dim](still installing tai/claude/codex on the box — ~1–2 min, "
+                f"safe to start editing in the meantime)[/dim]\n"
+            )
 
         if copy_agent_creds:
+            _step("Copying agent credentials (~/.claude, ~/.codex)")
             plans = bootstrap_mod.plan_cred_copy(enabled=True)
             for cmd in bootstrap_mod.build_cred_copy_commands(ssh_alias=host_alias, plans=plans):
                 _run_or_raise(cmd)
@@ -150,92 +264,45 @@ def up(
                 raise TaiError(
                     f"--tai-source path has no pyproject.toml: {source_root}",
                 )
+            _step(f"Building wheel from {source_root}")
             import tempfile
             wheel_dir = Path(tempfile.mkdtemp(prefix="tai-wheel-"))
             wheel = bootstrap_mod.build_wheel(source_root, wheel_dir)
+            _step(f"Uploading wheel to {host_alias}:/tmp")
             upload_cmds, remote_wheel = bootstrap_mod.build_wheel_upload_commands(
                 ssh_alias=host_alias, wheel_path=wheel,
             )
             for cmd in upload_cmds:
                 _run_or_raise(cmd)
 
+        _step("Running remote bootstrap (uv, tai, claude-code, codex, skills)")
         _run_or_raise(
             bootstrap_mod.build_install_command(host_alias),
             stdin=bootstrap_mod.render_install_script(remote_wheel),
+            stream=True,
         )
 
-        synced_repos: list[dict] = []
-        target = sync_mod.RemoteTarget(ssh_alias=host_alias)
-        for repo_path in repo:
-            repo_path = repo_path.expanduser().resolve()
-            if not repo_path.is_dir():
-                raise TaiError(f"Repo path not found: {repo_path}")
-            basename = repo_path.name
-            entry: dict = {"local": str(repo_path), "remote": f"{target.remote_root}/{basename}"}
-            if sync_mod.is_git_repo(repo_path):
-                origin = sync_mod.remote_origin_url(repo_path)
-                if origin:
-                    branch = _run_or_raise(["git", "-C", str(repo_path), "rev-parse", "--abbrev-ref", "HEAD"]).strip()
-                    _run_or_raise(sync_mod.build_clone_cmd(
-                        target=target, origin_url=origin, branch=branch, repo_basename=basename,
-                    ))
-                    entry["origin"] = origin
-                files = sync_mod.uncommitted_files(repo_path)
-                wip_cmd = sync_mod.build_rsync_cmd(
-                    target=target, local_root=repo_path, files=files, repo_basename=basename,
-                )
-                if wip_cmd:
-                    _run_or_raise(wip_cmd, stdin="\n".join(files) + "\n")
-                    entry["wip_files"] = len(files)
-            else:
-                # Not a git repo — rsync everything except hard-block patterns.
-                cmd = sync_mod.build_rsync_ignored_cmd(
-                    target=target, local_root=repo_path.parent, include_path=repo_path.name, repo_basename=basename,
-                )
-                _run_or_raise(cmd)
-                entry["mode"] = "rsync_full"
-            for path in include_ignored:
-                cmd = sync_mod.build_rsync_ignored_cmd(
-                    target=target, local_root=repo_path, include_path=path, repo_basename=basename,
-                )
-                _run_or_raise(cmd)
-            synced_repos.append(entry)
-
-        record = state_mod.VastaiInstanceState(
-            alias=chosen_alias,
-            instance_id=instance_id,
-            ssh_host=instance.ssh_host,
-            ssh_port=instance.ssh_port,
-            ssh_user=instance.ssh_user,
-            ssh_key_path=str(ssh_key),
-            ssh_config_alias=host_alias,
-            repo_paths=[str(p) for p in repo],
-            image=image,
-            gpu=gpu,
-            disk_gb=disk,
-            region=region,
-        )
-        state_mod.save_state(record)
-
-        payload = {
-            "alias": chosen_alias,
-            "ssh_alias": host_alias,
-            "instance_id": instance_id,
-            "ssh_host": instance.ssh_host,
-            "ssh_port": instance.ssh_port,
-            "offer": summary,
-            "repos": synced_repos,
-            "vscode": f"code --remote ssh-remote+{host_alias} {target.remote_root}",
-            "ssh": f"ssh {host_alias}",
-        }
         success_message = (
-            f"[green]Ready.[/green] Connect: [cyan]ssh {host_alias}[/cyan]\n"
-            f"VS Code: [cyan]{payload['vscode']}[/cyan]"
+            f"[green]Done.[/green] Box fully provisioned. Connect: "
+            f"[cyan]ssh {host_alias}[/cyan]"
         )
         _emit(payload, json_output=json_output, success_message=success_message)
-    except TaiError:
-        raise
+    except TaiError as exc:
+        # If we got far enough to record state, the user can clean up the
+        # billing instance with `tai vastai down`. Without this hint they'd
+        # have to find the orphan id manually in vast.ai's UI.
+        if 'chosen_alias' in locals() and state_mod.state_path(chosen_alias).is_file():
+            err_console.print(
+                f"[yellow]Partial provisioning recorded.[/yellow] "
+                f"Tear down with: [cyan]tai vastai down {chosen_alias}[/cyan]"
+            )
+        raise exc
     except Exception as exc:
+        if 'chosen_alias' in locals() and state_mod.state_path(chosen_alias).is_file():
+            err_console.print(
+                f"[yellow]Partial provisioning recorded.[/yellow] "
+                f"Tear down with: [cyan]tai vastai down {chosen_alias}[/cyan]"
+            )
         raise TaiError(f"vastai up failed: {exc}", hint="Re-run with --verbose for a traceback.") from exc
 
 

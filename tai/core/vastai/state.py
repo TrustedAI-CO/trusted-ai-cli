@@ -27,12 +27,17 @@ _ALIAS_RE = re.compile(r"[^a-z0-9-]+")
 
 
 class VastaiInstanceState(BaseModel):
-    """Persisted record of a provisioned vast.ai instance."""
+    """Persisted record of a provisioned vast.ai instance.
+
+    ssh_host/ssh_port default to empty so state can be saved as soon as
+    `vastai create instance` returns an id — before SSH is reachable —
+    making partial provisioning recoverable via `tai vastai down`.
+    """
 
     alias: str
     instance_id: int
-    ssh_host: str
-    ssh_port: int
+    ssh_host: str = ""
+    ssh_port: int = 0
     ssh_user: str = "root"
     ssh_key_path: str
     ssh_config_alias: str
