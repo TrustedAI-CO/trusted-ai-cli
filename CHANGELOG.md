@@ -1,6 +1,30 @@
 # CHANGELOG
 
 
+## v0.28.0 (2026-05-10)
+
+### Features
+
+- **vastai**: Install from git+https by default, drop cwd auto-walk
+  ([`ba00008`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ba000082bdfaa4bfafc555e2c469eac748e00371))
+
+The remote bootstrap previously fell back to PyPI when no wheel was shipped — but trusted-ai-cli
+  isn't published, so `tai vastai up` would fail unless run from inside the source tree (where
+  `find_tai_source_root` walked up to discover pyproject.toml). That made the command silently
+  location-dependent.
+
+The repo is public, so default to:
+
+uv tool install --force "git+https://github.com/TrustedAI-CO/trusted-ai-cli.git"
+
+This works from anywhere with no auth. `--tai-source <path>` still builds and ships a local wheel
+  for testing uncommitted changes.
+
+Removed the now-dead `find_tai_source_root` helper and its tests.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+
 ## v0.27.0 (2026-05-10)
 
 ### Features
