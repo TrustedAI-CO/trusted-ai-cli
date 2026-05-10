@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.27.0 (2026-05-10)
+
+### Features
+
+- **vastai**: Shred secrets on the box before destroying
+  ([`4deb20d`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4deb20da3fda4785a7db506fba075a0b293cab4b))
+
+`tai vastai down` now ssh's in and `rm -rf`'s ~/.claude, ~/.codex, /tmp/trusted_ai_cli-*.whl, and
+  the cloned repo trees before calling `vastai destroy instance`. This is belt-and-suspenders
+  against destroy failures and any disk-reuse weirdness on vast.ai's side.
+
+Best-effort: short ConnectTimeout and BatchMode=yes so an unreachable box fails fast, and shred
+  failures are warnings (the destroy still runs). Pass `--no-shred` to skip the SSH round-trip
+  entirely.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+
 ## v0.26.0 (2026-05-10)
 
 ### Features
