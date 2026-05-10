@@ -1,6 +1,25 @@
 # CHANGELOG
 
 
+## v0.29.0 (2026-05-10)
+
+### Features
+
+- **vastai**: Connect-first flow, save state early, progress markers
+  ([`3bfd204`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3bfd204149abc627c0d4fc1416e6b4f6b6b982d4))
+
+Reorder `tai vastai up` so the user can ssh / open VS Code as soon as the repo is on the box; the
+  bootstrap install (uv, tai, claude-code, codex, skills) runs after the "Ready to connect" line.
+  Cuts perceived time-to-usable from ~2-3 min to ~30-60s.
+
+Also: persist partial state right after `create instance` so any later failure (smoke test, sync,
+  bootstrap) is recoverable via `tai vastai down <alias>`. Bump SSH smoke-test deadline 120s -> 240s
+  since some hosts take longer than that to settle. Add per-step stderr markers and stream bootstrap
+  output live so progress is visible.
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+
+
 ## v0.28.0 (2026-05-10)
 
 ### Features
