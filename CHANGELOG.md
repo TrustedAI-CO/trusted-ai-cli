@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.32.2 (2026-05-24)
+
+### Features
+
+- **skills**: Two-pass codebase mapping — scout agent detects 3-8 major concepts,
+  then spawns parallel agents to write one `how-{concept}.html` per domain.
+  Replaces monolithic `code-map.html` with `overview.html` + small focused docs.
+
+
 ## v0.32.1 (2026-05-24)
 
 ### Improvements

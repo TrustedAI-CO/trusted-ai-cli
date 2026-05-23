@@ -52,8 +52,9 @@ docs/
   specs/
     _template.html       # feature spec template (draft→implemented)
   trace/
+    overview.html        # system overview — links to concept docs
     stack.html
-    code-map.html
+    how-{concept}.html   # one per major domain (3-8 files, auto-detected)
     conventions.html
     concerns.html
     testing.html
@@ -699,7 +700,7 @@ Replace `YYYY-MM-DD` with the actual date (`$_DATE`).
 
 ## Step 4: Codebase Map
 
-If `docs/trace/stack.html`, `code-map.html`, `conventions.html`, or `concerns.html`
+If `docs/trace/overview.html`, `stack.html`, `conventions.html`, or `concerns.html`
 already exist, ask:
 
 > This repo already has trace docs. Refresh them now as part of setup?
@@ -707,7 +708,7 @@ already exist, ask:
 > B) Keep existing trace docs
 > C) Refresh only selected docs
 
-If there is no existing map, create all 4 trace documents.
+If there is no existing map, create all trace documents.
 
 ### Shared Mapping Rules
 
@@ -766,22 +767,38 @@ external services, deployment target. For each choice, one sentence on *why* it
 was chosen (if inferable from config/comments). Don't list every dependency —
 only the ones that shape how you think about the system.
 
-#### Agent 2 — How It Works → `docs/trace/code-map.html`
+#### Agent 2 — System Overview (two-pass)
 
-Answer: "If I had to explain this system to a new engineer in 10 minutes, what
-would I say?" Cover:
+This agent runs in two phases to produce small, focused docs instead of one
+monolithic code-map.
+
+**Phase 1: Scout** — Quick scan the codebase. Identify 3-8 major concepts or
+domains (e.g., "authentication", "data pipeline", "API layer", "real-time
+collaboration", "payment processing"). Write `docs/trace/overview.html`:
 
 - **What it does** — one paragraph, plain English
-- **Key concepts** — the 3-5 domain concepts that everything revolves around
-- **How a request flows** — pick the most important user action, trace it from
-  UI to database and back. Name entry points.
-- **How the code is organized** — layers, boundaries, what talks to what. Brief
-  directory overview (3-5 lines, not exhaustive).
-- **Where to look** — "If you need to change X, start in Y." Table of 5-8
-  common tasks → starting points.
+- **Key concepts** — list the 3-8 domains with one sentence each
+- **How parts connect** — which concepts depend on which, data flow between them
+- **Where to look** — table of common tasks → which concept doc to read
+- **Links** — link to each `docs/trace/how-{slug}.html` (will be created in Phase 2)
 
-Do NOT produce a file-by-file inventory. Do NOT list every function. Think
-"architecture whiteboard sketch", not "codebase index".
+Keep overview under 80 lines of HTML body. This is the entry point — brief and
+navigable, not comprehensive.
+
+**Phase 2: Concept docs** — Spawn one parallel agent per concept identified in
+Phase 1. Each agent writes `docs/trace/how-{slug}.html` answering:
+"How does {concept} work in this system?"
+
+Each concept doc should cover:
+- **What it does** — the concept in plain English
+- **How it works** — the flow, step by step. "When X happens, Y does Z."
+- **Key decisions** — why it works this way (if inferable)
+- **Where to change things** — the 2-3 files you'd touch to modify this behavior
+- **Gotchas** — anything surprising about this area
+
+Keep each concept doc under 100 lines of HTML body. Use the same trace HTML
+boilerplate. Name files `how-{slug}.html` (e.g., `how-auth.html`,
+`how-data-pipeline.html`).
 
 #### Agent 3 — How We Work → `docs/trace/conventions.html`
 
@@ -860,8 +877,9 @@ Docs reorganized:
 - [list migrated/copied/deleted legacy files, or "none"]
 
 Codebase map:
+- docs/trace/overview.html — [status]
 - docs/trace/stack.html — [status]
-- docs/trace/code-map.html — [status]
+- docs/trace/how-{concept}.html — [list each concept doc created]
 - docs/trace/conventions.html — [status]
 - docs/trace/concerns.html — [status]
 
