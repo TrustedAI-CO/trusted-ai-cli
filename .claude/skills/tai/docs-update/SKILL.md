@@ -3,7 +3,7 @@ name: docs-update
 version: 1.0.0
 description: |
   [TAI] Post-ship documentation update. Reads all project docs, cross-references the
-  diff, updates README/docs/trace/code-map.md/docs/contributing.md/CLAUDE.md to match what shipped,
+  diff, updates README/docs/trace/code-map.html/docs/contributing.html/CLAUDE.md to match what shipped,
   polishes changelog voice, cleans up todos, and optionally bumps VERSION. Use when
   asked to "update the docs", "sync documentation", or "post-ship docs".
 allowed-tools:
@@ -135,7 +135,7 @@ subjective decisions.
 **NEVER do:**
 - Overwrite, replace, or regenerate CHANGELOG entries — polish wording only, preserve all content
 - Bump VERSION without asking — always use AskUserQuestion for version changes
-- Use `Write` tool on docs/changelog.md — always use `Edit` with exact `old_string` matches
+- Use `Write` tool on docs/changelog.html — always use `Edit` with exact `old_string` matches
 
 ---
 
@@ -157,10 +157,12 @@ git log <base>..HEAD --oneline
 git diff <base>...HEAD --name-only
 ```
 
-3. Discover all documentation files in the repo:
+3. Discover all documentation files in the repo. Root-level files (README.md, CLAUDE.md) stay as
+   Markdown; files under `docs/` are now HTML:
 
 ```bash
-find . -maxdepth 3 -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./.tai/*" | sort
+find . -maxdepth 1 -name "*.md" -not -path "./.git/*" | sort
+find ./docs -maxdepth 3 -name "*.html" -not -path "./_assets/*" 2>/dev/null | sort
 ```
 
 4. Classify the changes into categories relevant to documentation:
@@ -184,13 +186,16 @@ Read each documentation file and cross-reference it against the diff. Use these 
 - Are examples, demos, and usage descriptions still valid?
 - Are troubleshooting steps still accurate?
 
-**docs/trace/code-map.md:**
+**docs/trace/code-map.html:**
 - Do ASCII diagrams and component descriptions match the current code?
 - Are design decisions and "why" explanations still accurate?
 - Be conservative — only update things clearly contradicted by the diff. Architecture docs
   describe things unlikely to change frequently.
+- HTML structure uses `<meta name="doc-type">`, `<meta name="doc-date">`, and
+  `<section data-section="...">` for semantic markup. Shared assets live at
+  `docs/_assets/style.css` and `docs/_assets/docs.js`.
 
-**docs/contributing.md — New contributor smoke test:**
+**docs/contributing.html — New contributor smoke test:**
 - Walk through the setup instructions as if you are a brand new contributor.
 - Are the listed commands accurate? Would each step succeed?
 - Do test tier descriptions match the current test infrastructure?
@@ -203,15 +208,34 @@ Read each documentation file and cross-reference it against the diff. Use these 
 - Do build/test instructions match what's in package.json (or equivalent)?
 
 **docs/ tree (if exists):**
-- Check `docs/trace/code-map.md` — is the architecture description still accurate after this release?
-- Check `docs/trace/concerns.md` — are any concerns resolved by this release?
-- Check `docs/trace/matrix.md` — are all REQs from `docs/specs/*.md` still valid?
-- Run doc validation: check all frontmatter links resolve, no orphans, bidirectional links intact.
+- Check `docs/trace/code-map.html` — is the architecture description still accurate after this release?
+- Check `docs/trace/concerns.html` — are any concerns resolved by this release?
+- Check `docs/trace/matrix.html` — are all REQs from `docs/specs/*.html` still valid?
+- HTML docs use `<meta name="doc-type">` and `<meta name="doc-date">` for metadata,
+  and `<section data-section="...">` for structural sections. There is no `doc-status` meta.
+- Run doc validation using the Python validator:
+
+```bash
+python3 -c "
+from tai.commands.docs import validate_all, find_docs_root
+issues = validate_all(find_docs_root())
+if issues:
+    for path, errs in issues.items():
+        for e in errs:
+            print(f'ISSUE: {path}: {e}')
+else:
+    print('All docs valid.')
+"
+```
+
 - Flag stale docs for update or removal.
 
-**Any other .md files:**
+**Any other .html files under docs/:**
 - Read the file, determine its purpose and audience.
 - Cross-reference against the diff to check if it contradicts anything the file says.
+
+**Any root-level .md files (README.md, CLAUDE.md, etc.):**
+- These remain Markdown. Read and audit as before.
 
 For each file, classify needed updates as:
 
@@ -232,7 +256,7 @@ from 9 to 10."
 
 **Never auto-update:**
 - README introduction or project positioning
-- `docs/trace/code-map.md` philosophy or design rationale
+- `docs/trace/code-map.html` philosophy or design rationale
 - Security model descriptions
 - Do not remove entire sections from any document
 
@@ -260,7 +284,7 @@ A real incident occurred where an agent replaced existing CHANGELOG entries when
 preserved them. This skill must NEVER do that.
 
 **Rules:**
-1. Read the entire `docs/changelog.md` first. Understand what is already there.
+1. Read the entire `docs/changelog.html` first. Understand what is already there.
 2. Only modify wording within existing entries. Never delete, reorder, or replace entries.
 3. Never regenerate a CHANGELOG entry from scratch. The entry was written by `/ship` from the
    actual diff and commit history. It is the source of truth. You are polishing prose, not
@@ -268,7 +292,7 @@ preserved them. This skill must NEVER do that.
 4. If an entry looks wrong or incomplete, use AskUserQuestion — do NOT silently fix it.
 5. Use Edit tool with exact `old_string` matches — never use Write to overwrite the changelog file.
 
-**If CHANGELOG was not modified in this branch:** skip this step.
+**If CHANGELOG (docs/changelog.html) was not modified in this branch:** skip this step.
 
 **If CHANGELOG was modified in this branch**, review the entry for voice:
 
@@ -287,22 +311,22 @@ preserved them. This skill must NEVER do that.
 After auditing each file individually, do a cross-doc consistency pass:
 
 1. Does the README's feature/capability list match what CLAUDE.md (or project instructions) describes?
-2. Does `docs/trace/code-map.md`'s component list match `docs/contributing.md`'s project structure description?
+2. Does `docs/trace/code-map.html`'s component list match `docs/contributing.html`'s project structure description?
 3. Does CHANGELOG's latest version match the VERSION file?
 4. **Discoverability:** Is every documentation file reachable from README.md or CLAUDE.md? If
-   `docs/trace/code-map.md` exists but neither README nor CLAUDE.md links to it, flag it. Every doc
+   `docs/trace/code-map.html` exists but neither README nor CLAUDE.md links to it, flag it. Every doc
    should be discoverable from one of the two entry-point files.
 5. Flag any contradictions between documents. Auto-fix clear factual inconsistencies (e.g., a
    version mismatch). Use AskUserQuestion for narrative contradictions.
 
 ---
 
-## Step 7: docs/plan/todos.md Cleanup
+## Step 7: docs/plan/todos.html Cleanup
 
 This is a second pass that complements `/ship`'s Step 5.5. Read `review/TODOS-format.md` (if
 available) for the canonical TODO item format.
 
-If `docs/plan/todos.md` doesn't exist, skip this step.
+If `docs/plan/todos.html` doesn't exist, skip this step.
 
 1. **Completed items not yet marked:** Cross-reference the diff against open TODO items. If a
    TODO is clearly completed by the changes in this branch, move it to the Completed section
@@ -315,7 +339,7 @@ If `docs/plan/todos.md` doesn't exist, skip this step.
 
 3. **New deferred work:** Check the diff for `TODO`, `FIXME`, `HACK`, and `XXX` comments. For
    each one that represents meaningful deferred work (not a trivial inline note), use
-   AskUserQuestion to ask whether it should be captured in docs/plan/todos.md.
+   AskUserQuestion to ask whether it should be captured in docs/plan/todos.html.
 
 ---
 
@@ -421,12 +445,12 @@ Output a scannable summary showing every documentation file's status:
 
 ```
 Documentation health:
-  README.md       [status] ([details])
-  docs/trace/code-map.md  [status] ([details])
-  docs/contributing.md    [status] ([details])
-  docs/changelog.md       [status] ([details])
-  docs/plan/todos.md      [status] ([details])
-  VERSION         [status] ([details])
+  README.md                [status] ([details])
+  docs/trace/code-map.html [status] ([details])
+  docs/contributing.html   [status] ([details])
+  docs/changelog.html      [status] ([details])
+  docs/plan/todos.html     [status] ([details])
+  VERSION                  [status] ([details])
 ```
 
 Where status is one of:

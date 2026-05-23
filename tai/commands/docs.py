@@ -34,15 +34,15 @@ SCHEMAS: dict[str, dict] = {
     },
     "decision": {
         "required_sections": ["context", "decision", "consequences"],
-        "required_meta": ["date"],
+        "required_meta": ["date", "status"],
     },
     "design": {
         "required_sections": ["overview", "components"],
         "required_meta": ["date"],
     },
     "spec": {
-        "required_sections": ["overview", "requirements"],
-        "required_meta": ["date"],
+        "required_sections": ["problem", "requirements", "acceptance-criteria"],
+        "required_meta": ["date", "status"],
     },
     "guide": {
         "required_sections": ["overview"],

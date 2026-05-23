@@ -15,15 +15,15 @@
     },
     decision: {
       required: ["context", "decision", "consequences"],
-      meta: ["date"],
+      meta: ["date", "status"],
     },
     design: {
       required: ["overview", "components"],
       meta: ["date"],
     },
     spec: {
-      required: ["overview", "requirements"],
-      meta: ["date"],
+      required: ["problem", "requirements", "acceptance-criteria"],
+      meta: ["date", "status"],
     },
     guide: {
       required: ["overview"],
@@ -236,10 +236,16 @@
     /* skip if author already placed a dl.meta */
     if (article.querySelector("dl.meta")) return;
 
-    const fields = ["type", "date", "author"];
+    const fields = ["type", "status", "date", "author"];
+    const docType = getMeta("type");
+    const statusTypes = ["spec", "decision"];
     const entries = fields
       .map((f) => [f, getMeta(f)])
-      .filter(([, v]) => v);
+      .filter(([f, v]) => {
+        if (!v) return false;
+        if (f === "status" && !statusTypes.includes(docType)) return false;
+        return true;
+      });
 
     if (!entries.length) return;
 
@@ -249,7 +255,14 @@
       const dt = document.createElement("dt");
       dt.textContent = key;
       const dd = document.createElement("dd");
-      dd.textContent = val;
+      if (key === "status") {
+        const span = document.createElement("span");
+        span.className = `status status-${val}`;
+        span.textContent = val;
+        dd.appendChild(span);
+      } else {
+        dd.textContent = val;
+      }
       dl.appendChild(dt);
       dl.appendChild(dd);
     });
