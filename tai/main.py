@@ -21,7 +21,7 @@ from tai.core.config import load_config
 from tai.core.context import AppContext
 from tai.core.errors import ConfigError, TaiError, handle_error
 
-from tai.commands import secret, config, ai, api, claude, codex, meetings, project, tasks, pdf, style, sales, browser, agent, vastai
+from tai.commands import secret, config, ai, api, claude, codex, docs, meetings, project, tasks, pdf, style, sales, browser, agent, vastai
 from tai.commands.auth import login, logout, whoami
 from tai.commands.setup import setup
 from tai.commands.update import update
@@ -137,8 +137,11 @@ app.command(name="logout")(logout)
 app.command(name="whoami")(whoami)
 
 
-@app.command(name="docs")
-def docs_cmd() -> None:
+app.add_typer(docs.app)
+
+
+@docs.app.command(name="print")
+def docs_print() -> None:
     """Print LLM-friendly usage reference in Markdown and exit."""
     print(DOCS)
 

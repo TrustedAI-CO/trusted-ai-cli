@@ -1,0 +1,504 @@
+/* ── tai docs — shared renderer ──────────────────────────────────────────────
+   Agents write semantic HTML. This CSS handles all visual presentation.
+   Agents never need to touch this file.
+
+   Aesthetic: engineering notebook — blueprint accent, dot-grid paper,
+   monospace headings, serif body, hard shadows, dark mode.
+   ────────────────────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --font-display: 'VT323', ui-monospace, 'JetBrains Mono', monospace;
+  --font-body: 'Source Serif 4', 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  --bg: #fafaf5;
+  --bg-surface: #f3f1e8;
+  --bg-surface-hover: #ece9dc;
+  --ink: #1a1a1a;
+  --ink-soft: #4a4a4a;
+  --ink-mute: #7a7a78;
+  --rule: #1a1a1a;
+  --rule-soft: rgba(26, 26, 26, 0.16);
+  --paper-rule: rgba(26, 26, 26, 0.08);
+
+  --blueprint: #3553ff;
+  --blueprint-tint: rgba(53, 83, 255, 0.08);
+  --blueprint-tint-strong: rgba(53, 83, 255, 0.18);
+
+  --success: #059669;
+  --warning: #b8870f;
+  --error: #dc2626;
+  --code-bg: #efece0;
+
+  --max-width: 72ch;
+  --nav-width: 260px;
+}
+
+[data-theme="dark"] {
+  --bg: #0a0d1a;
+  --bg-surface: #131830;
+  --bg-surface-hover: #1b2244;
+  --ink: #e8e6dc;
+  --ink-soft: #a8a6a0;
+  --ink-mute: #7a7878;
+  --rule: #e8e6dc;
+  --rule-soft: rgba(232, 230, 220, 0.18);
+  --paper-rule: rgba(232, 230, 220, 0.08);
+
+  --blueprint: #6b8eff;
+  --blueprint-tint: rgba(107, 142, 255, 0.12);
+  --blueprint-tint-strong: rgba(107, 142, 255, 0.22);
+
+  --code-bg: #131830;
+}
+
+::selection {
+  background: var(--blueprint);
+  color: var(--bg);
+}
+
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 2rem;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.62;
+  color: var(--ink);
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--paper-rule) 1px, transparent 1px);
+  background-size: 16px 16px;
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+body.has-nav { margin-left: var(--nav-width); }
+
+article {
+  max-width: var(--max-width);
+  margin: 3rem auto;
+  padding: 0 2rem;
+}
+
+
+/* ── Sidebar navigation (injected by docs.js) ──────────────────────────── */
+
+nav.docs-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: var(--nav-width);
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--rule-soft);
+  padding: 1.5rem 1rem;
+  background: var(--bg-surface);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+nav.docs-nav .nav-title {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+nav.docs-nav .nav-group {
+  font-weight: 500;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-mute);
+  margin-top: 1.5rem;
+  margin-bottom: 0.4rem;
+}
+
+nav.docs-nav .nav-link {
+  display: block;
+  padding: 0.3rem 0.5rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+  border-bottom: none;
+  transition: color 0.15s, background 0.15s;
+}
+
+nav.docs-nav .nav-link:hover {
+  color: var(--blueprint);
+  background: var(--bg-surface-hover);
+}
+
+nav.docs-nav .nav-link.active {
+  color: var(--blueprint);
+  background: var(--blueprint-tint);
+  font-weight: 600;
+}
+
+
+/* ── Typography ─────────────────────────────────────────────────────────── */
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--blueprint);
+  margin-top: 2.5rem;
+  margin-bottom: 0.75rem;
+}
+
+h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  margin-top: 0;
+  padding-bottom: 0.5rem;
+  border-bottom: none;
+}
+
+h1::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 6px;
+  margin-top: 0.5rem;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      var(--blueprint) 0, var(--blueprint) 4px,
+      transparent 4px, transparent 8px
+    ),
+    repeating-linear-gradient(
+      to right,
+      transparent 0, transparent 8px,
+      var(--blueprint-tint-strong) 8px, var(--blueprint-tint-strong) 14px
+    );
+  background-size: 100% 3px, 100% 3px;
+  background-position: 0 0, 0 3px;
+  background-repeat: no-repeat;
+}
+
+h2 {
+  font-size: clamp(1.4rem, 3vw, 1.8rem);
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+h3 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
+h4 { font-size: 1.1rem; color: var(--ink); }
+
+p {
+  margin-bottom: 1rem;
+  color: var(--ink);
+}
+
+a {
+  color: var(--blueprint);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+a:hover { border-bottom-color: var(--blueprint); }
+a.broken-link { color: var(--error); text-decoration: line-through; border-bottom: none; }
+
+strong { font-weight: 700; }
+em { font-style: italic; }
+
+hr {
+  border: none;
+  height: 6px;
+  margin: 2rem 0;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      var(--blueprint) 0, var(--blueprint) 4px,
+      transparent 4px, transparent 8px
+    ),
+    repeating-linear-gradient(
+      to right,
+      transparent 0, transparent 8px,
+      var(--blueprint-tint-strong) 8px, var(--blueprint-tint-strong) 14px
+    );
+  background-size: 100% 3px, 100% 3px;
+  background-position: 0 0, 0 3px;
+  background-repeat: no-repeat;
+}
+
+
+/* ── Lists ──────────────────────────────────────────────────────────────── */
+
+ul, ol { margin-bottom: 1rem; padding-left: 1.5rem; }
+li { margin-bottom: 0.3rem; }
+li > ul, li > ol { margin-bottom: 0; margin-top: 0.3rem; }
+
+
+/* ── Code ───────────────────────────────────────────────────────────────── */
+
+code, pre, kbd, samp { font-family: var(--font-mono); }
+
+code {
+  font-size: 0.85em;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border: 1px solid var(--rule-soft);
+}
+
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--rule-soft);
+  padding: 1rem 1.25rem;
+  overflow-x: auto;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+  font-size: 0.9rem;
+}
+
+pre code { background: none; padding: 0; border: none; }
+
+
+/* ── Tables ─────────────────────────────────────────────────────────────── */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+  font-family: var(--font-mono);
+}
+
+th, td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--rule-soft);
+  text-align: left;
+}
+
+th {
+  background: var(--bg-surface);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+
+/* ── Metadata block ─────────────────────────────────────────────────────── */
+
+dl.meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 1.5rem;
+  margin: 1rem 0 2rem;
+  padding: 1rem 1.25rem;
+  background: var(--blueprint-tint);
+  border: 1px solid var(--rule-soft);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+dl.meta dt {
+  font-weight: 500;
+  color: var(--ink-mute);
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  align-self: center;
+}
+
+dl.meta dd {
+  align-self: center;
+  color: var(--ink);
+}
+
+
+
+/* ── Blockquotes & callouts ─────────────────────────────────────────────── */
+
+blockquote {
+  border-left: 3px solid var(--blueprint);
+  margin: 1.5rem 0;
+  padding: 0.75rem 1.25rem;
+  color: var(--ink-soft);
+  background: var(--blueprint-tint);
+  font-style: italic;
+}
+
+blockquote p:last-child { margin-bottom: 0; }
+
+.callout {
+  margin: 1.5rem 0;
+  padding: 1rem 1.25rem;
+  border: 1px solid var(--rule-soft);
+  border-left: 4px solid;
+}
+
+.callout-info    { border-left-color: var(--blueprint); background: var(--blueprint-tint); }
+.callout-warning { border-left-color: var(--warning); background: rgba(184, 135, 15, 0.06); }
+.callout-error   { border-left-color: var(--error); background: rgba(220, 38, 38, 0.06); }
+.callout-success { border-left-color: var(--success); background: rgba(5, 150, 105, 0.06); }
+
+
+/* ── Sections ───────────────────────────────────────────────────────────── */
+
+section[data-section] {
+  margin-top: 2rem;
+  padding-left: 0;
+  transition: border-left 0.2s, padding-left 0.2s;
+}
+
+section[data-valid="true"]  { border-left: 3px solid var(--success); padding-left: 1rem; }
+section[data-valid="false"] { border-left: 3px solid var(--error); padding-left: 1rem; }
+
+
+/* ── Figure labels ──────────────────────────────────────────────────────── */
+
+figcaption, .fig-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--blueprint);
+  margin-top: 0.5rem;
+}
+
+
+/* ── Label / tag ────────────────────────────────────────────────────────── */
+
+.label {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+
+/* ── Validation badge (injected by docs.js) ─────────────────────────────── */
+
+.validation-badge {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  z-index: 100;
+  cursor: pointer;
+  border: 1px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.validation-badge:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
+.validation-pass {
+  background: rgba(5, 150, 105, 0.12);
+  color: var(--success);
+  border-color: var(--success);
+  box-shadow: 3px 3px 0 var(--success);
+}
+
+.validation-fail {
+  background: rgba(220, 38, 38, 0.12);
+  color: var(--error);
+  border-color: var(--error);
+  box-shadow: 3px 3px 0 var(--error);
+}
+
+.validation-panel {
+  position: fixed;
+  bottom: 3.5rem;
+  right: 1rem;
+  width: 380px;
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--bg);
+  border: 1px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 1rem 1.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  z-index: 100;
+  display: none;
+}
+
+.validation-panel.open { display: block; }
+
+.validation-panel .issue {
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--rule-soft);
+  color: var(--error);
+}
+
+.validation-panel .issue:last-child { border-bottom: none; }
+
+
+/* ── Theme toggle (injected by docs.js) ─────────────────────────────────── */
+
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--rule-soft);
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  color: var(--ink);
+  z-index: 100;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.theme-toggle:hover {
+  border-color: var(--blueprint);
+  color: var(--blueprint);
+}
+
+
+/* ── Print ──────────────────────────────────────────────────────────────── */
+
+@media print {
+  nav.docs-nav,
+  .validation-badge,
+  .validation-panel,
+  .theme-toggle { display: none; }
+  body.has-nav { margin-left: 0; }
+  body { background-image: none; }
+  article { max-width: none; }
+}
+
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  nav.docs-nav { display: none; }
+  body.has-nav { margin-left: 0; }
+  article { padding: 0 1rem; }
+}

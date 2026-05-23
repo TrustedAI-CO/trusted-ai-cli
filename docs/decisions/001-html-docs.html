@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="decision">
+  <meta name="doc-date" content="2026-05-23">
+  <meta name="doc-author" content="TAI">
+  <title>Use HTML for Project Documentation</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body>
+  <article>
+    <h1>Use HTML for Project Documentation</h1>
+
+    <section data-section="context">
+      <h2>Context</h2>
+      <p>
+        TAI agents generate project documentation as part of the
+        <code>docs-init</code> and <code>docs-update</code> workflows. Previously,
+        agents wrote Markdown files which required a separate rendering step
+        to view with proper formatting, navigation, and cross-document linking.
+      </p>
+      <p>
+        Markdown also lacks built-in validation — there is no way to enforce
+        required sections, metadata, or structural rules without external tooling.
+      </p>
+    </section>
+
+    <section data-section="decision">
+      <h2>Decision</h2>
+      <p>
+        All project documentation under <code>docs/</code> is authored as HTML.
+        Agents write semantic HTML with <code>data-</code> attributes.
+        A shared CSS stylesheet (<code>_assets/style.css</code>) handles all
+        visual presentation. A shared JS runtime (<code>_assets/docs.js</code>)
+        provides sidebar navigation, client-side validation, dark mode, and
+        hot reload during development.
+      </p>
+      <p>
+        Agents do not concern themselves with styling. They write structure:
+      </p>
+      <pre><code>&lt;meta name="doc-type" content="decision"&gt;
+&lt;section data-section="context"&gt;...&lt;/section&gt;
+&lt;section data-section="decision"&gt;...&lt;/section&gt;</code></pre>
+      <p>
+        Validation rules are defined per document type (decision, design, spec,
+        intent, etc.) and enforced both client-side via <code>docs.js</code> and
+        server-side during <code>docs-init</code> / <code>docs-update</code>.
+      </p>
+    </section>
+
+    <section data-section="consequences">
+      <h2>Consequences</h2>
+      <ul>
+        <li>Documents are browsable by double-clicking — no build step needed.</li>
+        <li>
+          <code>tai docs serve</code> adds hot reload and sidebar navigation
+          for iterative editing.
+        </li>
+        <li>
+          Validation is structural, not just linting — missing required sections
+          are caught at authoring time.
+        </li>
+        <li>
+          Agents produce richer output: tables, code blocks, callouts, and
+          cross-document links work natively.
+        </li>
+        <li>Dark mode and print support come free from the shared stylesheet.</li>
+        <li>
+          Trade-off: HTML is more verbose than Markdown. Mitigated by agents
+          doing the writing, not humans.
+        </li>
+      </ul>
+
+      <div class="callout callout-info">
+        <strong>Migration:</strong> Existing Markdown docs (README, ARCHITECTURE, etc.)
+        remain at the repo root. Only <code>docs/</code> uses the HTML system.
+      </div>
+    </section>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>
