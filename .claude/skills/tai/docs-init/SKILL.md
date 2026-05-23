@@ -713,131 +713,102 @@ If there is no existing map, create all 4 trace documents.
 
 1. Use Agent tool in parallel when available; otherwise run sequentially.
 2. Each agent writes directly to `docs/trace/{file}.html`.
-3. Use HTML format with `<meta name="doc-type" content="trace">` and `<meta name="doc-date" content="YYYY-MM-DD">`.
-4. Include concrete file paths in `<code>` tags.
-5. Be prescriptive, not merely descriptive.
-6. Never read or quote secret-bearing files. Note existence only.
-7. Limit searches; avoid unbounded scans of dependency/vendor/build dirs.
-8. For all trace docs in `docs/trace/`, use `../_assets/style.css` and `../_assets/docs.js`.
+3. Use the HTML boilerplate below (doc-type="trace", `../_assets/style.css`, `../_assets/docs.js`).
+4. Never read or quote secret-bearing files. Note existence only.
+5. Limit searches; avoid unbounded scans of dependency/vendor/build dirs.
+
+**Writing style — concept-level, not file inventory:**
+
+- Explain **how things work**, not what files exist. A new engineer reading these
+  docs should build a mental model of the system, not memorize a directory listing.
+- Describe **flows and behaviors**: "When a user logs in, X happens, then Y, then Z."
+  Not: "`login.py` calls `auth.py` which calls `session.py`."
+- Name files only when a reader would need to find them — entry points, config files,
+  the one file that handles something surprising. Don't list every file in a directory.
+- Use **analogies and mental models**: "The API layer is a thin adapter — it translates
+  HTTP into domain calls and back. No business logic lives here."
+- Explain **why**, not just what: "We use server-side sessions instead of JWTs because
+  we need instant revocation for compliance."
+- Keep each doc **under 200 lines of HTML body**. If a topic is too big, it means
+  the codebase has multiple concepts — split into separate trace docs.
+
+### HTML Boilerplate for Trace Docs
+
+All trace docs use this shell:
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="YYYY-MM-DD">
+  <title>{Title}</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body>
+  <article>
+    <h1>{Title}</h1>
+    <!-- content here -->
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>
+```
 
 ### Mapping Agent Prompts
 
-#### Agent 1 — Stack Analysis → `docs/trace/stack.html`
+#### Agent 1 — Technology Stack → `docs/trace/stack.html`
 
-Analyze manifests, runtime versions, config files, integrations, database/storage,
-CI/CD, and deployment. Write an HTML file with:
+Answer: "What is this built with and why?" Cover language, framework, database,
+external services, deployment target. For each choice, one sentence on *why* it
+was chosen (if inferable from config/comments). Don't list every dependency —
+only the ones that shape how you think about the system.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="doc-type" content="trace">
-  <meta name="doc-date" content="YYYY-MM-DD">
-  <title>Technology Stack</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-</head>
-<body>
-  <article>
-    <h1>Technology Stack</h1>
-    <!-- Sections: Languages, Runtime & Package Manager,
-         Frameworks & Key Dependencies, External Integrations,
-         Data Storage, CI/CD & Deployment, Configuration -->
-  </article>
-  <script src="../_assets/docs.js"></script>
-</body>
-</html>
-```
+#### Agent 2 — How It Works → `docs/trace/code-map.html`
 
-#### Agent 2 — Architecture Analysis → `docs/trace/code-map.html`
+Answer: "If I had to explain this system to a new engineer in 10 minutes, what
+would I say?" Cover:
 
-Analyze directory layout, entry points, module boundaries, representative data
-flow, state management, error handling, and where to add new code. Write an HTML file with:
+- **What it does** — one paragraph, plain English
+- **Key concepts** — the 3-5 domain concepts that everything revolves around
+- **How a request flows** — pick the most important user action, trace it from
+  UI to database and back. Name entry points.
+- **How the code is organized** — layers, boundaries, what talks to what. Brief
+  directory overview (3-5 lines, not exhaustive).
+- **Where to look** — "If you need to change X, start in Y." Table of 5-8
+  common tasks → starting points.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="doc-type" content="trace">
-  <meta name="doc-date" content="YYYY-MM-DD">
-  <title>Code Map</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-</head>
-<body>
-  <article>
-    <h1>Code Map</h1>
-    <!-- Sections: Pattern Overview, Directory Layout, Layers &
-         Boundaries, Data Flow, Entry Points, Key Abstractions,
-         Error Handling Strategy, Where to Add New Code -->
-  </article>
-  <script src="../_assets/docs.js"></script>
-</body>
-</html>
-```
+Do NOT produce a file-by-file inventory. Do NOT list every function. Think
+"architecture whiteboard sketch", not "codebase index".
 
-#### Agent 3 — Conventions Analysis → `docs/trace/conventions.html`
+#### Agent 3 — How We Work → `docs/trace/conventions.html`
 
-Analyze formatting/linting, representative source files, import order, naming,
-test framework/config, test organization, mocking, and coverage. Write an HTML file with:
+Answer: "What do I need to know before writing code here?" Cover:
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="doc-type" content="trace">
-  <meta name="doc-date" content="YYYY-MM-DD">
-  <title>Coding Conventions &amp; Testing</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-</head>
-<body>
-  <article>
-    <h1>Coding Conventions &amp; Testing</h1>
-    <!-- Sections: Code Style, Naming Patterns, Import Organization,
-         Error Handling Conventions, Logging Conventions, Testing,
-         Framework & Config, Test Organization, Test Patterns,
-         Mocking Approach, Coverage -->
-  </article>
-  <script src="../_assets/docs.js"></script>
-</body>
-</html>
-```
+- **Code style** — formatter, linter, key patterns (naming, error handling)
+- **Testing** — how to run tests, what framework, what's the testing philosophy
+  (unit-heavy? integration-heavy? e2e?), where tests live
+- **Common patterns** — the 3-5 patterns used repeatedly (e.g., "all API routes
+  use X middleware", "state is managed via Y pattern")
+- **Gotchas** — things that would surprise a new contributor
 
-Also update `docs/trace/testing.html` with detected test commands and coverage
-expectations if possible.
+Also update `docs/trace/testing.html` with detected test commands.
 
-#### Agent 4 — Concerns Analysis → `docs/trace/concerns.html`
+#### Agent 4 — Known Issues → `docs/trace/concerns.html`
 
-Analyze TODO/FIXME/HACK/XXX comments, large files, high-churn files, broad
-exception handling, duplication patterns, source files without tests, dependency
-concerns, and likely security review surfaces. Write an HTML file with:
+Answer: "What should I be careful about?" Cover:
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="doc-type" content="trace">
-  <meta name="doc-date" content="YYYY-MM-DD">
-  <title>Codebase Concerns</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-</head>
-<body>
-  <article>
-    <h1>Codebase Concerns</h1>
-    <!-- Sections: Tech Debt, TODO/FIXME Inventory, Complexity Hotspots,
-         Fragile Areas, Missing Test Coverage, Dependency Concerns,
-         Security Surface -->
-  </article>
-  <script src="../_assets/docs.js"></script>
-</body>
-</html>
-```
+- **Tech debt** — areas that need refactoring and why
+- **Fragile areas** — code that breaks easily or has hidden coupling
+- **Missing coverage** — what's not tested and why it matters
+- **Security surfaces** — where external input enters the system
+- **Dependency risks** — outdated, unmaintained, or problematic deps
+
+Be honest and specific. "The auth module is fragile because session handling
+is spread across 3 files with no shared abstraction" is useful. "Some files
+are large" is not.
 
 ## Step 5: Validate Docs
 
