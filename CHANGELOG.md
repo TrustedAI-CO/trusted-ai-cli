@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.33.0 (2026-05-24)
+
+### Breaking Changes
+
+- **docs**: Remove `tai docs serve` command — docs are static HTML, just open files directly
+
+### Bug Fixes
+
+- **docs**: Fix `write_index` failing on re-runs when `<body>` already has `class="has-nav"`
+
+
 ## v0.32.2 (2026-05-24)
 
 ### Features
