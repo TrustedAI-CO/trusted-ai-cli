@@ -1,6 +1,19 @@
 # CHANGELOG
 
 
+## v0.31.0 (2026-05-23)
+
+### Features
+
+- **docs**: Interactive HTML docs with live-reload server
+  ([`5fe2c6d`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5fe2c6d))
+
+Add `tai docs serve` — threaded HTTP server with SSE hot reload, sidebar navigation,
+  client-side validation, and dark mode. Documents are semantic HTML with `data-` attributes;
+  shared CSS/JS handles all rendering (blueprint/engineering-notebook aesthetic).
+  Validation schemas enforce required sections per doc type.
+
+
 ## v0.30.0 (2026-05-23)
 
 ### Features
