@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.32.1 (2026-05-24)
+
+### Improvements
+
+- **skills**: Concept-level trace docs — agents explain how the system works,
+  not file-by-file inventories. Answers: "what is this built with?", "how does
+  it work?", "what do I need to know?", "what should I be careful about?"
+
+
 ## v0.32.0 (2026-05-24)
 
 ### Features
