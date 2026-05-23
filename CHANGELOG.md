@@ -1,6 +1,41 @@
 # CHANGELOG
 
 
+## v0.29.1 (2026-05-23)
+
+### Bug Fixes
+
+- **skills**: Align 10 skills with docs-philosophy rules
+  ([`4463c5f`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4463c5f38e7384bb3f6af18b71ea22f27bcefff8))
+
+Replace .context/ with .tai/ (retro, smart-compact, design-consultation). Replace project-local
+  .tai-skills/ with .tai/ (ship, qa, qa-only). Move review-light log from ~/.tai-skills/ to
+  .tai/state/ and fix copy-paste skill name bug ("plan-eng" → "review-light"). Replace root-level
+  ARCHITECTURE/PLAN.md references with docs/ paths (document-release, plan-eng, next).
+
+### Chores
+
+- **skills**: Remove project skill
+  ([`27e569d`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/27e569d6fb7845a9c23c0252cc766fb9ee43150c))
+
+### Refactoring
+
+- **skills**: Consolidate and rename 27 skills to 22
+  ([`76b6db9`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/76b6db9263f7d2fb5833edc0453bcb96f3649631))
+
+Removed redundant skills: qa-only (merged into qa), review-light, notion-cli, smart-compact, next,
+  retro, map (absorbed by docs-init).
+
+Renamed for consistent prefixing: - market-research → research-market - tech-research →
+  research-tech - office-hours → plan-product - content-writer → gen-content - slides → gen-slides -
+  generate-pdf → gen-pdf - execute → execute-solo - team → execute-team - setup → docs-init -
+  document-release → docs-update
+
+New skill: research-design (competitor UI, UX patterns, design trends).
+
+Fixed all cross-references across skills to use new names.
+
+
 ## v0.29.0 (2026-05-10)
 
 ### Features

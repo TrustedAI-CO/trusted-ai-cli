@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "trusted-ai-cli"
-version = "0.29.0"
+version = "0.29.1"
 description = "Internal CLI for TrustedAI company tools and APIs"
 requires-python = ">=3.11"
 dependencies = [
@@ -40,6 +40,7 @@ tai = "tai.main:cli"
 [project.entry-points."tai.plugins"]
 # third-party plugins register here:
 # my-plugin = "tai_myplugin.commands:app"
+
 
 
 
