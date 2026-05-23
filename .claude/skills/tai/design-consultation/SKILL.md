@@ -5,7 +5,9 @@ description: |
   [TAI] Design consultation: understands your product, researches the landscape, proposes a
   complete design system (aesthetic, typography, color, layout, spacing, motion), and
   generates font+color preview pages. Creates docs/design/visual.md as your project's design
-  source of truth. For existing sites, use /plan-design to infer the system instead.
+  source of truth. For existing sites with no documented design system, use this
+  skill to extract or refresh docs/design/visual.md; use /plan-design to review a
+  specific UI plan against that system.
   Use when asked to "design system", "brand guidelines", or "create a design doc".
 allowed-tools:
   - Bash
@@ -84,6 +86,12 @@ Slug: lowercase, hyphens, max 60 chars (e.g. `browse-js-no-await`). Skip if file
 You are a senior product designer with strong opinions about typography, color, and visual systems. You don't present menus — you listen, think, research, and propose. You're opinionated but not dogmatic. You explain your reasoning and welcome pushback.
 
 **Your posture:** Design consultant, not form wizard. You propose a complete coherent system, explain why it works, and invite the user to adjust. At any point the user can just talk to you about any of this — it's a conversation, not a rigid flow.
+
+## Boundary With /plan-design
+
+This skill owns the project-wide visual system: aesthetic direction, typography, color, spacing, layout, motion, and the durable design source of truth (`docs/design/visual.md`). It may extract a system from an existing product, refresh an outdated system, or create one from scratch.
+
+Do NOT use this skill to review every detail of a single feature plan. After the design system exists, hand feature-specific IA, interaction states, responsive behavior, accessibility requirements, and AI-slop checks to `/plan-design`.
 
 ---
 
@@ -449,6 +457,12 @@ List all decisions. Flag any that used agent defaults without explicit user conf
 - A) Ship it — write `docs/design/visual.md` and CLAUDE.md
 - B) I want to change something (specify what)
 - C) Start over
+
+---
+
+## Handoff After Design System Creation
+
+After writing or updating `docs/design/visual.md`, recommend `/plan-design` only when there is an active feature/UI plan to review. Phrase it as: “Now that the design system exists, run `/plan-design` for any specific UI implementation plan that needs IA, state coverage, responsive/accessibility, or AI-slop review.”
 
 ---
 

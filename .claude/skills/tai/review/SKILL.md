@@ -158,7 +158,7 @@ Before reviewing code quality, check whether the diff matches its stated intent.
 1. **Gather intent signals:**
    - Read commit messages on this branch: `git log origin/<base>..HEAD --format="%s%n%b"`
    - Read PR description if available: `gh pr view --json body -q .body 2>/dev/null`
-   - Read TODOS.md if it exists — check for items this branch claims to address
+   - Read `docs/plan/todos.md` if it exists — check for items this branch claims to address
    - Check branch name for intent clues
 
 2. **Compare diff against intent:**
@@ -213,7 +213,7 @@ _DIFF_FILES=$(git diff --name-only <base>...HEAD 2>/dev/null); SCOPE_FRONTEND=$(
 
 **If `SCOPE_FRONTEND=true`:**
 
-1. **Check for DESIGN.md.** If `DESIGN.md` or `design-system.md` exists in the repo root, read it. All design findings are calibrated against it — patterns blessed in DESIGN.md are not flagged. If not found, use universal design principles.
+1. **Check for design doc.** Check `docs/design/visual.md`. All design findings are calibrated against it — patterns blessed in the design doc are not flagged. If not found, use universal design principles.
 
 2. **Read `.claude/skills/review/design-checklist.md`.** If the file cannot be read, skip design review with a note: "Design checklist not found — skipping design review."
 
@@ -229,14 +229,39 @@ _DIFF_FILES=$(git diff --name-only <base>...HEAD 2>/dev/null); SCOPE_FRONTEND=$(
 6. **Log the result** for the Review Readiness Dashboard:
 
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$SLUG
-echo '{"skill":"design-review-lite","timestamp":"TIMESTAMP","status":"STATUS","findings":N,"auto_fixed":M}' >> ~/.tai-skills/projects/$SLUG/$BRANCH-reviews.jsonl
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+_BRANCH_SAFE=$(echo "$_BRANCH" | tr '/' '-')
+mkdir -p "$_REPO_ROOT/.tai/state"
+echo '{"skill":"design-review-lite","timestamp":"TIMESTAMP","status":"STATUS","findings":N,"auto_fixed":M}' >> "$_REPO_ROOT/.tai/state/${_BRANCH_SAFE}-reviews.jsonl"
 ```
 
 Substitute: TIMESTAMP = ISO 8601 datetime, STATUS = "clean" if 0 findings or "issues_found", N = total findings, M = auto-fixed count.
 
 Include any design findings alongside the findings from Step 4. They follow the same Fix-First flow in Step 5 — AUTO-FIX for mechanical CSS fixes, ASK for everything else.
+
+---
+
+## Step 4.7: Traceability Review (conditional)
+
+Check if `docs/specs/` and `docs/trace/matrix.md` exist. If not, skip silently.
+
+If they exist:
+
+1. **Collect all REQ IDs from specs:** Grep `docs/specs/*.md` for `### REQ-*` headers.
+
+2. **Check coverage in matrix:** For each REQ, verify it has a row in `docs/trace/matrix.md`.
+   - Flag REQs with no matrix entry as: `[WARNING] REQ-AUTH-003 has no traceability entry`
+
+3. **Scope creep detection:** For each file changed in the diff, check if it appears in
+   any row of `docs/trace/matrix.md`. Files with significant changes (>20 lines added)
+   that are NOT in the matrix are potential scope creep:
+   - Flag as: `[INFO] SCOPE CREEP: {file} changed but not traceable to any REQ`
+
+4. **REVIEW.md check:** If `docs/REVIEW.md` has PENDING items, note them:
+   - `[INFO] {N} pending review items in docs/REVIEW.md`
+
+Include these findings in the review output. Traceability warnings are INFORMATIONAL,
+not CRITICAL — they don't block shipping but should be addressed.
 
 ---
 
@@ -318,19 +343,19 @@ Before replying to any comment, run the **Escalation Detection** algorithm from 
 
 ## Step 5.5: TODOS cross-reference
 
-Read `TODOS.md` in the repository root (if it exists). Cross-reference the PR against open TODOs:
+Read `docs/plan/todos.md` if it exists. Cross-reference the PR against open TODOs:
 
 - **Does this PR close any open TODOs?** If yes, note which items in your output: "This PR addresses TODO: <title>"
 - **Does this PR create work that should become a TODO?** If yes, flag it as an informational finding.
 - **Are there related TODOs that provide context for this review?** If yes, reference them when discussing related findings.
 
-If TODOS.md doesn't exist, skip this step silently.
+If `docs/plan/todos.md` doesn't exist, skip this step silently.
 
 ---
 
 ## Step 5.6: Documentation staleness check
 
-Cross-reference the diff against documentation files. For each `.md` file in the repo root (README.md, ARCHITECTURE.md, CONTRIBUTING.md, CLAUDE.md, etc.):
+Cross-reference the diff against documentation files. For each `.md` file in the repo root and `docs/` directory (README.md, docs/trace/code-map.md, docs/contributing.md, CLAUDE.md, etc.):
 
 1. Check if code changes in the diff affect features, components, or workflows described in that doc file.
 2. If the doc file was NOT updated in this branch but the code it describes WAS changed, flag it as an INFORMATIONAL finding:
@@ -359,8 +384,9 @@ _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || 
 _BRANCH_SAFE=$(git branch --show-current | tr '/' '-')
 _COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 _COMMITS_ON_BRANCH=$(git rev-list --count origin/<base>..HEAD 2>/dev/null || echo "0")
-mkdir -p "$HOME/.tai-skills/projects/$_SLUG"
-echo "{\"skill\":\"review\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"status\":\"STATUS\",\"commit_hash\":\"$_COMMIT\",\"commits_on_branch\":$_COMMITS_ON_BRANCH,\"findings\":N,\"auto_fixed\":M,\"scope_drift\":DRIFT}" >> "$HOME/.tai-skills/projects/$_SLUG/${_BRANCH_SAFE}-reviews.jsonl"
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+mkdir -p "$_REPO_ROOT/.tai/state"
+echo "{\"skill\":\"review\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"status\":\"STATUS\",\"commit_hash\":\"$_COMMIT\",\"commits_on_branch\":$_COMMITS_ON_BRANCH,\"findings\":N,\"auto_fixed\":M,\"scope_drift\":DRIFT}" >> "$_REPO_ROOT/.tai/state/${_BRANCH_SAFE}-reviews.jsonl"
 ```
 
 Substitute: STATUS = "clean" if 0 findings or "issues_found", N = total findings, M = auto-fixed count, DRIFT = true/false (whether scope drift was detected in Step 3.5).

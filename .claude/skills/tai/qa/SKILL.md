@@ -1,22 +1,16 @@
 ---
 name: qa
-version: 2.0.0
+version: 3.0.0
 description: |
-  [TAI] Systematically QA test a web application and fix bugs found. Runs QA testing,
-  then iteratively fixes bugs in source code, committing each fix atomically and
-  re-verifying. Use when asked to "qa", "QA", "test this site", "find bugs",
-  "test and fix", or "fix what's broken". Three tiers: Quick (critical/high only),
-  Standard (+ medium), Exhaustive (+ cosmetic). Produces before/after health scores,
-  fix evidence, and a ship-readiness summary. For report-only mode, use /qa-only.
+  [TAI] Report-only QA testing. Systematically tests a web application and produces a
+  structured report with health score, screenshots, and repro steps — but never
+  fixes anything. Use when asked to "qa", "QA", "test this site", "find bugs",
+  "qa report only", or "just report bugs". Modes: Quick, Full, Diff-aware, Regression.
 allowed-tools:
   - Bash
   - Read
   - Write
-  - Edit
-  - Glob
-  - Grep
   - AskUserQuestion
-  - WebSearch
 ---
 
 ## Preamble (run first)
@@ -92,28 +86,9 @@ Keep these in English regardless of language:
 - Technical terms: SQL, CSRF, API, LLM, XSS, etc.
 Translate all prose, explanations, recommendations, and AskUserQuestion text.
 
-## Step 0: Detect base branch
+# /qa: Report-Only QA Testing
 
-Determine which branch this PR targets. Use the result as "the base branch" in all subsequent steps.
-
-1. Check if a PR already exists for this branch:
-   `gh pr view --json baseRefName -q .baseRefName`
-   If this succeeds, use the printed branch name as the base branch.
-
-2. If no PR exists (command fails), detect the repo's default branch:
-   `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`
-
-3. If both commands fail, fall back to `main`.
-
-Print the detected base branch name. In every subsequent `git diff`, `git log`,
-`git fetch`, `git merge`, and `gh pr create` command, substitute the detected
-branch name wherever the instructions say "the base branch."
-
----
-
-# /qa: Test → Fix → Verify
-
-You are a QA engineer AND a bug-fix engineer. Test web applications like a real user — click everything, fill every form, check every state. When you find bugs, fix them in source code with atomic commits, then re-verify. Produce a structured report with before/after evidence.
+You are a QA engineer. Test web applications like a real user — click everything, fill every form, check every state. Produce a structured report with evidence. **NEVER fix anything.**
 
 ## Setup
 
@@ -122,26 +97,12 @@ You are a QA engineer AND a bug-fix engineer. Test web applications like a real 
 | Parameter | Default | Override example |
 |-----------|---------|-----------------:|
 | Target URL | (auto-detect or required) | `https://myapp.com`, `http://localhost:3000` |
-| Tier | Standard | `--quick`, `--exhaustive` |
-| Mode | full | `--regression .tai/qa-reports/baseline.json` |
+| Mode | full | `--quick`, `--regression .tai/qa-reports/baseline.json` |
 | Output dir | `.tai/qa-reports/` | `Output to /tmp/qa` |
 | Scope | Full app (or diff-scoped) | `Focus on the billing page` |
 | Auth | None | `Sign in to user@example.com`, `Import cookies from cookies.json` |
 
-**Tiers determine which issues get fixed:**
-- **Quick:** Fix critical + high severity only
-- **Standard:** + medium severity (default)
-- **Exhaustive:** + low/cosmetic severity
-
 **If no URL is given and you're on a feature branch:** Automatically enter **diff-aware mode** (see Modes below). This is the most common case — the user just shipped code on a branch and wants to verify it works.
-
-**Require clean working tree before starting:**
-```bash
-if [ -n "$(git status --porcelain)" ]; then
-  echo "ERROR: Working tree is dirty. Commit or stash changes before running /qa."
-  exit 1
-fi
-```
 
 **Find the browse binary:**
 
@@ -164,161 +125,6 @@ If `NEEDS_SETUP`:
 2. Run: `cd <SKILL_DIR> && ./setup`
 3. If `bun` is not installed: `curl -fsSL https://bun.sh/install | bash`
 
-**Check test framework (bootstrap if needed):**
-
-## Test Framework Bootstrap
-
-**Detect existing test framework and project runtime:**
-
-```bash
-# Detect project runtime
-[ -f Gemfile ] && echo "RUNTIME:ruby"
-[ -f package.json ] && echo "RUNTIME:node"
-[ -f requirements.txt ] || [ -f pyproject.toml ] && echo "RUNTIME:python"
-[ -f go.mod ] && echo "RUNTIME:go"
-[ -f Cargo.toml ] && echo "RUNTIME:rust"
-[ -f composer.json ] && echo "RUNTIME:php"
-[ -f mix.exs ] && echo "RUNTIME:elixir"
-# Detect sub-frameworks
-[ -f Gemfile ] && grep -q "rails" Gemfile 2>/dev/null && echo "FRAMEWORK:rails"
-[ -f package.json ] && grep -q '"next"' package.json 2>/dev/null && echo "FRAMEWORK:nextjs"
-# Check for existing test infrastructure
-ls jest.config.* vitest.config.* playwright.config.* .rspec pytest.ini pyproject.toml phpunit.xml 2>/dev/null
-ls -d test/ tests/ spec/ __tests__/ cypress/ e2e/ 2>/dev/null
-# Check opt-out marker
-[ -f .tai/no-test-bootstrap ] && echo "BOOTSTRAP_DECLINED"
-```
-
-**If test framework detected** (config files or test directories found):
-Print "Test framework detected: {name} ({N} existing tests). Skipping bootstrap."
-Read 2-3 existing test files to learn conventions (naming, imports, assertion style, setup patterns).
-Store conventions as prose context for use in Phase 8e.5 or Step 3.4. **Skip the rest of bootstrap.**
-
-**If BOOTSTRAP_DECLINED** appears: Print "Test bootstrap previously declined — skipping." **Skip the rest of bootstrap.**
-
-**If NO runtime detected** (no config files found): Use AskUserQuestion:
-"I couldn't detect your project's language. What runtime are you using?"
-Options: A) Node.js/TypeScript B) Ruby/Rails C) Python D) Go E) Rust F) PHP G) Elixir H) This project doesn't need tests.
-If user picks H → write `.tai/no-test-bootstrap` and continue without tests.
-
-**If runtime detected but no test framework — bootstrap:**
-
-### B2. Research best practices
-
-Use WebSearch to find current best practices for the detected runtime:
-- `"[runtime] best test framework 2025 2026"`
-- `"[framework A] vs [framework B] comparison"`
-
-If WebSearch is unavailable, use this built-in knowledge table:
-
-| Runtime | Primary recommendation | Alternative |
-|---------|----------------------|-------------|
-| Ruby/Rails | minitest + fixtures + capybara | rspec + factory_bot + shoulda-matchers |
-| Node.js | vitest + @testing-library | jest + @testing-library |
-| Next.js | vitest + @testing-library/react + playwright | jest + cypress |
-| Python | pytest + pytest-cov | unittest |
-| Go | stdlib testing + testify | stdlib only |
-| Rust | cargo test (built-in) + mockall | — |
-| PHP | phpunit + mockery | pest |
-| Elixir | ExUnit (built-in) + ex_machina | — |
-
-### B3. Framework selection
-
-Use AskUserQuestion:
-"I detected this is a [Runtime/Framework] project with no test framework. I researched current best practices. Here are the options:
-A) [Primary] — [rationale]. Includes: [packages]. Supports: unit, integration, smoke, e2e
-B) [Alternative] — [rationale]. Includes: [packages]
-C) Skip — don't set up testing right now
-RECOMMENDATION: Choose A because [reason based on project context]"
-
-If user picks C → write `.tai/no-test-bootstrap`. Tell user: "If you change your mind later, delete `.tai/no-test-bootstrap` and re-run." Continue without tests.
-
-If multiple runtimes detected (monorepo) → ask which runtime to set up first, with option to do both sequentially.
-
-### B4. Install and configure
-
-1. Install the chosen packages (npm/bun/gem/pip/etc.)
-2. Create minimal config file
-3. Create directory structure (test/, spec/, etc.)
-4. Create one example test matching the project's code to verify setup works
-
-If package installation fails → debug once. If still failing → revert with `git checkout -- package.json package-lock.json` (or equivalent for the runtime). Warn user and continue without tests.
-
-### B4.5. First real tests
-
-Generate 3-5 real tests for existing code:
-
-1. **Find recently changed files:** `git log --since=30.days --name-only --format="" | sort | uniq -c | sort -rn | head -10`
-2. **Prioritize by risk:** Error handlers > business logic with conditionals > API endpoints > pure functions
-3. **For each file:** Write one test that tests real behavior with meaningful assertions. Never `expect(x).toBeDefined()` — test what the code DOES.
-4. Run each test. Passes → keep. Fails → fix once. Still fails → delete silently.
-5. Generate at least 1 test, cap at 5.
-
-Never import secrets, API keys, or credentials in test files. Use environment variables or test fixtures.
-
-### B5. Verify
-
-```bash
-# Run the full test suite to confirm everything works
-{detected test command}
-```
-
-If tests fail → debug once. If still failing → revert all bootstrap changes and warn user.
-
-### B5.5. CI/CD pipeline
-
-```bash
-# Check CI provider
-ls -d .github/ 2>/dev/null && echo "CI:github"
-ls .gitlab-ci.yml .circleci/ bitrise.yml 2>/dev/null
-```
-
-If `.github/` exists (or no CI detected — default to GitHub Actions):
-Create `.github/workflows/test.yml` with:
-- `runs-on: ubuntu-latest`
-- Appropriate setup action for the runtime (setup-node, setup-ruby, setup-python, etc.)
-- The same test command verified in B5
-- Trigger: push + pull_request
-
-If non-GitHub CI detected → skip CI generation with note: "Detected {provider} — CI pipeline generation supports GitHub Actions only. Add test step to your existing pipeline manually."
-
-### B6. Create docs/trace/testing.md
-
-First check: If `docs/trace/testing.md` already exists → read it and update/append rather than overwriting. Never destroy existing content.
-
-Write `docs/trace/testing.md` with:
-- Philosophy: "100% test coverage is the key to great vibe coding. Tests let you move fast, trust your instincts, and ship with confidence — without them, vibe coding is just yolo coding. With tests, it's a superpower."
-- Framework name and version
-- How to run tests (the verified command from B5)
-- Test layers: Unit tests (what, where, when), Integration tests, Smoke tests, E2E tests
-- Conventions: file naming, assertion style, setup/teardown patterns
-
-### B7. Update CLAUDE.md
-
-First check: If CLAUDE.md already has a `## Testing` section → skip. Don't duplicate.
-
-Append a `## Testing` section:
-- Run command and test directory
-- Reference to docs/trace/testing.md
-- Test expectations:
-  - 100% test coverage is the goal — tests make vibe coding safe
-  - When writing new functions, write a corresponding test
-  - When fixing a bug, write a regression test
-  - When adding error handling, write a test that triggers the error
-  - When adding a conditional (if/else, switch), write tests for BOTH paths
-  - Never commit code that makes existing tests fail
-
-### B8. Commit
-
-```bash
-git status --porcelain
-```
-
-Only commit if there are changes. Stage all bootstrap files (config, test directory, docs/trace/testing.md, CLAUDE.md, .github/workflows/test.yml if created):
-`git commit -m "chore: bootstrap test framework ({framework name})"`
-
----
-
 **Create output directories:**
 
 ```bash
@@ -340,8 +146,6 @@ Before falling back to git diff heuristics, check for richer test plan sources:
 3. **Use whichever source is richer.** Fall back to git diff analysis only if neither is available.
 
 ---
-
-## Phases 1-6: QA Baseline
 
 ## Modes
 
@@ -622,171 +426,7 @@ Record baseline health score at end of Phase 6.
 
 ---
 
-## Output Structure
-
-```
-.tai/qa-reports/
-├── qa-report-{domain}-{YYYY-MM-DD}.md    # Structured report
-├── screenshots/
-│   ├── initial.png                        # Landing page annotated screenshot
-│   ├── issue-001-step-1.png               # Per-issue evidence
-│   ├── issue-001-result.png
-│   ├── issue-001-before.png               # Before fix (if fixed)
-│   ├── issue-001-after.png                # After fix (if fixed)
-│   └── ...
-└── baseline.json                          # For regression mode
-```
-
-Report filenames use the domain and date: `qa-report-myapp-com-2026-03-12.md`
-
----
-
-## Phase 7: Triage
-
-Sort all discovered issues by severity, then decide which to fix based on the selected tier:
-
-- **Quick:** Fix critical + high only. Mark medium/low as "deferred."
-- **Standard:** Fix critical + high + medium. Mark low as "deferred."
-- **Exhaustive:** Fix all, including cosmetic/low severity.
-
-Mark issues that cannot be fixed from source code (e.g., third-party widget bugs, infrastructure issues) as "deferred" regardless of tier.
-
----
-
-## Phase 8: Fix Loop
-
-For each fixable issue, in severity order:
-
-### 8a. Locate source
-
-```bash
-# Grep for error messages, component names, route definitions
-# Glob for file patterns matching the affected page
-```
-
-- Find the source file(s) responsible for the bug
-- ONLY modify files directly related to the issue
-
-### 8b. Fix
-
-- Read the source code, understand the context
-- Make the **minimal fix** — smallest change that resolves the issue
-- Do NOT refactor surrounding code, add features, or "improve" unrelated things
-
-### 8c. Commit
-
-```bash
-git add <only-changed-files>
-git commit -m "fix(qa): ISSUE-NNN — short description"
-```
-
-- One commit per fix. Never bundle multiple fixes.
-- Message format: `fix(qa): ISSUE-NNN — short description`
-
-### 8d. Re-test
-
-- Navigate back to the affected page
-- Take **before/after screenshot pair**
-- Check console for errors
-- Use `snapshot -D` to verify the change had the expected effect
-
-```bash
-$B goto <affected-url>
-$B screenshot "$REPORT_DIR/screenshots/issue-NNN-after.png"
-$B console --errors
-$B snapshot -D
-```
-
-### 8e. Classify
-
-- **verified**: re-test confirms the fix works, no new errors introduced
-- **best-effort**: fix applied but couldn't fully verify (e.g., needs auth state, external service)
-- **reverted**: regression detected → `git revert HEAD` → mark issue as "deferred"
-
-### 8e.5. Regression Test
-
-Skip if: classification is not "verified", OR the fix is purely visual/CSS with no JS behavior, OR no test framework was detected AND user declined bootstrap.
-
-**1. Study the project's existing test patterns:**
-
-Read 2-3 test files closest to the fix (same directory, same code type). Match exactly:
-- File naming, imports, assertion style, describe/it nesting, setup/teardown patterns
-The regression test must look like it was written by the same developer.
-
-**2. Trace the bug's codepath, then write a regression test:**
-
-Before writing the test, trace the data flow through the code you just fixed:
-- What input/state triggered the bug? (the exact precondition)
-- What codepath did it follow? (which branches, which function calls)
-- Where did it break? (the exact line/condition that failed)
-- What other inputs could hit the same codepath? (edge cases around the fix)
-
-The test MUST:
-- Set up the precondition that triggered the bug (the exact state that made it break)
-- Perform the action that exposed the bug
-- Assert the correct behavior (NOT "it renders" or "it doesn't throw")
-- If you found adjacent edge cases while tracing, test those too (e.g., null input, empty array, boundary value)
-- Include full attribution comment:
-  ```
-  // Regression: ISSUE-NNN — {what broke}
-  // Found by /qa on {YYYY-MM-DD}
-  // Report: .tai/qa-reports/qa-report-{domain}-{date}.md
-  ```
-
-Test type decision:
-- Console error / JS exception / logic bug → unit or integration test
-- Broken form / API failure / data flow bug → integration test with request/response
-- Visual bug with JS behavior (broken dropdown, animation) → component test
-- Pure CSS → skip (caught by QA reruns)
-
-Generate unit tests. Mock all external dependencies (DB, API, Redis, file system).
-
-Use auto-incrementing names to avoid collisions: check existing `{name}.regression-*.test.{ext}` files, take max number + 1.
-
-**3. Run only the new test file:**
-
-```bash
-{detected test command} {new-test-file}
-```
-
-**4. Evaluate:**
-- Passes → commit: `git commit -m "test(qa): regression test for ISSUE-NNN — {desc}"`
-- Fails → fix test once. Still failing → delete test, defer.
-- Taking >2 min exploration → skip and defer.
-
-**5. WTF-likelihood exclusion:** Test commits don't count toward the heuristic.
-
-### 8f. Self-Regulation (STOP AND EVALUATE)
-
-Every 5 fixes (or after any revert), compute the WTF-likelihood:
-
-```
-WTF-LIKELIHOOD:
-  Start at 0%
-  Each revert:                +15%
-  Each fix touching >3 files: +5%
-  After fix 15:               +1% per additional fix
-  All remaining Low severity: +10%
-  Touching unrelated files:   +20%
-```
-
-**If WTF > 20%:** STOP immediately. Show the user what you've done so far. Ask whether to continue.
-
-**Hard cap: 50 fixes.** After 50 fixes, stop regardless of remaining issues.
-
----
-
-## Phase 9: Final QA
-
-After all fixes are applied:
-
-1. Re-run QA on all affected pages
-2. Compute final health score
-3. **If final score is WORSE than baseline:** WARN prominently — something regressed
-
----
-
-## Phase 10: Report
+## Output
 
 Write the report to both local and project-scoped locations:
 
@@ -799,36 +439,24 @@ mkdir -p "$_REPO_ROOT/.tai/state"
 ```
 Write to `.tai/state/{user}-{branch}-test-outcome-{datetime}.md`
 
-**Per-issue additions** (beyond standard report template):
-- Fix Status: verified / best-effort / reverted / deferred
-- Commit SHA (if fixed)
-- Files Changed (if fixed)
-- Before/After screenshots (if fixed)
+### Output Structure
 
-**Summary section:**
-- Total issues found
-- Fixes applied (verified: X, best-effort: Y, reverted: Z)
-- Deferred issues
-- Health score delta: baseline → final
+```
+.tai/qa-reports/
+├── qa-report-{domain}-{YYYY-MM-DD}.md    # Structured report
+├── screenshots/
+│   ├── initial.png                        # Landing page annotated screenshot
+│   ├── issue-001-step-1.png               # Per-issue evidence
+│   ├── issue-001-result.png
+│   └── ...
+└── baseline.json                          # For regression mode
+```
 
-**PR Summary:** Include a one-line summary suitable for PR descriptions:
-> "QA found N issues, fixed M, health score X → Y."
-
----
-
-## Phase 11: docs/plan/todos.md Update
-
-If the repo has a `docs/plan/todos.md`:
-
-1. **New deferred bugs** → add as TODOs with severity, category, and repro steps
-2. **Fixed bugs that were in docs/plan/todos.md** → annotate with "Fixed by /qa on {branch}, {date}"
+Report filenames use the domain and date: `qa-report-myapp-com-2026-03-12.md`
 
 ---
 
 ## Additional Rules (qa-specific)
 
-11. **Clean working tree required.** Refuse to start if `git status --porcelain` is non-empty.
-12. **One commit per fix.** Never bundle multiple fixes into one commit.
-13. **Only modify tests when generating regression tests in Phase 8e.5.** Never modify CI configuration. Never modify existing tests — only create new test files.
-14. **Revert on regression.** If a fix makes things worse, `git revert HEAD` immediately.
-15. **Self-regulate.** Follow the WTF-likelihood heuristic. When in doubt, stop and ask.
+11. **Never fix bugs.** Find and document only. Do not read source code, edit files, or suggest fixes in the report. Your job is to report what's broken, not to fix it.
+12. **No test framework detected?** Include in the report summary: "No test framework detected. Consider bootstrapping one to enable regression test generation."

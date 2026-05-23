@@ -3,8 +3,10 @@ name: plan-design
 version: 2.0.0
 description: |
   [TAI] Designer's eye plan review — interactive, like Biz and Eng review.
-  Rates each design dimension 0-10, explains what would make it a 10,
-  then fixes the plan to get there. Works in plan mode. For live site
+  Focuses only on UI/UX, product-design intent, interaction states, IA,
+  accessibility, responsive behavior, and AI-slop risk. Rates each design
+  dimension 0-10, explains what would make it a 10, then fixes the plan to get
+  there. Works in plan mode. For live site
   visual audits, use /design-review. Use when asked to "review the design plan"
   or "design critique".
 allowed-tools:
@@ -126,6 +128,17 @@ choices.
 Do NOT make any code changes. Do NOT start implementation. Your only job right now
 is to review and improve the plan's design decisions with maximum rigor.
 
+## Scope Boundary
+
+This skill owns the **design-plan gate**: will the user-facing experience feel intentional, usable, accessible, responsive, and specific enough to implement without guesswork?
+
+Stay design-focused:
+* Review information architecture, hierarchy, interaction states, user journey, emotional arc, AI-slop risk, design-system alignment, responsive behavior, and accessibility.
+* Edit the plan to specify what users see, feel, and can do.
+* Do NOT review backend architecture, data modeling, deployment, performance, or test strategy except where those choices directly change the user-visible experience.
+* Do NOT challenge business ambition except where scope creates clutter, weak hierarchy, or an incoherent journey. Hand strategic scope questions to `/plan-ceo`.
+* Do NOT act as the implementation gate. Hand engineering feasibility, failure modes, and test coverage to `/plan-eng`.
+
 ## Design Principles
 
 1. Empty states are features. "No items found." is not a design. Every empty state needs warmth, a primary action, and context.
@@ -176,12 +189,12 @@ git diff <base> --stat
 Then read:
 - The plan file (current plan or branch diff)
 - CLAUDE.md — project conventions
-- DESIGN.md — if it exists, ALL design decisions calibrate against it
-- TODOS.md — any design-related TODOs this plan touches
+- `docs/design/visual.md` — if it exists, ALL design decisions calibrate against it
+- `docs/plan/todos.md` — any design-related TODOs this plan touches
 
 Map:
 * What is the UI scope of this plan? (pages, components, interactions)
-* Does a DESIGN.md exist? If not, flag as a gap.
+* Does `docs/design/visual.md` exist? If not, flag as a gap.
 * Are there existing design patterns in the codebase to align with?
 * What prior design reviews exist? (check reviews.jsonl)
 
@@ -189,7 +202,9 @@ Map:
 Check git log for prior design review cycles. If areas were previously flagged for design issues, be MORE aggressive reviewing them now.
 
 ### UI Scope Detection
-Analyze the plan. If it involves NONE of: new UI screens/pages, changes to existing UI, user-facing interactions, frontend framework changes, or design system changes — tell the user "This plan has no UI scope. A design review isn't applicable." and exit early. Don't force design review on a backend change.
+Analyze the plan. If it involves NONE of: new UI screens/pages, changes to existing UI, user-facing interactions, frontend framework changes, or design system changes — tell the user "This plan has no UI scope. A design review isn't applicable." and exit early. Don't force design review on a backend, infrastructure, prompt-only, or implementation-only change.
+
+If UI scope exists but backend/engineering details dominate the plan, ignore those details unless they affect what the user sees; recommend `/plan-eng` for them instead of reviewing them here.
 
 Report findings before proceeding to Step 0.
 
@@ -202,9 +217,9 @@ Rate the plan's overall design completeness 0-10.
 
 Explain what a 10 looks like for THIS plan.
 
-### 0B. DESIGN.md Status
-- If DESIGN.md exists: "All design decisions will be calibrated against your stated design system."
-- If no DESIGN.md: "No design system found. Recommend running /design-consultation first. Proceeding with universal design principles."
+### 0B. Design System Status
+- If `docs/design/visual.md` exists: "All design decisions will be calibrated against your stated design system."
+- If no design system exists: "No design system found. Recommend running /design-consultation to create docs/design/visual.md before finalizing visual direction. Proceeding with universal design principles for this plan review only."
 
 ### 0C. Existing Design Leverage
 What existing UI patterns, components, or design decisions in the codebase should this plan reuse? Don't reinvent what already works.
@@ -236,14 +251,14 @@ FIX TO 10: Add information hierarchy to the plan. Include ASCII diagram of scree
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY. If no issues, say so and move on. Do NOT proceed until user responds.
 
 ### Pass 2: Interaction State Coverage
-Rate 0-10: Does the plan specify loading, empty, error, success, partial states?
+Rate 0-10: Does the plan specify loading, empty, error, success, partial states from the user's perspective?
 FIX TO 10: Add interaction state table to the plan:
 ```
   FEATURE              | LOADING | EMPTY | ERROR | SUCCESS | PARTIAL
   ---------------------|---------|-------|-------|---------|--------
   [each UI feature]    | [spec]  | [spec]| [spec]| [spec]  | [spec]
 ```
-For each state: describe what the user SEES, not backend behavior.
+For each state: describe what the user SEES, not backend behavior. If the missing state requires engineering feasibility or test coverage decisions, record the visible requirement and hand implementation validation to `/plan-eng`.
 Empty states are features — specify warmth, primary action, context.
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY.
 
@@ -269,8 +284,8 @@ FIX TO 10: Rewrite vague UI descriptions with specific alternatives.
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY.
 
 ### Pass 5: Design System Alignment
-Rate 0-10: Does the plan align with DESIGN.md?
-FIX TO 10: If DESIGN.md exists, annotate with specific tokens/components. If no DESIGN.md, flag the gap and recommend `/design-consultation`.
+Rate 0-10: Does the plan align with `docs/design/visual.md`?
+FIX TO 10: If design doc exists, annotate with specific tokens/components. If no design doc exists, flag the gap, avoid inventing a full visual system here, and recommend `/design-consultation`.
 Flag any new component — does it fit the existing vocabulary?
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY.
 
@@ -280,7 +295,7 @@ FIX TO 10: Add responsive specs per viewport — not "stacked on mobile" but int
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY.
 
 ### Pass 7: Unresolved Design Decisions
-Surface ambiguities that will haunt implementation:
+Surface design ambiguities that will haunt implementation. Do not include backend architecture or test-strategy decisions here unless they directly block a user-visible design choice:
 ```
   DECISION NEEDED              | IF DEFERRED, WHAT HAPPENS
   -----------------------------|---------------------------
@@ -305,9 +320,9 @@ Follow the AskUserQuestion format from the Preamble above. Additional rules for 
 Design decisions considered and explicitly deferred, with one-line rationale each.
 
 ### "What already exists" section
-Existing DESIGN.md, UI patterns, and components that the plan should reuse.
+Existing `docs/design/visual.md`, UI patterns, and components that the plan should reuse.
 
-### TODOS.md updates
+### docs/plan/todos.md updates
 After all review passes are complete, present each potential TODO as its own individual AskUserQuestion. Never batch TODOs — one per question. Never silently skip this step.
 
 For design debt: missing a11y, unresolved responsive behavior, deferred empty states. Each TODO gets:
@@ -318,14 +333,14 @@ For design debt: missing a11y, unresolved responsive behavior, deferred empty st
 * **Context:** Enough detail that someone picking this up in 3 months understands the motivation.
 * **Depends on / blocked by:** Any prerequisites.
 
-Then present options: **A)** Add to TODOS.md **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
+Then present options: **A)** Add to docs/plan/todos.md **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
 
 ### Completion Summary
 ```
   +====================================================================+
   |         DESIGN PLAN REVIEW — COMPLETION SUMMARY                    |
   +====================================================================+
-  | System Audit         | [DESIGN.md status, UI scope]                |
+  | System Audit         | [Design doc status, UI scope]               |
   | Step 0               | [initial rating, focus areas]               |
   | Pass 1  (Info Arch)  | ___/10 → ___/10 after fixes                |
   | Pass 2  (States)     | ___/10 → ___/10 after fixes                |
@@ -337,7 +352,7 @@ Then present options: **A)** Add to TODOS.md **B)** Skip — not valuable enough
   +--------------------------------------------------------------------+
   | NOT in scope         | written (___ items)                         |
   | What already exists  | written                                     |
-  | TODOS.md updates     | ___ items proposed                          |
+  | docs/plan/todos.md   | ___ items proposed                          |
   | Decisions made       | ___ added to plan                           |
   | Decisions deferred   | ___ (listed below)                          |
   | Overall design score | ___/10 → ___/10                             |
@@ -355,9 +370,10 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default to 
 After producing the Completion Summary above, persist the review result:
 
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$SLUG
-echo '{"skill":"plan-design","timestamp":"TIMESTAMP","status":"STATUS","overall_score":N,"unresolved":N,"decisions_made":N}' >> ~/.tai-skills/projects/$SLUG/$BRANCH-reviews.jsonl
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+_BRANCH_SAFE=$(echo "$_BRANCH" | tr '/' '-')
+mkdir -p "$_REPO_ROOT/.tai/state"
+echo '{"skill":"plan-design","timestamp":"TIMESTAMP","status":"STATUS","overall_score":N,"unresolved":N,"decisions_made":N}' >> "$_REPO_ROOT/.tai/state/${_BRANCH_SAFE}-reviews.jsonl"
 ```
 
 Substitute values from the Completion Summary:
@@ -372,8 +388,9 @@ Substitute values from the Completion Summary:
 After completing the review, read the review log and config to display the dashboard.
 
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-cat ~/.tai-skills/projects/$SLUG/$BRANCH-reviews.jsonl 2>/dev/null || echo "NO_REVIEWS"
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+_BRANCH_SAFE=$(echo "$_BRANCH" | tr '/' '-')
+cat "$_REPO_ROOT/.tai/state/${_BRANCH_SAFE}-reviews.jsonl" 2>/dev/null || echo "NO_REVIEWS"
 echo "---CONFIG---"
 echo "false"
 ```

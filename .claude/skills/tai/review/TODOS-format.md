@@ -1,6 +1,6 @@
-# TODOS.md Format Reference
+# docs/plan/todos.md Format Reference
 
-Shared reference for the canonical TODOS.md format. Referenced by `/ship` (Step 5.5) and `/plan-ceo` (TODOS.md updates section) to ensure consistent TODO item structure.
+Shared reference for the canonical `docs/plan/todos.md` format. Referenced by `/ship` (Step 5.5) and `/plan-ceo` (TODOS updates section) to ensure consistent TODO item structure.
 
 ---
 

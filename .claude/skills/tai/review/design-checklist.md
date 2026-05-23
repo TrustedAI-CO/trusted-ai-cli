@@ -14,7 +14,7 @@ _DIFF_FILES=$(git diff --name-only <base>...HEAD 2>/dev/null); SCOPE_FRONTEND=$(
 
 If `SCOPE_FRONTEND=false`, skip the entire design review silently.
 
-**DESIGN.md calibration:** If `DESIGN.md` or `design-system.md` exists in the repo root, read it first. All findings are calibrated against the project's stated design system. Patterns explicitly blessed in DESIGN.md are NOT flagged. If no DESIGN.md exists, use universal design principles.
+**Design doc calibration:** Check `docs/design/visual.md`. If found, read it first. All findings are calibrated against the project's stated design system. Patterns explicitly blessed in the design doc are NOT flagged. If no design doc exists, use universal design principles.
 
 ---
 
@@ -36,7 +36,7 @@ Each item is tagged with a detection confidence level:
 - `font-size` < 16px on body text → bump to 16px
 
 **ASK** (everything else — requires design judgment):
-- All AI slop findings, typography structure, spacing choices, interaction state gaps, DESIGN.md violations
+- All AI slop findings, typography structure, spacing choices, interaction state gaps, design doc violations
 
 **LOW confidence items** → present as "Possible: [description]. Verify visually or run /design-review." Never AUTO-FIX.
 
@@ -94,7 +94,7 @@ These are the telltale signs of AI-generated UI that no designer at a respected 
 
 ### 3. Spacing & Layout (4 items)
 
-- **[MEDIUM]** Arbitrary spacing values not on a 4px or 8px scale, when DESIGN.md specifies a spacing scale. Check `margin`, `padding`, `gap` values against the stated scale. Only flag when DESIGN.md defines a scale.
+- **[MEDIUM]** Arbitrary spacing values not on a 4px or 8px scale, when the design doc specifies a spacing scale. Check `margin`, `padding`, `gap` values against the stated scale. Only flag when the design doc defines a scale.
 
 - **[MEDIUM]** Fixed widths without responsive handling: `width: NNNpx` on containers without `max-width` or `@media` breakpoints. Risk of horizontal scroll on mobile.
 
@@ -110,22 +110,22 @@ These are the telltale signs of AI-generated UI that no designer at a respected 
 
 - **[LOW]** Touch targets < 44px on interactive elements. Check `min-height`/`min-width`/`padding` on buttons and links. Requires computing effective size from multiple properties — low confidence from code alone.
 
-### 5. DESIGN.md Violations (3 items, conditional)
+### 5. Design Doc Violations (3 items, conditional)
 
-Only apply if `DESIGN.md` or `design-system.md` exists:
+Only apply if `docs/design/visual.md` exists:
 
-- **[MEDIUM]** Colors not in the stated palette. Compare color values in changed CSS against the palette defined in DESIGN.md.
+- **[MEDIUM]** Colors not in the stated palette. Compare color values in changed CSS against the palette defined in the design doc.
 
-- **[MEDIUM]** Fonts not in the stated typography section. Compare `font-family` values against DESIGN.md's font list.
+- **[MEDIUM]** Fonts not in the stated typography section. Compare `font-family` values against the design doc's font list.
 
-- **[MEDIUM]** Spacing values outside the stated scale. Compare `margin`/`padding`/`gap` values against DESIGN.md's spacing scale.
+- **[MEDIUM]** Spacing values outside the stated scale. Compare `margin`/`padding`/`gap` values against the design doc's spacing scale.
 
 ---
 
 ## Suppressions
 
 Do NOT flag:
-- Patterns explicitly documented in DESIGN.md as intentional choices
+- Patterns explicitly documented in the design doc (`docs/design/visual.md`) as intentional choices
 - Third-party/vendor CSS files (node_modules, vendor directories)
 - CSS resets or normalize stylesheets
 - Test fixture files

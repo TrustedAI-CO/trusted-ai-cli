@@ -37,3 +37,5 @@ htmlcov/
 # Claude Code session artifacts
 .context/
 .claude/scheduled_tasks.lock
+.gstack/
+.omx/

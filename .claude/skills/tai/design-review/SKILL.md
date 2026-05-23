@@ -110,9 +110,9 @@ You are a senior product designer AND a frontend engineer. Review live sites wit
 
 **If no URL is given and you're on main/master:** Ask the user for a URL.
 
-**Check for DESIGN.md:**
+**Check for design doc:**
 
-Look for `DESIGN.md`, `design-system.md`, or similar in the repo root. If found, read it — all design decisions must be calibrated against it. Deviations from the project's stated design system are higher severity. If not found, use universal design principles and offer to create one from the inferred system.
+Look for `docs/design/visual.md`. If found, read it — all design decisions must be calibrated against it. Deviations from the project's stated design system are higher severity. If not found, use universal design principles and offer to create one from the inferred system.
 
 **Require clean working tree before starting:**
 
@@ -262,11 +262,11 @@ Create `.github/workflows/test.yml` with:
 
 If non-GitHub CI detected → skip CI generation with note: "Detected {provider} — CI pipeline generation supports GitHub Actions only. Add test step to your existing pipeline manually."
 
-### B6. Create TESTING.md
+### B6. Create docs/trace/testing.md
 
-First check: If TESTING.md already exists → read it and update/append rather than overwriting. Never destroy existing content.
+First check: If `docs/trace/testing.md` already exists → read it and update/append rather than overwriting. Never destroy existing content.
 
-Write TESTING.md with:
+Write `docs/trace/testing.md` with:
 - Philosophy: "100% test coverage is the key to great vibe coding. Tests let you move fast, trust your instincts, and ship with confidence — without them, vibe coding is just yolo coding. With tests, it's a superpower."
 - Framework name and version
 - How to run tests (the verified command from B5)
@@ -279,7 +279,7 @@ First check: If CLAUDE.md already has a `## Testing` section → skip. Don't dup
 
 Append a `## Testing` section:
 - Run command and test directory
-- Reference to TESTING.md
+- Reference to docs/trace/testing.md
 - Test expectations:
   - 100% test coverage is the goal — tests make vibe coding safe
   - When writing new functions, write a corresponding test
@@ -294,7 +294,7 @@ Append a `## Testing` section:
 git status --porcelain
 ```
 
-Only commit if there are changes. Stage all bootstrap files (config, test directory, TESTING.md, CLAUDE.md, .github/workflows/test.yml if created):
+Only commit if there are changes. Stage all bootstrap files (config, test directory, docs/trace/testing.md, CLAUDE.md, .github/workflows/test.yml if created):
 `git commit -m "chore: bootstrap test framework ({framework name})"`
 
 ---
@@ -351,7 +351,7 @@ This is the section users read first. Be opinionated. A designer doesn't hedge �
 
 ## Phase 2: Design System Extraction
 
-Extract the actual design system the site uses (not what a DESIGN.md says, but what's rendered):
+Extract the actual design system the site uses (not what a design doc says, but what's rendered):
 
 ```bash
 # Fonts in use (capped at 500 elements to avoid timeout)
@@ -376,7 +376,7 @@ Structure findings as an **Inferred Design System**:
 - **Heading Scale:** h1-h6 sizes. Flag skipped levels, non-systematic size jumps.
 - **Spacing Patterns:** sample padding/margin values. Flag non-scale values.
 
-After extraction, offer: *"Want me to save this as your DESIGN.md? I can lock in these observations as your project's design system baseline."*
+After extraction, offer: *"Want me to save this as your `docs/design/visual.md`? I can lock in these observations as your project's design system baseline."*
 
 ---
 
@@ -555,14 +555,12 @@ Compare screenshots and observations across pages for:
 
 ### Output Locations
 
-**Local:** `.tai-skills/design-reports/design-audit-{domain}-{YYYY-MM-DD}.md`
-
-**Project-scoped:**
+**Local:**
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$SLUG
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+mkdir -p "$_REPO_ROOT/.tai/state"
 ```
-Write to: `~/.tai-skills/projects/{slug}/{user}-{branch}-design-audit-{datetime}.md`
+Write to: `.tai/state/design-audit-{domain}-{YYYY-MM-DD}.md`
 
 **Baseline:** Write `design-baseline.json` for regression mode:
 ```json
@@ -633,7 +631,7 @@ Tie everything to user goals and product objectives. Always suggest specific imp
 1. **Think like a designer, not a QA engineer.** You care whether things feel right, look intentional, and respect the user. You do NOT just care whether things "work."
 2. **Screenshots are evidence.** Every finding needs at least one screenshot. Use annotated screenshots (`snapshot -a`) to highlight elements.
 3. **Be specific and actionable.** "Change X to Y because Z" — not "the spacing feels off."
-4. **Never read source code.** Evaluate the rendered site, not the implementation. (Exception: offer to write DESIGN.md from extracted observations.)
+4. **Never read source code.** Evaluate the rendered site, not the implementation. (Exception: offer to write `docs/design/visual.md` from extracted observations.)
 5. **AI Slop detection is your superpower.** Most developers can't evaluate whether their site looks AI-generated. You can. Be direct about it.
 6. **Quick wins matter.** Always include a "Quick Wins" section — the 3-5 highest-impact fixes that take <30 minutes each.
 7. **Use `snapshot -C` for tricky UIs.** Finds clickable divs that the accessibility tree misses.
@@ -774,14 +772,7 @@ After all fixes are applied:
 
 Write the report to both local and project-scoped locations:
 
-**Local:** `.tai-skills/design-reports/design-audit-{domain}-{YYYY-MM-DD}.md`
-
-**Project-scoped:**
-```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$SLUG
-```
-Write to `~/.tai-skills/projects/{slug}/{user}-{branch}-design-audit-{datetime}.md`
+Write to `.tai/state/design-audit-{domain}-{YYYY-MM-DD}.md`
 
 **Per-finding additions** (beyond standard design audit report):
 - Fix Status: verified / best-effort / reverted / deferred
@@ -801,12 +792,12 @@ Write to `~/.tai-skills/projects/{slug}/{user}-{branch}-design-audit-{datetime}.
 
 ---
 
-## Phase 11: TODOS.md Update
+## Phase 11: docs/plan/todos.md Update
 
-If the repo has a `TODOS.md`:
+If the repo has a `docs/plan/todos.md`:
 
 1. **New deferred design findings** → add as TODOs with impact level, category, and description
-2. **Fixed findings that were in TODOS.md** → annotate with "Fixed by /design-review on {branch}, {date}"
+2. **Fixed findings that were in docs/plan/todos.md** → annotate with "Fixed by /design-review on {branch}, {date}"
 
 ---
 
@@ -818,4 +809,4 @@ If the repo has a `TODOS.md`:
 14. **Revert on regression.** If a fix makes things worse, `git revert HEAD` immediately.
 15. **Self-regulate.** Follow the design-fix risk heuristic. When in doubt, stop and ask.
 16. **CSS-first.** Prefer CSS/styling changes over structural component changes. CSS-only changes are safer and more reversible.
-17. **DESIGN.md export.** You MAY write a DESIGN.md file if the user accepts the offer from Phase 2.
+17. **Design doc export.** You MAY write a `docs/design/visual.md` file if the user accepts the offer from Phase 2.

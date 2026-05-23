@@ -60,7 +60,7 @@ Before touching any code:
    - Read the relevant source files (full files, not just snippets)
    - Check git blame for recent changes to the affected area
    - Check if tests exist for this code path
-   - Look for related issues in TODOS.md
+   - Look for related issues in `docs/plan/todos.md`
 
 4. **State the symptoms clearly:**
    ```
@@ -115,7 +115,7 @@ Options:
 A) Widen scope — investigate {broader area} (RECOMMENDATION)
 B) Add instrumentation — add logging/tracing to narrow down
 C) Pair debug — walk me through what you know about this code path
-D) Defer — capture in TODOS.md and move on
+D) Defer — capture in docs/plan/todos.md and move on
 ```
 
 Do NOT keep guessing after 3 strikes. The pattern of repeated failed hypotheses

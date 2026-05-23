@@ -3,7 +3,9 @@ name: plan-ceo
 version: 3.0.0
 description: |
   [TAI] CEO/founder-mode plan review. Rethink the problem, find the 10-star product,
-  challenge premises, expand scope when it creates a better product. Four modes:
+  challenge premises, expand or reduce scope, and decide whether this is the right
+  product/business bet. This is NOT the implementation gate; hand off execution
+  details to /plan-eng and deep UI decisions to /plan-design. Four modes:
   SCOPE EXPANSION (dream big), SELECTIVE EXPANSION (hold scope + cherry-pick
   expansions), HOLD SCOPE (maximum rigor), SCOPE REDUCTION (strip to essentials).
   Say "quick" for fast scan (premise + risks + verdict only).
@@ -159,6 +161,17 @@ But your posture depends on what the user needs:
 Critical rule: In ALL modes, the user is 100% in control. Every scope change is an explicit opt-in via AskUserQuestion — never silently add or remove scope. Once the user selects a mode, COMMIT to it. Do not silently drift toward a different mode. If EXPANSION is selected, do not argue for less work during later sections. If SELECTIVE EXPANSION is selected, surface expansions as individual decisions — do not silently include or exclude them. If REDUCTION is selected, do not sneak scope back in. Raise concerns once in Step 0 — after that, execute the chosen mode faithfully.
 Do NOT make any code changes. Do NOT start implementation. Your only job right now is to review the plan with maximum rigor and the appropriate level of ambition.
 
+## Scope Boundary
+
+This skill owns the **product/company decision**: should we build this, how ambitious should it be, and what scope is worth carrying now versus deferring.
+
+Stay CEO-focused:
+* Challenge the premise, user/business outcome, opportunity cost, scope, sequencing, reversibility, and long-term trajectory.
+* Use engineering, security, deployment, and UX analysis only to expose strategic risk, scope implications, or required follow-up review.
+* Do NOT perform a full implementation gate. If architecture, tests, performance, or rollout need detailed validation, recommend `/plan-eng`.
+* Do NOT perform detailed design remediation. If UI/UX scope exists beyond obvious strategic risk, recommend `/plan-design`.
+* Output decisions and handoffs, not a duplicate engineering/design checklist.
+
 ## Prime Directives
 1. Zero silent failures. Every failure mode must be visible — to the system, to the team, to the user. If a failure can happen silently, that is a critical defect in the plan.
 2. Every error has a name. Don't say "handle errors." Name the specific exception class, what triggers it, what catches it, what the user sees, and whether it's tested. Catch-all error handling (e.g., catch Exception, rescue StandardError, except Exception) is a code smell — call it out.
@@ -166,7 +179,7 @@ Do NOT make any code changes. Do NOT start implementation. Your only job right n
 4. Interactions have edge cases. Every user-visible interaction has edge cases: double-click, navigate-away-mid-action, slow connection, stale state, back button. Map them.
 5. Observability is scope, not afterthought. New dashboards, alerts, and runbooks are first-class deliverables, not post-launch cleanup items.
 6. Diagrams are mandatory. No non-trivial flow goes undiagrammed. ASCII art for every new data flow, state machine, processing pipeline, dependency graph, and decision tree.
-7. Everything deferred must be written down. Vague intentions are lies. TODOS.md or it doesn't exist.
+7. Everything deferred must be written down. Vague intentions are lies. `docs/plan/todos.md` or it doesn't exist.
 8. Optimize for the 6-month future, not just today. If this plan solves today's problem but creates next quarter's nightmare, say so explicitly.
 9. You have permission to say "scrap it and do this instead." If there's a fundamentally better approach, table it. I'd rather hear it now.
 
@@ -222,7 +235,7 @@ git stash list                                 # Any stashed work
 grep -r "TODO\|FIXME\|HACK\|XXX" -l --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=.git . | head -30
 git log --since=30.days --name-only --format="" | sort | uniq -c | sort -rn | head -20  # Recently touched files
 ```
-Then read CLAUDE.md, TODOS.md, and any existing architecture docs. When reading TODOS.md, specifically:
+Then read CLAUDE.md, `docs/plan/todos.md`, and any existing architecture docs. When reading the todos file, specifically:
 * Note any TODOs this plan touches, blocks, or unlocks
 * Check if deferred work from prior reviews relates to this plan
 * Flag dependencies: does this plan enable or depend on deferred items?
@@ -297,7 +310,7 @@ Rules:
 1. 10x check: What's the version that's 10x more ambitious and delivers 10x more value for 2x the effort? Describe it concretely.
 2. Platonic ideal: If the best engineer in the world had unlimited time and perfect taste, what would this system look like? What would the user feel when using it? Start from experience, not architecture.
 3. Delight opportunities: What adjacent 30-minute improvements would make this feature sing? Things where a user would think "oh nice, they thought of that." List at least 5.
-4. **Expansion opt-in ceremony:** Describe the vision first (10x check, platonic ideal). Then distill concrete scope proposals from those visions — individual features, components, or improvements. Present each proposal as its own AskUserQuestion. Recommend enthusiastically — explain why it's worth doing. But the user decides. Options: **A)** Add to this plan's scope **B)** Defer to TODOS.md **C)** Skip. Accepted items become plan scope for all remaining review sections. Rejected items go to "NOT in scope."
+4. **Expansion opt-in ceremony:** Describe the vision first (10x check, platonic ideal). Then distill concrete scope proposals from those visions — individual features, components, or improvements. Present each proposal as its own AskUserQuestion. Recommend enthusiastically — explain why it's worth doing. But the user decides. Options: **A)** Add to this plan's scope **B)** Defer to docs/plan/todos.md **C)** Skip. Accepted items become plan scope for all remaining review sections. Rejected items go to "NOT in scope."
 
 **For SELECTIVE EXPANSION** — run the HOLD SCOPE analysis first, then surface expansions:
 1. Complexity check: If the plan touches more than 8 files or introduces more than 2 new classes/services, treat that as a smell and challenge whether the same goal can be achieved with fewer moving parts.
@@ -306,7 +319,7 @@ Rules:
    - 10x check: What's the version that's 10x more ambitious? Describe it concretely.
    - Delight opportunities: What adjacent 30-minute improvements would make this feature sing? List at least 5.
    - Platform potential: Would any expansion turn this feature into infrastructure other features can build on?
-4. **Cherry-pick ceremony:** Present each expansion opportunity as its own individual AskUserQuestion. Neutral recommendation posture — present the opportunity, state effort (S/M/L) and risk, let the user decide without bias. Options: **A)** Add to this plan's scope **B)** Defer to TODOS.md **C)** Skip. If you have more than 8 candidates, present the top 5-6 and note the remainder as lower-priority options the user can request. Accepted items become plan scope for all remaining review sections. Rejected items go to "NOT in scope."
+4. **Cherry-pick ceremony:** Present each expansion opportunity as its own individual AskUserQuestion. Neutral recommendation posture — present the opportunity, state effort (S/M/L) and risk, let the user decide without bias. Options: **A)** Add to this plan's scope **B)** Defer to docs/plan/todos.md **C)** Skip. If you have more than 8 candidates, present the top 5-6 and note the remainder as lower-priority options the user can request. Accepted items become plan scope for all remaining review sections. Rejected items go to "NOT in scope."
 
 **For HOLD SCOPE** — run this:
 1. Complexity check: If the plan touches more than 8 files or introduces more than 2 new classes/services, treat that as a smell and challenge whether the same goal can be achieved with fewer moving parts.
@@ -321,24 +334,26 @@ Rules:
 After the opt-in/cherry-pick ceremony, write the plan to disk so the vision and decisions survive beyond this conversation. Only run this step for EXPANSION and SELECTIVE EXPANSION modes.
 
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$_SLUG/ceo-plans
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+_DOCS_DIR="$_REPO_ROOT/docs"
+mkdir -p "$_DOCS_DIR/decisions"
 ```
 
-Before writing, check for existing CEO plans in the ceo-plans/ directory. If any are >30 days old or their branch has been merged/deleted, offer to archive them:
+Before writing, check for an existing intent doc. If `docs/intent.md` exists, offer to
+update it or create a new version with a dated decision record in `docs/decisions/`.
 
-```bash
-mkdir -p ~/.tai-skills/projects/$_SLUG/ceo-plans/archive
-# For each stale plan: mv ~/.tai-skills/projects/$_SLUG/ceo-plans/{old-plan}.md ~/.tai-skills/projects/$_SLUG/ceo-plans/archive/
-```
-
-Write to `~/.tai-skills/projects/$_SLUG/ceo-plans/{date}-{feature-slug}.md` using this format:
+Write to `docs/intent.md` using this format:
 
 ```markdown
 ---
+id: intent
+type: intent
+parent: null
+children: []
+related: []
 status: ACTIVE
 ---
-# CEO Plan: {Feature Name}
+# Product Intent: {Feature Name}
 Generated by /plan-ceo on {date}
 Branch: {branch} | Mode: {EXPANSION / SELECTIVE EXPANSION}
 Repo: {owner/repo}
@@ -360,11 +375,43 @@ Repo: {owner/repo}
 ## Accepted Scope (added to this plan)
 - {bullet list of what's now in scope}
 
-## Deferred to TODOS.md
+## Deferred to docs/plan/todos.md
 - {items with context}
 ```
 
-Derive the feature slug from the plan being reviewed (e.g., "user-dashboard", "auth-refactor"). Use the date in YYYY-MM-DD format.
+Additionally, for each ACCEPTED scope decision that represents a significant trade-off,
+write a decision record to `docs/decisions/NNN-slug.md`:
+
+```markdown
+---
+id: dec-NNN-slug
+type: decision
+parent: intent
+children: []
+related: []
+---
+
+# Decision NNN: {Short title}
+
+## Context
+{What was the problem or question}
+
+## Options Considered
+1. {Option A} — {pros/cons}
+2. {Option B} — {pros/cons}
+
+## Decision
+{What was chosen and why}
+
+## Decided by
+/plan-ceo, {date}
+
+## Affects
+- {what specs or modules this impacts}
+```
+
+After writing the decisions, update the `related` field in `docs/intent.md` frontmatter
+to reference each decision doc ID.
 
 After writing the CEO plan, run the spec review loop on it:
 
@@ -425,9 +472,8 @@ After the loop completes (PASS, max iterations, or convergence guard):
 
 3. Append metrics:
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/analytics
-echo '{"skill":"plan-ceo","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","iterations":ITERATIONS,"issues_found":FOUND,"issues_fixed":FIXED,"remaining":REMAINING,"quality_score":SCORE}' >> ~/.tai-skills/analytics/spec-review.jsonl 2>/dev/null || true
+mkdir -p "$_REPO_ROOT/.tai/logs"
+echo '{"skill":"plan-ceo","ts":"'$(date -u +%Y-%m-%dT%H:%M:%SZ)'","iterations":ITERATIONS,"issues_found":FOUND,"issues_fixed":FIXED,"remaining":REMAINING,"quality_score":SCORE}' >> "$_REPO_ROOT/.tai/logs/spec-review.jsonl" 2>/dev/null || true
 ```
 Replace ITERATIONS, FOUND, FIXED, REMAINING, SCORE with actual values from the review.
 
@@ -471,7 +517,9 @@ Once selected, commit fully. Do not silently drift.
 
 ## Review Sections (10 sections, after scope and mode are agreed)
 
-### Section 1: Architecture Review
+### Section 1: Strategic Architecture Risk Scan
+Evaluate only architecture concerns that affect product scope, sequencing, reversibility, user/business risk, or the need for a mandatory `/plan-eng` handoff. Do not duplicate `/plan-eng`'s implementation-level architecture gate.
+
 Evaluate and diagram:
 * Overall system design and component boundaries. Draw the dependency graph.
 * Data flow — all four paths. For every new data flow, ASCII diagram the:
@@ -493,12 +541,13 @@ Evaluate and diagram:
 
 **SELECTIVE EXPANSION:** If any accepted cherry-picks from Step 0D affect the architecture, evaluate their architectural fit here. Flag any that create coupling concerns or don't integrate cleanly — this is a chance to revisit the decision with new information.
 
-Required ASCII diagram: full system architecture showing new components and their relationships to existing ones.
+Required ASCII diagram: decision-level system architecture showing new components, strategic dependencies, and risk hotspots. Leave detailed implementation diagrams to `/plan-eng`.
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 2: Error & Rescue Map
-This is the section that catches silent failures. It is not optional.
-For every new method, service, or codepath that can fail, fill in this table:
+### Section 2: Strategic Error & Rescue Risk Map
+This section catches silent-failure risk at a decision level. It is not optional. Map representative failure classes and any user/business-visible silent failures; do not exhaustively enumerate every implementation exception unless that exception changes scope, launch risk, or review readiness. Defer full exception-by-exception validation to `/plan-eng`.
+
+For every new method, service, or codepath that can fail materially, fill in this table:
 ```
   METHOD/CODEPATH          | WHAT CAN GO WRONG           | EXCEPTION CLASS
   -------------------------|-----------------------------|-----------------
@@ -525,8 +574,9 @@ Rules for this section:
 * For LLM/AI service calls specifically: what happens when the response is malformed? When it's empty? When it hallucinates invalid JSON? When the model returns a refusal? Each of these is a distinct failure mode.
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 3: Security & Threat Model
-Security is not a sub-bullet of architecture. It gets its own section.
+### Section 3: Strategic Security & Threat Model
+Security is not a sub-bullet of architecture. It gets its own section. Focus on whether the plan introduces product, trust, compliance, data-classification, or launch-blocking risk. Leave detailed control design and test mapping to `/plan-eng` or a security review.
+
 Evaluate:
 * Attack surface expansion. What new attack vectors does this plan introduce? New endpoints, new params, new file paths, new background jobs?
 * Input validation. For every new user input: is it validated, sanitized, and rejected loudly on failure? What happens with: nil, empty string, string when integer expected, string exceeding max length, unicode edge cases, HTML/script injection attempts?
@@ -540,8 +590,8 @@ Evaluate:
 For each finding: threat, likelihood (High/Med/Low), impact (High/Med/Low), and whether the plan mitigates it.
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 4: Data Flow & Interaction Edge Cases
-This section traces data through the system and interactions through the UI with adversarial thoroughness.
+### Section 4: Data Flow & Interaction Strategic Edge Cases
+This section traces data and interactions only far enough to expose hidden product risk, scope gaps, trust loss, or required handoffs. Avoid becoming a full QA/test-design pass; `/plan-eng` owns testability and `/plan-design` owns UX-state remediation.
 
 **Data Flow Tracing:** For every new data flow, produce an ASCII diagram showing:
 ```
@@ -576,7 +626,9 @@ For each node: what happens on each shadow path? Is it tested?
 Flag any unhandled edge case as a gap. For each gap, specify the fix.
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 5: Code Quality Review
+### Section 5: Code Quality Scope Risk Scan
+Evaluate code quality only where it affects maintainability, delivery risk, strategic scope, or whether `/plan-eng` must revisit the plan. Do not duplicate a line-by-line engineering review.
+
 Evaluate:
 * Code organization and module structure. Does new code fit existing patterns? If it deviates, is there a reason?
 * DRY violations. Be aggressive. If the same logic exists elsewhere, flag it and reference the file and line.
@@ -588,8 +640,10 @@ Evaluate:
 * Cyclomatic complexity. Flag any new method that branches more than 5 times. Propose a refactor.
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 6: Test Review
-Make a complete diagram of every new thing this plan introduces:
+### Section 6: Test Strategy Risk Scan
+Check whether the plan has enough test intent to be credible, and identify what `/plan-eng` must turn into a concrete test plan. Do not produce the final exhaustive test artifact here.
+
+Make a decision-level diagram of every new thing this plan introduces:
 ```
   NEW UX FLOWS:
     [list each new user-visible interaction]
@@ -628,7 +682,9 @@ Load/stress test requirements: For any new codepath called frequently or process
 For LLM/prompt changes: Check CLAUDE.md for the "Prompt/LLM changes" file patterns. If this plan touches ANY of those patterns, state which eval suites must be run, which cases should be added, and what baselines to compare against.
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 7: Performance Review
+### Section 7: Performance Scope Risk Scan
+Evaluate performance only where it changes product feasibility, launch sequencing, user trust, or scope. Defer detailed p95/p99 analysis and implementation-level optimization to `/plan-eng`.
+
 Evaluate:
 * N+1 queries. For every new database association traversal: is there an eager load?
 * Memory usage. For every new data structure: what's the maximum size in production?
@@ -639,8 +695,9 @@ Evaluate:
 * Connection pool pressure. New DB connections, Redis connections, HTTP connections?
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 8: Observability & Debuggability Review
-New systems break. This section ensures you can see why.
+### Section 8: Observability & Debuggability Scope Risk Scan
+New systems break. This section ensures silent strategic failures are visible. Focus on launch-readiness and operating-model implications; `/plan-eng` owns the concrete log/metric/runbook spec.
+
 Evaluate:
 * Logging. For every new codepath: structured log lines at entry, exit, and each significant branch?
 * Metrics. For every new feature: what metric tells you it's working? What tells you it's broken?
@@ -655,7 +712,9 @@ Evaluate:
 * What observability would make this feature a joy to operate? (For SELECTIVE EXPANSION, include observability for any accepted cherry-picks.)
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 9: Deployment & Rollout Review
+### Section 9: Deployment & Rollout Strategic Scan
+Evaluate rollout only where it affects sequencing, reversibility, user/business risk, or go/no-go confidence. Defer exact deploy checklist detail to `/plan-eng`.
+
 Evaluate:
 * Migration safety. For every new DB migration: backward-compatible? Zero-downtime? Table locks?
 * Feature flags. Should any part be behind a feature flag?
@@ -685,26 +744,20 @@ Evaluate:
 * (SELECTIVE EXPANSION only) Retrospective: Were the right cherry-picks accepted? Did any rejected expansions turn out to be load-bearing for the accepted ones?
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
-### Section 11: Design & UX Review (skip if no UI scope detected)
-The CEO calling in the designer. Not a pixel-level audit — that's /plan-design and /design-review. This is ensuring the plan has design intentionality.
+### Section 11: Design & UX Strategic Risk Scan (skip if no UI scope detected)
+The CEO calling in the designer for a **light risk scan only**. This is not a pixel-level audit and not a substitute for `/plan-design` or `/design-review`.
 
-Evaluate:
-* Information architecture — what does the user see first, second, third?
-* Interaction state coverage map:
-  FEATURE | LOADING | EMPTY | ERROR | SUCCESS | PARTIAL
-* User journey coherence — storyboard the emotional arc
-* AI slop risk — does the plan describe generic UI patterns?
-* Design system alignment — does the plan match the stated design system?
-* Responsive intention — is mobile mentioned or afterthought?
-* Accessibility basics — keyboard nav, screen readers, contrast, touch targets
+Evaluate only:
+* Does the UI direction support the business/user outcome?
+* Is there an obvious trust, accessibility, responsiveness, empty-state, or AI-slop risk that could damage adoption?
+* Does the plan require `/plan-design` before implementation?
+* Did any accepted scope expansion create new UI/UX decisions that must be handed off?
 
-**EXPANSION and SELECTIVE EXPANSION additions:**
-* What would make this UI feel *inevitable*?
-* What 30-minute UI touches would make users think "oh nice, they thought of that"?
+Do NOT fix detailed design decisions here. Do NOT rate all design dimensions here. Do NOT produce the final interaction-state table unless a missing state changes product scope or launch readiness.
 
-Required ASCII diagram: user flow showing screens/states and transitions.
+Optional ASCII diagram: strategic user journey only if it clarifies scope or risk.
 
-If this plan has significant UI scope, recommend: "Consider running /plan-design for a deep design review of this plan before implementation."
+If this plan has significant UI scope, recommend: "Run /plan-design for the dedicated design-plan review before implementation."
 **STOP.** Batch all issues in this section into ONE AskUserQuestion. Number each issue with options. The user responds to all at once (e.g., "1A, 2B"). If no issues or fix is obvious, state what you'll do and move on. Do NOT proceed until user responds.
 
 ## Post-Implementation Design Audit (if UI scope detected)
@@ -741,7 +794,7 @@ Complete table of every method that can fail, every exception class, rescued sta
 ```
 Any row with RESCUED=N, TEST=N, USER SEES=Silent → **CRITICAL GAP**.
 
-### TODOS.md updates
+### docs/plan/todos.md updates
 Present each potential TODO as its own individual AskUserQuestion. Never batch TODOs — one per question. Never silently skip this step. Follow the format in `.claude/skills/tai/review/TODOS-format.md`.
 
 For each TODO, describe:
@@ -754,12 +807,12 @@ For each TODO, describe:
 * **Priority:** P1/P2/P3
 * **Depends on / blocked by:** Any prerequisites or ordering constraints.
 
-Then present options: **A)** Add to TODOS.md **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
+Then present options: **A)** Add to docs/plan/todos.md **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
 
 ### Scope Expansion Decisions (EXPANSION and SELECTIVE EXPANSION only)
 For EXPANSION and SELECTIVE EXPANSION modes: expansion opportunities and delight items were surfaced and decided in Step 0D (opt-in/cherry-pick ceremony). The decisions are persisted in the CEO plan document. Reference the CEO plan for the full record. Do not re-surface them here — list the accepted expansions for completeness:
 * Accepted: {list items added to scope}
-* Deferred: {list items sent to TODOS.md}
+* Deferred: {list items sent to docs/plan/todos.md}
 * Skipped: {list items rejected}
 
 ### Diagrams (mandatory, produce all that apply)
@@ -798,7 +851,7 @@ List every ASCII diagram in files this plan touches. Still accurate?
   | Dream state delta    | written                                     |
   | Error/rescue registry| ___ methods, ___ CRITICAL GAPS              |
   | Failure modes        | ___ total, ___ CRITICAL GAPS                |
-  | TODOS.md updates     | ___ items proposed                          |
+  | docs/plan/todos.md   | ___ items proposed                          |
   | Scope proposals      | ___ proposed, ___ accepted (EXP + SEL)      |
   | CEO plan             | written / skipped (HOLD/REDUCTION)           |
   | Lake Score           | X/Y recommendations chose complete option   |
@@ -816,10 +869,10 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default.
 After producing the Completion Summary above, persist the review result:
 
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$_SLUG
+_BRANCH_SAFE=$(echo "$_BRANCH" | tr '/' '-')
+mkdir -p "$_REPO_ROOT/.tai/state"
 _COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
-echo "{\"skill\":\"plan-ceo\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"status\":\"STATUS\",\"commit_hash\":\"$_COMMIT\",\"unresolved\":N,\"critical_gaps\":N,\"mode\":\"MODE\"}" >> ~/.tai-skills/projects/$_SLUG/$_BRANCH-reviews.jsonl
+echo "{\"skill\":\"plan-ceo\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"status\":\"STATUS\",\"commit_hash\":\"$_COMMIT\",\"unresolved\":N,\"critical_gaps\":N,\"mode\":\"MODE\"}" >> "$_REPO_ROOT/.tai/state/${_BRANCH_SAFE}-reviews.jsonl"
 ```
 
 Substitute values from the Completion Summary:
@@ -835,8 +888,8 @@ Substitute values from the Completion Summary:
 After completing the review, read the review log to display the dashboard.
 
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-cat ~/.tai-skills/projects/$_SLUG/$_BRANCH-reviews.jsonl 2>/dev/null || echo "NO_REVIEWS"
+_BRANCH_SAFE=$(echo "$_BRANCH" | tr '/' '-')
+cat "$_REPO_ROOT/.tai/state/${_BRANCH_SAFE}-reviews.jsonl" 2>/dev/null || echo "NO_REVIEWS"
 ```
 
 Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng, plan-design, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
@@ -885,16 +938,27 @@ Use AskUserQuestion to present the next step. Include only applicable options:
 - **B)** Run /plan-design next (only if UI scope detected)
 - **C)** Skip — I'll handle reviews manually
 
-## docs/designs Promotion (EXPANSION and SELECTIVE EXPANSION only)
+## Design Doc Promotion (EXPANSION and SELECTIVE EXPANSION only)
 
-At the end of the review, if the vision produced a compelling feature direction, offer to promote the CEO plan to the project repo. AskUserQuestion:
+The intent doc is already committed in `docs/intent.md`. If the vision produced
+architectural decisions that should inform `/plan-eng`, offer to create a design doc:
 
-"The vision from this review produced {N} accepted scope expansions. Want to promote it to a design doc in the repo?"
-- **A)** Promote to `docs/designs/{FEATURE}.md` (committed to repo, visible to the team)
-- **B)** Keep in `~/.tai-skills/projects/` only (local, personal reference)
-- **C)** Skip
+"The vision from this review produced {N} accepted scope expansions. Want to create a system design doc?"
+- **A)** Create `docs/design/system.md` with architecture notes from this review
+- **B)** Skip — let /plan-eng create the design doc
 
-If promoted, copy the CEO plan content to `docs/designs/{FEATURE}.md` (create the directory if needed) and update the `status` field in the original CEO plan from `ACTIVE` to `PROMOTED`.
+If creating, write `docs/design/system.md` with frontmatter:
+```yaml
+---
+id: design-system
+type: design
+parent: intent
+children: []
+related: [dec-NNN-slug]  # reference any decisions made
+---
+```
+
+And update `docs/intent.md` frontmatter to add `design-system` to its `children` list.
 
 ## Formatting Rules
 * NUMBER issues (1, 2, 3...) and LETTERS for options (A, B, C...).

@@ -3,8 +3,9 @@ name: plan-eng
 version: 3.0.0
 description: |
   [TAI] Eng manager-mode plan review. Lock in the execution plan — architecture,
-  data flow, diagrams, edge cases, test coverage, performance. Walks through
-  issues interactively with opinionated recommendations. Say "quick" for fast
+  data flow, diagrams, edge cases, test coverage, performance, and rollout safety.
+  This is the implementation gate, not the business-scope or design-taste review.
+  Walks through issues interactively with opinionated recommendations. Say "quick" for fast
   scan (scope + diagram + concerns only). Use when asked to "review the
   architecture", "engineering review", or "lock in the plan".
   Proactively suggest when the user has a plan or design doc and is about to
@@ -88,6 +89,17 @@ RECOMMENDATION: [what the user should do next]
 ```
 
 # Plan Review Mode
+
+## Scope Boundary
+
+This skill owns the **engineering execution gate**: can this plan be implemented safely, simply, observably, and testably?
+
+Stay engineering-focused:
+* Review architecture, code organization, data flow, error handling, tests, performance, deployment, and production failure modes.
+* Treat UI/user flows as testable behavior and edge cases, not visual taste or brand direction.
+* Do NOT challenge product ambition except when scope creates engineering risk, hidden complexity, or an unsafe rollout.
+* Do NOT perform deep design critique. If IA, visual hierarchy, interaction states, responsive design, accessibility, or AI-slop risk need product-design decisions, recommend `/plan-design`.
+* Mention `/plan-ceo` only for significant product/scope decisions, not routine implementation tradeoffs.
 
 ## Language
 
@@ -225,7 +237,9 @@ Evaluate:
 **STOP.** Batch all issues in this section into ONE AskUserQuestion (see Batching Rule above). Only proceed to the next section after the user responds.
 
 ### 3. Test review
-Make a diagram of all new UX, new data flow, new codepaths, and new branching if statements or outcomes. For each, note what is new about the features discussed in this branch and plan. Then, for each new item in the diagram, make sure there is a corresponding test.
+Make a diagram of all new UX behavior, new data flow, new codepaths, and new branching if statements or outcomes. UX belongs here only as observable/testable behavior: routes, interactions, states, accessibility-critical behavior, and failure paths. Do not critique visual taste or rewrite design direction; send those decisions to `/plan-design`.
+
+For each item, note what is new about the features discussed in this branch and plan. Then, for each new item in the diagram, make sure there is a corresponding test.
 
 For LLM/prompt changes: check the "Prompt/LLM changes" file patterns listed in CLAUDE.md. If this plan touches ANY of those patterns, state which eval suites must be run, which cases should be added, and what baselines to compare against. Then use AskUserQuestion to confirm the eval scope with the user.
 
@@ -309,7 +323,7 @@ it's too vague.
 #### 3. Execution Tasks (`docs/plan/tasks.md`)
 
 This replaces the old test plan artifact. Contains both the implementation tasks
-AND the QA test plan, consumed by `/tai-execute`, `/qa`, and `/qa-only`.
+AND the QA test plan, consumed by `/execute-solo`, `/qa`, and `/qa`.
 
 ```markdown
 ---
@@ -351,7 +365,7 @@ Repo: {owner/repo}
 - {end-to-end flow that must work}
 ```
 
-Each task's `REQs covered` field maps to spec requirements — this is how `/tai-execute`
+Each task's `REQs covered` field maps to spec requirements — this is how `/execute-solo`
 knows what to add to the traceability matrix after completing a task.
 
 #### 4. Milestones (`docs/plan/milestones.md`)
@@ -377,9 +391,11 @@ related: [plan-tasks]
 #### Migration
 
 If legacy planning files exist at the project root (e.g., `PLAN.md`), migrate their content
-into `docs/plan/tasks.md` and delete the root file. `/tai-execute` reads `docs/plan/tasks.md`.
+into `docs/plan/tasks.md` and delete the root file. `/execute-solo` reads `docs/plan/tasks.md`.
 
 ### 4. Performance review
+Evaluate implementation performance, capacity, and complexity risks only. Product prioritization belongs in `/plan-ceo`; visual/perceived-performance design choices belong in `/plan-design` unless they require engineering work.
+
 Evaluate:
 * N+1 queries and database access patterns.
 * Memory-usage concerns.
@@ -520,9 +536,9 @@ Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng,
 
 After displaying the Review Readiness Dashboard, check if additional reviews would be valuable.
 
-**Suggest /plan-design if UI changes exist and no design review has been run** — detect from the test diagram, architecture review, or any section that touched frontend components, CSS, views, or user-facing interaction flows.
+**Suggest /plan-design if UI changes exist and no design review has been run** — detect from the test diagram, architecture review, or any section that touched frontend components, CSS, views, or user-facing interaction flows. Phrase this as a handoff for design intentionality, not as an engineering blocker unless UI ambiguity blocks implementation.
 
-**Mention /plan-ceo if this is a significant product change and no CEO review exists** — this is a soft suggestion, not a push. CEO review is optional.
+**Mention /plan-ceo if this is a significant product/scope/strategy decision and no CEO review exists** — this is a soft suggestion, not a push. CEO review is optional and should not be triggered for routine technical choices.
 
 **If no additional reviews are needed**: state "All relevant reviews complete. Run /ship when ready."
 
