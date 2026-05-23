@@ -36,10 +36,11 @@ def test_skill_info_frozen():
 
 
 def test_install_result():
-    """InstallResult holds installed and skipped lists."""
-    result = InstallResult(installed=["a", "b"], skipped=["c"])
+    """InstallResult holds installed, skipped, and removed lists."""
+    result = InstallResult(installed=["a", "b"], skipped=["c"], removed=["d"])
     assert result.installed == ["a", "b"]
     assert result.skipped == ["c"]
+    assert result.removed == ["d"]
 
 
 # ── parse_frontmatter tests ──────────────────────────────────────────────────
@@ -355,6 +356,50 @@ def test_install_skills_force_overwrite(tmp_path):
     assert "tai-test-skill" in result.installed
     assert result.skipped == []
     assert "NEW" in (dest / "tai-test-skill" / "SKILL.md").read_text()
+
+
+def test_install_skills_force_removes_stale(tmp_path):
+    """Remove stale tai-* directories when force=True."""
+    source = tmp_path / "source"
+    skill = source / "new-skill"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: new-skill\n---")
+
+    dest = tmp_path / "dest"
+    stale = dest / "tai-old-skill"
+    stale.mkdir(parents=True)
+    (stale / "SKILL.md").write_text("---\nname: old-skill\n---")
+
+    # Non-tai dir should not be removed
+    other = dest / "other-tool"
+    other.mkdir(parents=True)
+
+    with patch("tai.core.skills.skills_install_dir", return_value=dest):
+        result = install_skills(source, force=True)
+
+    assert "tai-old-skill" in result.removed
+    assert not stale.exists()
+    assert other.exists()  # non-tai dirs untouched
+    assert "tai-new-skill" in result.installed
+
+
+def test_install_skills_no_remove_without_force(tmp_path):
+    """Do not remove stale dirs when force=False."""
+    source = tmp_path / "source"
+    skill = source / "new-skill"
+    skill.mkdir(parents=True)
+    (skill / "SKILL.md").write_text("---\nname: new-skill\n---")
+
+    dest = tmp_path / "dest"
+    stale = dest / "tai-old-skill"
+    stale.mkdir(parents=True)
+    (stale / "SKILL.md").write_text("---\nname: old-skill\n---")
+
+    with patch("tai.core.skills.skills_install_dir", return_value=dest):
+        result = install_skills(source, force=False)
+
+    assert result.removed == []
+    assert stale.exists()  # not removed
 
 
 # ── installed_version tests ──────────────────────────────────────────────────

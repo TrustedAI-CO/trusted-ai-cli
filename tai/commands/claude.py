@@ -364,18 +364,22 @@ def setup_skills(
             console.print_json(json.dumps({
                 "installed": result.installed,
                 "skipped": result.skipped,
+                "removed": result.removed,
                 "install_path": str(skills_install_dir()),
             }))
             return
 
+        for name in result.removed:
+            console.print(f"  [red]✗[/red] {name} (removed)")
         for name in result.installed:
             console.print(f"  [green]✓[/green] {name}")
         for name in result.skipped:
             console.print(f"  [dim]  {name}[/dim] (exists, use --force)")
 
         console.print(
-            f"\n[green]{len(result.installed)} skill(s) installed[/green]"
+            f"\n[green]{len(result.installed)} installed[/green]"
             f", {len(result.skipped)} skipped"
+            f", {len(result.removed)} removed"
             f" — {skills_install_dir()}"
         )
         console.print("[dim]Restart Claude Code to pick up new skills.[/dim]")

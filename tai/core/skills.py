@@ -30,6 +30,7 @@ class SkillInfo:
 class InstallResult:
     installed: list[str]
     skipped: list[str]
+    removed: list[str]
 
 
 def parse_frontmatter(skill_md: Path) -> SkillInfo:
@@ -141,12 +142,25 @@ def install_skills(
 
     Each skill gets its own top-level directory so agent CLIs discover them as
     personal skills (e.g. tai-review, tai-ship). When force=True, existing
-    skills are overwritten.
+    skills are overwritten and stale tai-* directories are removed.
     """
     base = skills_install_dir(target)
     base.mkdir(parents=True, exist_ok=True)
 
     skills = discover_skills(source_dir)
+    valid_names = {prefixed_name(s.name) for s in skills}
+
+    removed: list[str] = []
+    if force:
+        for existing in sorted(base.iterdir()):
+            if (
+                existing.is_dir()
+                and existing.name.startswith(f"{SKILL_PREFIX}-")
+                and existing.name not in valid_names
+            ):
+                shutil.rmtree(existing)
+                removed.append(existing.name)
+
     installed: list[str] = []
     skipped: list[str] = []
 
@@ -163,7 +177,7 @@ def install_skills(
         shutil.copytree(skill.path, dest)
         installed.append(dest_name)
 
-    return InstallResult(installed=installed, skipped=skipped)
+    return InstallResult(installed=installed, skipped=skipped, removed=removed)
 
 
 def installed_version(
