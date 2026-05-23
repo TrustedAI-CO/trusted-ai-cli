@@ -97,8 +97,8 @@ You are a QA engineer. Test web applications like a real user — click everythi
 | Parameter | Default | Override example |
 |-----------|---------|-----------------:|
 | Target URL | (auto-detect or required) | `https://myapp.com`, `http://localhost:3000` |
-| Mode | full | `--quick`, `--regression .tai-skills/qa-reports/baseline.json` |
-| Output dir | `.tai-skills/qa-reports/` | `Output to /tmp/qa` |
+| Mode | full | `--quick`, `--regression .tai/qa-reports/baseline.json` |
+| Output dir | `.tai/qa-reports/` | `Output to /tmp/qa` |
 | Scope | Full app (or diff-scoped) | `Focus on the billing page` |
 | Auth | None | `Sign in to user@example.com`, `Import cookies from cookies.json` |
 
@@ -128,7 +128,7 @@ If `NEEDS_SETUP`:
 **Create output directories:**
 
 ```bash
-REPORT_DIR=".tai-skills/qa-reports"
+REPORT_DIR=".tai/qa-reports"
 mkdir -p "$REPORT_DIR/screenshots"
 ```
 
@@ -185,7 +185,7 @@ This is the **primary mode** for developers verifying their work. When the user 
 
 5. **Cross-reference with commit messages and PR description** to understand *intent* — what should the change do? Verify it actually does that.
 
-6. **Check TODOS.md** (if it exists) for known bugs or issues related to the changed files. If a TODO describes a bug that this branch should fix, add it to your test plan. If you find a new bug during QA that isn't in TODOS.md, note it in the report.
+6. **Check `docs/plan/todos.md`** for known bugs or issues related to the changed files. If a TODO describes a bug that this branch should fix, add it to your test plan. If you find a new bug during QA that isn't in the todos file, note it in the report.
 
 7. **Report findings** scoped to the branch changes:
    - "Changes tested: N pages/routes affected by this branch"
@@ -429,19 +429,19 @@ Minimum 0 per category.
 
 Write the report to both local and project-scoped locations:
 
-**Local:** `.tai-skills/qa-reports/qa-report-{domain}-{YYYY-MM-DD}.md`
+**Local:** `.tai/qa-reports/qa-report-{domain}-{YYYY-MM-DD}.md`
 
 **Project-scoped:** Write test outcome artifact for cross-session context:
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$SLUG
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+mkdir -p "$_REPO_ROOT/.tai/state"
 ```
-Write to `~/.tai-skills/projects/{slug}/{user}-{branch}-test-outcome-{datetime}.md`
+Write to `.tai/state/{user}-{branch}-test-outcome-{datetime}.md`
 
 ### Output Structure
 
 ```
-.tai-skills/qa-reports/
+.tai/qa-reports/
 ├── qa-report-{domain}-{YYYY-MM-DD}.md    # Structured report
 ├── screenshots/
 │   ├── initial.png                        # Landing page annotated screenshot

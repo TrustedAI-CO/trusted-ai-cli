@@ -2,7 +2,7 @@
 name: next
 version: 1.0.0
 description: |
-  [TAI] Quick "what should I do next?" dashboard. Reads PLAN.md, git worktrees,
+  [TAI] Quick "what should I do next?" dashboard. Reads the plan file, git worktrees,
   and tai-skills pipeline state to show phase progress, active worktrees,
   pipeline status, and recommended next action. Avoids conflicts with parallel
   sessions using git worktree awareness. Use when asked "what's next", "status",
@@ -33,8 +33,11 @@ _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || 
 echo "SLUG: $_SLUG"
 _REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 echo "REPO_ROOT: $_REPO_ROOT"
-_STATE_DIR="$HOME/.tai-skills/projects/$_SLUG"
+_DOCS_DIR="$_REPO_ROOT/docs"
+_STATE_DIR="$_REPO_ROOT/.tai/state"
+_OLD_STATE_DIR="$HOME/.tai-skills/projects/$_SLUG"
 echo "STATE_DIR: $_STATE_DIR"
+echo "DOCS_DIR: $_DOCS_DIR"
 ```
 
 Store these values — they're used throughout.
@@ -43,14 +46,14 @@ Store these values — they're used throughout.
 
 Run these three steps **in parallel** (they're independent):
 
-### Step A: Read PLAN.md
+### Step A: Read Plan
 
-Read `$_REPO_ROOT/PLAN.md`. Extract:
+Read `$_DOCS_DIR/plan/tasks.md`. Extract:
 - Each `## Phase N — Title` header
 - Each `### N.M — Sub-phase title` under it
 - The `## Module Ownership Map` section (which modules can be worked in parallel)
 
-If PLAN.md doesn't exist, note "No PLAN.md found" and skip phase analysis.
+If it doesn't exist, note "No plan found" and skip phase analysis.
 
 ### Step B: Git Worktree Scan
 
@@ -81,12 +84,12 @@ For each worktree, infer what phase/module it's working on by matching branch na
 
 ### Step C: Pipeline Status
 
-Read the reviews JSONL and execute state. The slug from the remote may differ from directory names, so check both:
+Read the reviews JSONL and execute state. Check new `.tai/state/` first, fall back to old paths:
 
 ```bash
 echo "=== PIPELINE STATE ==="
-# Check under both possible slugs
-for slug_dir in "$HOME/.tai-skills/projects/$_SLUG" "$HOME/.tai-skills/projects/company"; do
+# Check new state dir first, then old paths
+for slug_dir in "$_STATE_DIR" "$_OLD_STATE_DIR" "$HOME/.tai-skills/projects/company"; do
   if [ -d "$slug_dir" ]; then
     echo "--- State dir: $slug_dir ---"
     # Reviews for current branch
@@ -110,6 +113,36 @@ for slug_dir in "$HOME/.tai-skills/projects/$_SLUG" "$HOME/.tai-skills/projects/
     ls "$slug_dir"/*-reviews.jsonl 2>/dev/null || echo "(none)"
   fi
 done
+```
+
+### Step D: Spec Coverage (if docs/ exists)
+
+```bash
+echo "=== SPEC COVERAGE ==="
+if [ -d "$_DOCS_DIR/specs" ]; then
+  echo "SPECS:"
+  for f in "$_DOCS_DIR/specs/"*.md; do
+    echo "--- $(basename $f) ---"
+    grep -c '^### REQ-' "$f" 2>/dev/null || echo "0"
+  done
+  echo ""
+  echo "MATRIX:"
+  if [ -f "$_DOCS_DIR/trace/matrix.md" ]; then
+    cat "$_DOCS_DIR/trace/matrix.md"
+  else
+    echo "NO MATRIX"
+  fi
+  echo ""
+  echo "REVIEW:"
+  if [ -f "$_DOCS_DIR/REVIEW.md" ]; then
+    grep -c 'Status: PENDING' "$_DOCS_DIR/REVIEW.md" 2>/dev/null || echo "0"
+    grep 'Status: PENDING' "$_DOCS_DIR/REVIEW.md" 2>/dev/null
+  else
+    echo "NO REVIEW.md"
+  fi
+else
+  echo "NO docs/ DIRECTORY"
+fi
 ```
 
 ## Dashboard Output
@@ -173,9 +206,39 @@ Mark entries older than 7 days as `STALE` in the Notes column.
 
 The pipeline steps in order are: `plan-ceo` (optional) → `plan-eng` → `execute` → `review` → `ship+docs`. Identify the **first incomplete required step** and mark it as "next step" in Notes.
 
-Note: The `ship+docs` step runs `/tai-ship` which merges the PR, then immediately runs `/tai-document-release` to update README, CHANGELOG, ARCHITECTURE, and CLAUDE.md in the same session. These are a single step, not two separate pipeline stages.
+Note: The `ship+docs` step runs `/tai-ship` which merges the PR, then immediately runs `/tai-document-release` to update README, `docs/changelog.md`, `docs/trace/code-map.md`, and CLAUDE.md in the same session. These are a single step, not two separate pipeline stages.
 
-### Section 4: Recommended Next Action
+### Section 4: Spec Coverage (if docs/ exists)
+
+If `docs/specs/` exists and contains spec files, show coverage from the traceability matrix:
+
+```
+## Spec Coverage
+| Module | REQs | Covered | Partial | Missing |
+|--------|------|---------|---------|---------|
+| auth   | 5    | 4       | 1       | 0       |
+| gateway| 3    | 1       | 0       | 2       |
+| Total  | 8    | 5 (63%) | 1 (13%) | 2 (25%) |
+```
+
+Parse `docs/specs/*.md` for `### REQ-*` headers to count REQs per module.
+Parse `docs/trace/matrix.md` for coverage status per REQ.
+
+If no `docs/specs/` exists, skip this section silently.
+
+### Section 5: Pending Reviews (if docs/REVIEW.md exists)
+
+If `docs/REVIEW.md` exists and has PENDING items, show them:
+
+```
+## Pending Reviews (docs/REVIEW.md)
+- [REVIEW-001] Auth token storage — PENDING since 2026-05-23
+- [REVIEW-003] Error response format — PENDING since 2026-05-23
+```
+
+If no PENDING items or no REVIEW.md, skip this section.
+
+### Section 6: Recommended Next Action
 
 Apply this priority logic:
 
@@ -186,7 +249,7 @@ If the current branch has started the pipeline (any entries in reviews.jsonl), r
 - review done, no ship → "Run /tai-ship, then /tai-document-release to update docs"
 
 **Priority 2 — On main or branch with completed pipeline:**
-Look at PLAN.md for the next available sub-phase that is NOT being worked on in any worktree:
+Look at the plan file for the next available sub-phase that is NOT being worked on in any worktree:
 - Recommend creating a new worktree
 - Suggest a branch name following the project convention (e.g., `feature/phase1-agents`)
 - Recommend starting with `/tai-plan-eng`
@@ -204,7 +267,7 @@ Format:
 ## Recommended Next Action
 -> Pick up: Phase 1.3 Agent CRUD (backend/agents module)
 -> Create worktree: git worktree add ../agent-crud -b feature/phase1-agents
--> Then run: /tai-plan-eng with Phase 1.3 tasks from PLAN.md
+-> Then run: /tai-plan-eng with Phase 1.3 tasks from the plan
 !! Avoid: Phase 1.1 Auth (active in worktree san-francisco-v1)
 ```
 

@@ -123,8 +123,8 @@ You are a QA engineer AND a bug-fix engineer. Test web applications like a real 
 |-----------|---------|-----------------:|
 | Target URL | (auto-detect or required) | `https://myapp.com`, `http://localhost:3000` |
 | Tier | Standard | `--quick`, `--exhaustive` |
-| Mode | full | `--regression .tai-skills/qa-reports/baseline.json` |
-| Output dir | `.tai-skills/qa-reports/` | `Output to /tmp/qa` |
+| Mode | full | `--regression .tai/qa-reports/baseline.json` |
+| Output dir | `.tai/qa-reports/` | `Output to /tmp/qa` |
 | Scope | Full app (or diff-scoped) | `Focus on the billing page` |
 | Auth | None | `Sign in to user@example.com`, `Import cookies from cookies.json` |
 
@@ -186,7 +186,7 @@ If `NEEDS_SETUP`:
 ls jest.config.* vitest.config.* playwright.config.* .rspec pytest.ini pyproject.toml phpunit.xml 2>/dev/null
 ls -d test/ tests/ spec/ __tests__/ cypress/ e2e/ 2>/dev/null
 # Check opt-out marker
-[ -f .tai-skills/no-test-bootstrap ] && echo "BOOTSTRAP_DECLINED"
+[ -f .tai/no-test-bootstrap ] && echo "BOOTSTRAP_DECLINED"
 ```
 
 **If test framework detected** (config files or test directories found):
@@ -199,7 +199,7 @@ Store conventions as prose context for use in Phase 8e.5 or Step 3.4. **Skip the
 **If NO runtime detected** (no config files found): Use AskUserQuestion:
 "I couldn't detect your project's language. What runtime are you using?"
 Options: A) Node.js/TypeScript B) Ruby/Rails C) Python D) Go E) Rust F) PHP G) Elixir H) This project doesn't need tests.
-If user picks H → write `.tai-skills/no-test-bootstrap` and continue without tests.
+If user picks H → write `.tai/no-test-bootstrap` and continue without tests.
 
 **If runtime detected but no test framework — bootstrap:**
 
@@ -231,7 +231,7 @@ B) [Alternative] — [rationale]. Includes: [packages]
 C) Skip — don't set up testing right now
 RECOMMENDATION: Choose A because [reason based on project context]"
 
-If user picks C → write `.tai-skills/no-test-bootstrap`. Tell user: "If you change your mind later, delete `.tai-skills/no-test-bootstrap` and re-run." Continue without tests.
+If user picks C → write `.tai/no-test-bootstrap`. Tell user: "If you change your mind later, delete `.tai/no-test-bootstrap` and re-run." Continue without tests.
 
 If multiple runtimes detected (monorepo) → ask which runtime to set up first, with option to do both sequentially.
 
@@ -282,11 +282,11 @@ Create `.github/workflows/test.yml` with:
 
 If non-GitHub CI detected → skip CI generation with note: "Detected {provider} — CI pipeline generation supports GitHub Actions only. Add test step to your existing pipeline manually."
 
-### B6. Create TESTING.md
+### B6. Create docs/trace/testing.md
 
-First check: If TESTING.md already exists → read it and update/append rather than overwriting. Never destroy existing content.
+First check: If `docs/trace/testing.md` already exists → read it and update/append rather than overwriting. Never destroy existing content.
 
-Write TESTING.md with:
+Write `docs/trace/testing.md` with:
 - Philosophy: "100% test coverage is the key to great vibe coding. Tests let you move fast, trust your instincts, and ship with confidence — without them, vibe coding is just yolo coding. With tests, it's a superpower."
 - Framework name and version
 - How to run tests (the verified command from B5)
@@ -299,7 +299,7 @@ First check: If CLAUDE.md already has a `## Testing` section → skip. Don't dup
 
 Append a `## Testing` section:
 - Run command and test directory
-- Reference to TESTING.md
+- Reference to docs/trace/testing.md
 - Test expectations:
   - 100% test coverage is the goal — tests make vibe coding safe
   - When writing new functions, write a corresponding test
@@ -314,7 +314,7 @@ Append a `## Testing` section:
 git status --porcelain
 ```
 
-Only commit if there are changes. Stage all bootstrap files (config, test directory, TESTING.md, CLAUDE.md, .github/workflows/test.yml if created):
+Only commit if there are changes. Stage all bootstrap files (config, test directory, docs/trace/testing.md, CLAUDE.md, .github/workflows/test.yml if created):
 `git commit -m "chore: bootstrap test framework ({framework name})"`
 
 ---
@@ -322,7 +322,7 @@ Only commit if there are changes. Stage all bootstrap files (config, test direct
 **Create output directories:**
 
 ```bash
-mkdir -p .tai-skills/qa-reports/screenshots
+mkdir -p .tai/qa-reports/screenshots
 ```
 
 ---
@@ -380,7 +380,7 @@ This is the **primary mode** for developers verifying their work. When the user 
 
 5. **Cross-reference with commit messages and PR description** to understand *intent* — what should the change do? Verify it actually does that.
 
-6. **Check TODOS.md** (if it exists) for known bugs or issues related to the changed files. If a TODO describes a bug that this branch should fix, add it to your test plan. If you find a new bug during QA that isn't in TODOS.md, note it in the report.
+6. **Check `docs/plan/todos.md`** for known bugs or issues related to the changed files. If a TODO describes a bug that this branch should fix, add it to your test plan. If you find a new bug during QA that isn't in the todos file, note it in the report.
 
 7. **Report findings** scoped to the branch changes:
    - "Changes tested: N pages/routes affected by this branch"
@@ -625,7 +625,7 @@ Record baseline health score at end of Phase 6.
 ## Output Structure
 
 ```
-.tai-skills/qa-reports/
+.tai/qa-reports/
 ├── qa-report-{domain}-{YYYY-MM-DD}.md    # Structured report
 ├── screenshots/
 │   ├── initial.png                        # Landing page annotated screenshot
@@ -730,7 +730,7 @@ The test MUST:
   ```
   // Regression: ISSUE-NNN — {what broke}
   // Found by /qa on {YYYY-MM-DD}
-  // Report: .tai-skills/qa-reports/qa-report-{domain}-{date}.md
+  // Report: .tai/qa-reports/qa-report-{domain}-{date}.md
   ```
 
 Test type decision:
@@ -790,14 +790,14 @@ After all fixes are applied:
 
 Write the report to both local and project-scoped locations:
 
-**Local:** `.tai-skills/qa-reports/qa-report-{domain}-{YYYY-MM-DD}.md`
+**Local:** `.tai/qa-reports/qa-report-{domain}-{YYYY-MM-DD}.md`
 
 **Project-scoped:** Write test outcome artifact for cross-session context:
 ```bash
-_SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
-mkdir -p ~/.tai-skills/projects/$SLUG
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+mkdir -p "$_REPO_ROOT/.tai/state"
 ```
-Write to `~/.tai-skills/projects/{slug}/{user}-{branch}-test-outcome-{datetime}.md`
+Write to `.tai/state/{user}-{branch}-test-outcome-{datetime}.md`
 
 **Per-issue additions** (beyond standard report template):
 - Fix Status: verified / best-effort / reverted / deferred
@@ -816,12 +816,12 @@ Write to `~/.tai-skills/projects/{slug}/{user}-{branch}-test-outcome-{datetime}.
 
 ---
 
-## Phase 11: TODOS.md Update
+## Phase 11: docs/plan/todos.md Update
 
-If the repo has a `TODOS.md`:
+If the repo has a `docs/plan/todos.md`:
 
 1. **New deferred bugs** → add as TODOs with severity, category, and repro steps
-2. **Fixed bugs that were in TODOS.md** → annotate with "Fixed by /qa on {branch}, {date}"
+2. **Fixed bugs that were in docs/plan/todos.md** → annotate with "Fixed by /qa on {branch}, {date}"
 
 ---
 

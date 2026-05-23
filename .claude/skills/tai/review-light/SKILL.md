@@ -101,7 +101,7 @@ Do NOT:
 - Review informational categories (dead code, magic numbers, naming, style)
 - Run design sub-review
 - Check Greptile comments
-- Cross-reference TODOS.md
+- Cross-reference docs/plan/todos.md
 - Check documentation staleness
 
 ## Step 4: Log result
@@ -109,8 +109,9 @@ Do NOT:
 ```bash
 _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
 _BRANCH_SAFE=$(git branch --show-current | tr '/' '-')
-mkdir -p "$HOME/.tai-skills/projects/$_SLUG"
-echo '{"skill":"plan-eng","variant":"light","timestamp":"TIMESTAMP","status":"STATUS","findings":N}' >> "$HOME/.tai-skills/projects/$_SLUG/${_BRANCH_SAFE}-reviews.jsonl"
+_REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+mkdir -p "$_REPO_ROOT/.tai/state"
+echo '{"skill":"review-light","variant":"light","timestamp":"TIMESTAMP","status":"STATUS","findings":N}' >> "$_REPO_ROOT/.tai/state/${_BRANCH_SAFE}-reviews.jsonl"
 ```
 
 Substitute: TIMESTAMP = ISO 8601 datetime, STATUS = "clean" if 0 findings else "issues_found", N = finding count.

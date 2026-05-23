@@ -4,9 +4,9 @@ version: 1.0.0
 description: |
   [TAI] Design consultation: understands your product, researches the landscape, proposes a
   complete design system (aesthetic, typography, color, layout, spacing, motion), and
-  generates font+color preview pages. Creates DESIGN.md as your project's design source
-  of truth. For existing sites, use /plan-design to infer the system instead.
-  Use when asked to "design system", "brand guidelines", or "create DESIGN.md".
+  generates font+color preview pages. Creates docs/design/visual.md as your project's design
+  source of truth. For existing sites, use /plan-design to infer the system instead.
+  Use when asked to "design system", "brand guidelines", or "create a design doc".
 allowed-tools:
   - Bash
   - Read
@@ -101,14 +101,14 @@ Translate all prose, explanations, recommendations, and AskUserQuestion text.
 
 ## Phase 0: Pre-checks
 
-**Check for existing DESIGN.md:**
+**Check for existing design doc:**
 
 ```bash
-ls DESIGN.md design-system.md 2>/dev/null || echo "NO_DESIGN_FILE"
+ls docs/design/visual.md 2>/dev/null || echo "NO_DESIGN_FILE"
 ```
 
-- If a DESIGN.md exists: Read it. Ask the user: "You already have a design system. Want to **update** it, **start fresh**, or **cancel**?"
-- If no DESIGN.md: continue.
+- If `docs/design/visual.md` exists: Read it. Ask the user: "You already have a design system. Want to **update** it, **start fresh**, or **cancel**?"
+- If no design doc: continue.
 
 **Gather product context from the codebase:**
 
@@ -123,7 +123,7 @@ Look for brainstorm output:
 ```bash
 _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || echo "project")
 ls ~/.tai-skills/projects/$SLUG/*brainstorm* 2>/dev/null | head -5
-ls .context/*brainstorm* .context/attachments/*brainstorm* 2>/dev/null | head -5
+ls .tai/*brainstorm* .tai/cache/*brainstorm* 2>/dev/null | head -5
 ```
 
 If brainstorm output exists, read it — the product context is pre-filled.
@@ -245,7 +245,7 @@ different ones? Or adjust anything else?
 
 The SAFE/RISK breakdown is critical. Design coherence is table stakes — every product in a category can be coherent and still look identical. The real question is: where do you take creative risks? The agent should always propose at least 2 risks, each with a clear rationale for why the risk is worth taking and what the user gives up. Risks might include: an unexpected typeface for the category, a bold accent color nobody else uses, tighter or looser spacing than the norm, a layout approach that breaks from convention, motion choices that add personality.
 
-**Options:** A) Looks great — generate the preview page. B) I want to adjust [section]. C) I want different risks — show me wilder options. D) Start over with a different direction. E) Skip the preview, just write DESIGN.md.
+**Options:** A) Looks great — generate the preview page. B) I want to adjust [section]. C) I want different risks — show me wilder options. D) Start over with a different direction. E) Skip the preview, just write docs/design/visual.md.
 
 ### Your Design Knowledge (use to inform proposals — do NOT display as tables)
 
@@ -361,9 +361,21 @@ If the user says skip the preview, go directly to Phase 6.
 
 ---
 
-## Phase 6: Write DESIGN.md & Confirm
+## Phase 6: Write Design Doc & Confirm
 
-Write `DESIGN.md` to the repo root with this structure:
+Write `docs/design/visual.md` (create `docs/design/` if needed) with this structure:
+
+```yaml
+---
+id: design-visual
+type: design
+parent: intent
+children: []
+related: []
+---
+```
+
+Followed by:
 
 ```markdown
 # Design System — [Project Name]
@@ -423,16 +435,18 @@ Write `DESIGN.md` to the repo root with this structure:
 
 ```markdown
 ## Design System
-Always read DESIGN.md before making any visual or UI decisions.
+Always read `docs/design/visual.md` before making any visual or UI decisions.
 All font choices, colors, spacing, and aesthetic direction are defined there.
 Do not deviate without explicit user approval.
-In QA mode, flag any code that doesn't match DESIGN.md.
+In QA mode, flag any code that doesn't match the design doc.
 ```
+
+If `docs/intent.md` exists, update its `children` frontmatter to include `design-visual`.
 
 **AskUserQuestion Q-final — show summary and confirm:**
 
 List all decisions. Flag any that used agent defaults without explicit user confirmation (the user should know what they're shipping). Options:
-- A) Ship it — write DESIGN.md and CLAUDE.md
+- A) Ship it — write `docs/design/visual.md` and CLAUDE.md
 - B) I want to change something (specify what)
 - C) Start over
 
@@ -446,5 +460,5 @@ List all decisions. Flag any that used agent defaults without explicit user conf
 4. **Never recommend blacklisted or overused fonts as primary.** If the user specifically requests one, comply but explain the tradeoff.
 5. **The preview page must be beautiful.** It's the first visual output and sets the tone for the whole skill.
 6. **Conversational tone.** This isn't a rigid workflow. If the user wants to talk through a decision, engage as a thoughtful design partner.
-7. **Accept the user's final choice.** Nudge on coherence issues, but never block or refuse to write a DESIGN.md because you disagree with a choice.
-8. **No AI slop in your own output.** Your recommendations, your preview page, your DESIGN.md — all should demonstrate the taste you're asking the user to adopt.
+7. **Accept the user's final choice.** Nudge on coherence issues, but never block or refuse to write docs/design/visual.md because you disagree with a choice.
+8. **No AI slop in your own output.** Your recommendations, your preview page, your design doc — all should demonstrate the taste you're asking the user to adopt.

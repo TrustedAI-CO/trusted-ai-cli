@@ -3,8 +3,8 @@ name: document-release
 version: 1.0.0
 description: |
   [TAI] Post-ship documentation update. Reads all project docs, cross-references the
-  diff, updates README/ARCHITECTURE/CONTRIBUTING/CLAUDE.md to match what shipped,
-  polishes CHANGELOG voice, cleans up TODOS, and optionally bumps VERSION. Use when
+  diff, updates README/docs/trace/code-map.md/docs/contributing.md/CLAUDE.md to match what shipped,
+  polishes changelog voice, cleans up todos, and optionally bumps VERSION. Use when
   asked to "update the docs", "sync documentation", or "post-ship docs".
 allowed-tools:
   - Bash
@@ -135,7 +135,7 @@ subjective decisions.
 **NEVER do:**
 - Overwrite, replace, or regenerate CHANGELOG entries — polish wording only, preserve all content
 - Bump VERSION without asking — always use AskUserQuestion for version changes
-- Use `Write` tool on CHANGELOG.md — always use `Edit` with exact `old_string` matches
+- Use `Write` tool on docs/changelog.md — always use `Edit` with exact `old_string` matches
 
 ---
 
@@ -160,7 +160,7 @@ git diff <base>...HEAD --name-only
 3. Discover all documentation files in the repo:
 
 ```bash
-find . -maxdepth 2 -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./.tai-skills/*" -not -path "./.context/*" | sort
+find . -maxdepth 3 -name "*.md" -not -path "./.git/*" -not -path "./node_modules/*" -not -path "./.tai/*" | sort
 ```
 
 4. Classify the changes into categories relevant to documentation:
@@ -184,13 +184,13 @@ Read each documentation file and cross-reference it against the diff. Use these 
 - Are examples, demos, and usage descriptions still valid?
 - Are troubleshooting steps still accurate?
 
-**ARCHITECTURE.md:**
+**docs/trace/code-map.md:**
 - Do ASCII diagrams and component descriptions match the current code?
 - Are design decisions and "why" explanations still accurate?
 - Be conservative — only update things clearly contradicted by the diff. Architecture docs
   describe things unlikely to change frequently.
 
-**CONTRIBUTING.md — New contributor smoke test:**
+**docs/contributing.md — New contributor smoke test:**
 - Walk through the setup instructions as if you are a brand new contributor.
 - Are the listed commands accurate? Would each step succeed?
 - Do test tier descriptions match the current test infrastructure?
@@ -201,6 +201,13 @@ Read each documentation file and cross-reference it against the diff. Use these 
 - Does the project structure section match the actual file tree?
 - Are listed commands and scripts accurate?
 - Do build/test instructions match what's in package.json (or equivalent)?
+
+**docs/ tree (if exists):**
+- Check `docs/trace/code-map.md` — is the architecture description still accurate after this release?
+- Check `docs/trace/concerns.md` — are any concerns resolved by this release?
+- Check `docs/trace/matrix.md` — are all REQs from `docs/specs/*.md` still valid?
+- Run doc validation: check all frontmatter links resolve, no orphans, bidirectional links intact.
+- Flag stale docs for update or removal.
 
 **Any other .md files:**
 - Read the file, determine its purpose and audience.
@@ -225,7 +232,7 @@ from 9 to 10."
 
 **Never auto-update:**
 - README introduction or project positioning
-- ARCHITECTURE philosophy or design rationale
+- `docs/trace/code-map.md` philosophy or design rationale
 - Security model descriptions
 - Do not remove entire sections from any document
 
@@ -253,13 +260,13 @@ A real incident occurred where an agent replaced existing CHANGELOG entries when
 preserved them. This skill must NEVER do that.
 
 **Rules:**
-1. Read the entire CHANGELOG.md first. Understand what is already there.
+1. Read the entire `docs/changelog.md` first. Understand what is already there.
 2. Only modify wording within existing entries. Never delete, reorder, or replace entries.
 3. Never regenerate a CHANGELOG entry from scratch. The entry was written by `/ship` from the
    actual diff and commit history. It is the source of truth. You are polishing prose, not
    rewriting history.
 4. If an entry looks wrong or incomplete, use AskUserQuestion — do NOT silently fix it.
-5. Use Edit tool with exact `old_string` matches — never use Write to overwrite CHANGELOG.md.
+5. Use Edit tool with exact `old_string` matches — never use Write to overwrite the changelog file.
 
 **If CHANGELOG was not modified in this branch:** skip this step.
 
@@ -280,22 +287,22 @@ preserved them. This skill must NEVER do that.
 After auditing each file individually, do a cross-doc consistency pass:
 
 1. Does the README's feature/capability list match what CLAUDE.md (or project instructions) describes?
-2. Does ARCHITECTURE's component list match CONTRIBUTING's project structure description?
+2. Does `docs/trace/code-map.md`'s component list match `docs/contributing.md`'s project structure description?
 3. Does CHANGELOG's latest version match the VERSION file?
 4. **Discoverability:** Is every documentation file reachable from README.md or CLAUDE.md? If
-   ARCHITECTURE.md exists but neither README nor CLAUDE.md links to it, flag it. Every doc
+   `docs/trace/code-map.md` exists but neither README nor CLAUDE.md links to it, flag it. Every doc
    should be discoverable from one of the two entry-point files.
 5. Flag any contradictions between documents. Auto-fix clear factual inconsistencies (e.g., a
    version mismatch). Use AskUserQuestion for narrative contradictions.
 
 ---
 
-## Step 7: TODOS.md Cleanup
+## Step 7: docs/plan/todos.md Cleanup
 
 This is a second pass that complements `/ship`'s Step 5.5. Read `review/TODOS-format.md` (if
 available) for the canonical TODO item format.
 
-If TODOS.md does not exist, skip this step.
+If `docs/plan/todos.md` doesn't exist, skip this step.
 
 1. **Completed items not yet marked:** Cross-reference the diff against open TODO items. If a
    TODO is clearly completed by the changes in this branch, move it to the Completed section
@@ -308,7 +315,7 @@ If TODOS.md does not exist, skip this step.
 
 3. **New deferred work:** Check the diff for `TODO`, `FIXME`, `HACK`, and `XXX` comments. For
    each one that represents meaningful deferred work (not a trivial inline note), use
-   AskUserQuestion to ask whether it should be captured in TODOS.md.
+   AskUserQuestion to ask whether it should be captured in docs/plan/todos.md.
 
 ---
 
@@ -415,10 +422,10 @@ Output a scannable summary showing every documentation file's status:
 ```
 Documentation health:
   README.md       [status] ([details])
-  ARCHITECTURE.md [status] ([details])
-  CONTRIBUTING.md [status] ([details])
-  CHANGELOG.md    [status] ([details])
-  TODOS.md        [status] ([details])
+  docs/trace/code-map.md  [status] ([details])
+  docs/contributing.md    [status] ([details])
+  docs/changelog.md       [status] ([details])
+  docs/plan/todos.md      [status] ([details])
   VERSION         [status] ([details])
 ```
 

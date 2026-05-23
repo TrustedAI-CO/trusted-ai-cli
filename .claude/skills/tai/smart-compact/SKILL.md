@@ -44,8 +44,8 @@ Suggests manual `/compact` at smart points in your workflow rather than relying 
 | TodoWrite task list | File contents previously read |
 | Memory files (`~/.claude/memory/`) | Multi-step conversation context |
 | Git state (commits, branches) | Tool call history and counts |
-| Files on disk (including `.context/`) | Nuanced preferences stated verbally |
-| `.context/compact-resume.md` (auto-saved) | Detailed error traces and debug output |
+| Files on disk (including `.tai/`) | Nuanced preferences stated verbally |
+| `.tai/state/compact-resume.md` (auto-saved) | Detailed error traces and debug output |
 
 ## How the Hooks Work
 
@@ -53,18 +53,18 @@ Two hooks support smart compaction (installed via `tai claude setup-hooks`):
 
 1. **suggest-compact** (PreToolUse on Edit/Write) — Counts tool calls and nudges you at ~50 calls, then every 25 after that. The nudge appears on stderr; you decide whether to act.
 
-2. **pre-compact** (PreCompact) — Runs automatically before any `/compact`. Saves a resume note to `.context/compact-resume.md` with your current working state so you can pick up where you left off.
+2. **pre-compact** (PreCompact) — Runs automatically before any `/compact`. Saves a resume note to `.tai/state/compact-resume.md` with your current working state so you can pick up where you left off.
 
 ## Best Practices
 
-1. **Write important context to files before compacting.** Memory files, `.context/` notes, and TodoWrite all survive.
+1. **Write important context to files before compacting.** Memory files, `.tai/` notes, and TodoWrite all survive.
 2. **Compact after planning, not during.** Once the plan is finalized in TodoWrite or a file, compact to start implementation fresh.
 3. **Use `/compact` with a summary message.** Example: `/compact Focus on implementing the auth refresh logic next.`
 4. **Read the hook suggestion but decide yourself.** The 50-call threshold is a guideline, not a rule. If you're mid-flow, keep going.
 
 ## Resume Notes
 
-The pre-compact hook automatically writes `.context/compact-resume.md` before each compaction. This file contains:
+The pre-compact hook automatically writes `.tai/state/compact-resume.md` before each compaction. This file contains:
 - What you were working on (from git status and recent changes)
 - Key files involved
 - Timestamp of the compaction

@@ -169,8 +169,8 @@ git shortlog origin/<default> --since="<window>" -sn --no-merges
 # 8. Greptile triage history (if available)
 cat ~/.tai-skills/greptile-history.md 2>/dev/null || true
 
-# 9. TODOS.md backlog (if available)
-cat TODOS.md 2>/dev/null || true
+# 9. docs/plan/todos.md backlog (if available)
+cat docs/plan/todos.md 2>/dev/null || true
 
 # 10. Test file count
 find . -name '*.test.*' -o -name '*.spec.*' -o -name '*_test.*' -o -name '*_spec.*' 2>/dev/null | grep -v node_modules | wc -l
@@ -216,19 +216,19 @@ Sort by commits descending. The current user (from `git config user.name`) alway
 
 **Greptile signal (if history exists):** Read `~/.tai-skills/greptile-history.md` (fetched in Step 1, command 8). Filter entries within the retro time window by date. Count entries by type: `fix`, `fp`, `already-fixed`. Compute signal ratio: `(fix + already-fixed) / (fix + already-fixed + fp)`. If no entries exist in the window or the file doesn't exist, skip the Greptile metric row. Skip unparseable lines silently.
 
-**Backlog Health (if TODOS.md exists):** Read `TODOS.md` (fetched in Step 1, command 9). Compute:
+**Backlog Health (if docs/plan/todos.md exists):** Read `docs/plan/todos.md` (fetched in Step 1, command 9). Compute:
 - Total open TODOs (exclude items in `## Completed` section)
 - P0/P1 count (critical/urgent items)
 - P2 count (important items)
 - Items completed this period (items in Completed section with dates within the retro window)
-- Items added this period (cross-reference git log for commits that modified TODOS.md within the window)
+- Items added this period (cross-reference git log for commits that modified `docs/plan/todos.md` within the window)
 
 Include in the metrics table:
 ```
 | Backlog Health | N open (X P0/P1, Y P2) · Z completed this period |
 ```
 
-If TODOS.md doesn't exist, skip the Backlog Health row.
+If `docs/plan/todos.md` doesn't exist, skip the Backlog Health row.
 
 ### Step 3: Commit Time Distribution
 
@@ -352,7 +352,7 @@ Count backward from today — how many consecutive days have at least one commit
 Before saving the new snapshot, check for prior retro history:
 
 ```bash
-ls -t .context/retros/*.json 2>/dev/null
+ls -t .tai/retros/*.json 2>/dev/null
 ```
 
 **If prior retros exist:** Load the most recent one using the Read tool. Calculate deltas for key metrics and include a **Trends vs Last Retro** section:
@@ -373,16 +373,16 @@ Deep sessions:      3      →    5           ↑2
 After computing all metrics (including streak) and loading any prior history for comparison, save a JSON snapshot:
 
 ```bash
-mkdir -p .context/retros
+mkdir -p .tai/retros
 ```
 
 Determine the next sequence number for today (substitute the actual date for `$(date +%Y-%m-%d)`):
 ```bash
 # Count existing retros for today to get next sequence number
 today=$(TZ=America/Los_Angeles date +%Y-%m-%d)
-existing=$(ls .context/retros/${today}-*.json 2>/dev/null | wc -l | tr -d ' ')
+existing=$(ls .tai/retros/${today}-*.json 2>/dev/null | wc -l | tr -d ' ')
 next=$((existing + 1))
-# Save as .context/retros/${today}-${next}.json
+# Save as .tai/retros/${today}-${next}.json
 ```
 
 Use the Write tool to save the JSON file with this schema:
@@ -425,7 +425,7 @@ Use the Write tool to save the JSON file with this schema:
 }
 ```
 
-**Note:** Only include the `greptile` field if `~/.tai-skills/greptile-history.md` exists and has entries within the time window. Only include the `backlog` field if `TODOS.md` exists. Only include the `test_health` field if test files were found (command 10 returns > 0). If any has no data, omit the field entirely.
+**Note:** Only include the `greptile` field if `~/.tai-skills/greptile-history.md` exists and has entries within the time window. Only include the `backlog` field if `docs/plan/todos.md` exists. Only include the `test_health` field if test files were found (command 10 returns > 0). If any has no data, omit the field entirely.
 
 Include test health data in the JSON when test files exist:
 ```json
@@ -437,7 +437,7 @@ Include test health data in the JSON when test files exist:
   }
 ```
 
-Include backlog data in the JSON when TODOS.md exists:
+Include backlog data in the JSON when `docs/plan/todos.md` exists:
 ```json
   "backlog": {
     "total_open": 28,
@@ -557,7 +557,7 @@ When the user runs `/retro compare` (or `/retro compare 14d`):
 2. Compute metrics for the immediately prior same-length window using both `--since` and `--until` to avoid overlap (e.g., `--since="14 days ago" --until="7 days ago"` for a 7d window)
 3. Show a side-by-side comparison table with deltas and arrows
 4. Write a brief narrative highlighting the biggest improvements and regressions
-5. Save only the current-window snapshot to `.context/retros/` (same as a normal retro run); do **not** persist the prior-window metrics.
+5. Save only the current-window snapshot to `.tai/retros/` (same as a normal retro run); do **not** persist the prior-window metrics.
 
 ## Tone
 
@@ -570,11 +570,11 @@ When the user runs `/retro compare` (or `/retro compare 14d`):
 - Never compare teammates against each other negatively. Each person's section stands on its own.
 - Keep total output around 3000-4500 words (slightly longer to accommodate team sections)
 - Use markdown tables and code blocks for data, prose for narrative
-- Output directly to the conversation — do NOT write to filesystem (except the `.context/retros/` JSON snapshot)
+- Output directly to the conversation — do NOT write to filesystem (except the `.tai/retros/` JSON snapshot)
 
 ## Important Rules
 
-- ALL narrative output goes directly to the user in the conversation. The ONLY file written is the `.context/retros/` JSON snapshot.
+- ALL narrative output goes directly to the user in the conversation. The ONLY file written is the `.tai/retros/` JSON snapshot.
 - Use `origin/<default>` for all git queries (not local main which may be stale)
 - Convert all timestamps to Pacific time for display (use `TZ=America/Los_Angeles`)
 - If the window has zero commits, say so and suggest a different window
