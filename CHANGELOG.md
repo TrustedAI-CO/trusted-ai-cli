@@ -1,6 +1,24 @@
 # CHANGELOG
 
 
+## v0.32.0 (2026-05-24)
+
+### Features
+
+- **docs**: Static sidebar navigation injected into every HTML doc
+  — works on `file://` protocol, no server or JS required for navigation
+- **docs**: Spec and decision doc types with status lifecycle badges
+  (draft/proposed → implemented/accepted → superseded/deprecated)
+- **docs**: Spec template with MoSCoW requirements, ADR template, traceability matrix
+- **docs**: Search bar, collapsible directory groups, dark mode in sidebar
+- **docs**: `write_index()` rebuilds all nav when docs change
+
+### Bug Fixes
+
+- **docs**: Fix threaded server freeze when SSE blocks page loads
+- **docs**: Fix sidebar not loading on `file://` (static HTML instead of JS)
+
+
 ## v0.31.0 (2026-05-23)
 
 ### Features

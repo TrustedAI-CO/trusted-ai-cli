@@ -391,7 +391,11 @@ def serve(
         console.print(f"[dim]Copying shared assets to {project_assets}[/dim]")
         _copy_assets(project_assets)
 
+    # Write static index so file:// also works
+    write_index(docs_root)
+
     watcher = FileWatcher(docs_root)
+    watcher.subscribe(lambda: write_index(docs_root))
     watcher_thread = threading.Thread(target=watcher.run, daemon=True)
     watcher_thread.start()
 
@@ -424,3 +428,66 @@ def _copy_assets(target: Path) -> None:
     if target.is_dir():
         shutil.rmtree(target)
     shutil.copytree(_BUNDLED_ASSETS, target)
+
+
+def write_index(docs_root: Path) -> None:
+    """Inject a static <nav> sidebar into every HTML file. No JS needed."""
+    docs = discover_docs(docs_root)
+
+    # Group by directory
+    groups: dict[str, list[dict]] = {}
+    for doc in docs:
+        parts = doc["path"].split("/")
+        d = parts[0] if len(parts) > 1 else ""
+        groups.setdefault(d, []).append(doc)
+
+    for html_file in sorted(docs_root.rglob("*.html")):
+        rel = html_file.relative_to(docs_root)
+        if rel.parts[0] == ASSETS_DIR:
+            continue
+
+        current = str(rel)
+        depth = len(rel.parts) - 1  # 0 for root, 1 for subdir
+        prefix = "../" * depth
+
+        # Build nav HTML
+        lines = ['<nav class="docs-nav">']
+        lines.append(f'  <a class="nav-title" href="{prefix}index.html">Docs</a>')
+
+        # Render root files first, then directories
+        for d in sorted(groups, key=lambda x: (x != "", x)):
+            if d:
+                lines.append(f'  <div class="nav-group">{d}</div>')
+                lines.append('  <div class="nav-group-items">')
+
+            for doc in sorted(groups[d], key=lambda x: x["title"]):
+                href = prefix + doc["path"]
+                active = " active" if doc["path"] == current else ""
+                lines.append(
+                    f'    <a class="nav-link{active}" href="{href}">{doc["title"]}</a>'
+                )
+
+            if d:
+                lines.append('  </div>')
+
+        lines.append('</nav>')
+        nav_html = "\n".join(lines)
+
+        text = html_file.read_text(encoding="utf-8")
+
+        # Remove old nav if present
+        text = re.sub(
+            r'<nav class="docs-nav">.*?</nav>\s*',
+            '',
+            text,
+            flags=re.DOTALL,
+        )
+        # Remove old inline index script
+        text = re.sub(r'<script>window\.__DOCS_INDEX__=.*?</script>\n?', '', text)
+        # Remove old _index.js script tag
+        text = re.sub(r'\s*<script src="[^"]*_index\.js"></script>\n?', '', text)
+
+        # Insert nav after <body> and add has-nav class
+        text = text.replace('<body>', f'<body class="has-nav">\n{nav_html}', 1)
+
+        html_file.write_text(text, encoding="utf-8")

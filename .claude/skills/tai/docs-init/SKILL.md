@@ -841,12 +841,15 @@ concerns, and likely security review surfaces. Write an HTML file with:
 
 ## Step 5: Validate Docs
 
-Run validation using the tai Python validator:
+Inject the static sidebar navigation into every HTML file and run validation:
 
 ```bash
 python3 -c "
-from tai.commands.docs import validate_all, find_docs_root
-issues = validate_all(find_docs_root())
+from tai.commands.docs import validate_all, write_index, find_docs_root
+root = find_docs_root()
+write_index(root)
+print('Static sidebar injected into all HTML docs')
+issues = validate_all(root)
 if issues:
     for path, errs in issues.items():
         for e in errs:
@@ -855,6 +858,9 @@ else:
     print('All docs valid.')
 "
 ```
+
+This injects a `<nav class="docs-nav">` with links to all docs directly into
+each HTML file. No JavaScript needed for navigation — works on `file://` protocol.
 
 If validation finds issues in files this skill created, fix them.
 If existing human docs have issues, report them as concerns and do
