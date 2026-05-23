@@ -1,6 +1,18 @@
 # CHANGELOG
 
 
+## v0.30.0 (2026-05-23)
+
+### Features
+
+- **skills**: Purge stale tai-* dirs on force install
+  ([`24e2099`](https://github.com/TrustedAI-CO/trusted-ai-cli/commit/24e20992c6f9dabc3040184336b0bbb81e2d3c67))
+
+When `install_skills(force=True)` runs (during `tai update` or `tai claude setup-skills --force`),
+  remove any tai-* directories in the global skills dir that no longer exist in the source bundle.
+  Prevents renamed/deleted skills from persisting on user machines.
+
+
 ## v0.29.1 (2026-05-23)
 
 ### Bug Fixes
