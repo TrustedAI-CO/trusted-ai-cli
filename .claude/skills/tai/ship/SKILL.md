@@ -117,7 +117,7 @@ You are running the `/ship` workflow. This is a **non-interactive, fully automat
 **Fast mode skips:**
 - Step 3.4 (Test Coverage Audit) — note "Skipped — run `/ship thorough` for full coverage audit" in PR body
 - Step 3.75 (Greptile Review) — skip silently
-- Step 5.5 (docs/plan/todos.md) — skip silently
+- Step 5.5 (docs/plan/todos.html) — skip silently
 - Design review portion of Step 3.5 — skip silently (code review still runs)
 
 **Only stop for:**
@@ -138,10 +138,10 @@ You are running the `/ship` workflow. This is a **non-interactive, fully automat
 **Thorough mode additionally runs:**
 - Step 3.4 (Test Coverage Audit)
 - Step 3.75 (Greptile Review) — stops for user decision on comments
-- Step 5.5 (docs/plan/todos.md) — stops if missing or disorganized
+- Step 5.5 (docs/plan/todos.html) — stops if missing or disorganized
 - Design review in Step 3.5
 - Test coverage gaps (auto-generate and commit, or flag in PR body)
-- docs/plan/todos.md completed-item detection (auto-mark)
+- docs/plan/todos.html completed-item detection (auto-mark)
 
 ---
 
@@ -169,8 +169,8 @@ cat "$_STATE_DIR/${_BRANCH_SAFE}-reviews.jsonl" 2>/dev/null || cat "$HOME/.tai-s
 echo "---CONFIG---"
 echo "false"
 echo "---DOCS---"
-[ -f "$_DOCS_DIR/REVIEW.md" ] && grep -c 'Status: PENDING' "$_DOCS_DIR/REVIEW.md" 2>/dev/null || echo "0"
-[ -f "$_DOCS_DIR/trace/matrix.md" ] && echo "MATRIX_EXISTS" || echo "NO_MATRIX"
+[ -f "$_DOCS_DIR/REVIEW.html" ] && grep -c 'PENDING' "$_DOCS_DIR/REVIEW.html" 2>/dev/null || echo "0"
+[ -f "$_DOCS_DIR/trace/matrix.html" ] && echo "MATRIX_EXISTS" || echo "NO_MATRIX"
 ```
 
 Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng, plan-design, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
@@ -229,8 +229,8 @@ If the Eng Review is NOT "CLEAR":
 If `docs/` directory exists in the project, run these additional checks:
 
 **REVIEW.md check:**
-If `docs/REVIEW.md` has PENDING items, use AskUserQuestion:
-- "There are {N} pending items in docs/REVIEW.md that haven't been reviewed by a human.
+If `docs/REVIEW.html` has PENDING items, use AskUserQuestion:
+- "There are {N} pending items in docs/REVIEW.html that haven't been reviewed by a human.
   These are decisions the agent made during implementation that may need your approval."
 - Show each PENDING item title
 - Options: A) Review now (show full details)  B) Defer — ship anyway, I'll review later  C) Abort
@@ -804,31 +804,31 @@ For each classified comment:
 
 ---
 
-## Step 5.5: docs/plan/todos.md (THOROUGH MODE ONLY — skip in fast mode)
+## Step 5.5: docs/plan/todos.html (THOROUGH MODE ONLY — skip in fast mode)
 
 **In fast mode:** Skip this step silently. Continue to Step 6.
 
-Cross-reference the project's `docs/plan/todos.md` against the changes being shipped. Mark completed items automatically; prompt only if the file is missing or disorganized.
+Cross-reference the project's `docs/plan/todos.html` against the changes being shipped. Mark completed items automatically; prompt only if the file is missing or disorganized.
 
 Read `.claude/skills/review/TODOS-format.md` for the canonical format reference.
 
-**1. Check if `docs/plan/todos.md` exists.**
+**1. Check if `docs/plan/todos.html` exists.**
 
 **If it doesn't exist:** Use AskUserQuestion:
-- Message: "GStack recommends maintaining a `docs/plan/todos.md` organized by skill/component, then priority (P0 at top through P4, then Completed at bottom). See TODOS-format.md for the full format. Would you like to create one?"
+- Message: "GStack recommends maintaining a `docs/plan/todos.html` organized by skill/component, then priority (P0 at top through P4, then Completed at bottom). See TODOS-format.md for the full format. Would you like to create one?"
 - Options: A) Create it now, B) Skip for now
-- If A: Create `docs/plan/todos.md` with a skeleton (# TODOS heading + ## Completed section). Continue to step 3.
+- If A: Create `docs/plan/todos.html` with a skeleton (# TODOS heading + ## Completed section). Continue to step 3.
 - If B: Skip the rest of Step 5.5. Continue to Step 6.
 
 **2. Check structure and organization:**
 
-Read `docs/plan/todos.md` and verify it follows the recommended structure:
+Read `docs/plan/todos.html` and verify it follows the recommended structure:
 - Items grouped under `## <Skill/Component>` headings
 - Each item has `**Priority:**` field with P0-P4 value
 - A `## Completed` section at the bottom
 
 **If disorganized** (missing priority fields, no component groupings, no Completed section): Use AskUserQuestion:
-- Message: "docs/plan/todos.md doesn't follow the recommended structure (skill/component groupings, P0-P4 priority, Completed section). Would you like to reorganize it?"
+- Message: "docs/plan/todos.html doesn't follow the recommended structure (skill/component groupings, P0-P4 priority, Completed section). Would you like to reorganize it?"
 - Options: A) Reorganize now (recommended), B) Leave as-is
 - If A: Reorganize in-place following TODOS-format.md. Preserve all content — only restructure, never delete items.
 - If B: Continue to step 3 without restructuring.
@@ -851,11 +851,11 @@ For each TODO item, check if the changes in this PR complete it by:
 **4. Move completed items** to the `## Completed` section at the bottom. Append: `**Completed:** vX.Y.Z (YYYY-MM-DD)`
 
 **5. Output summary:**
-- `docs/plan/todos.md: N items marked complete (item1, item2, ...). M items remaining.`
-- Or: `docs/plan/todos.md: No completed items detected. M items remaining.`
-- Or: `docs/plan/todos.md: Created.` / `docs/plan/todos.md: Reorganized.`
+- `docs/plan/todos.html: N items marked complete (item1, item2, ...). M items remaining.`
+- Or: `docs/plan/todos.html: No completed items detected. M items remaining.`
+- Or: `docs/plan/todos.html: Created.` / `docs/plan/todos.html: Reorganized.`
 
-**6. Defensive:** If `docs/plan/todos.md` cannot be written (permission error, disk full), warn the user and continue. Never stop the ship workflow for a TODOS failure.
+**6. Defensive:** If `docs/plan/todos.html` cannot be written (permission error, disk full), warn the user and continue. Never stop the ship workflow for a TODOS failure.
 
 Save this summary — it goes into the PR body in Step 8.
 
@@ -871,7 +871,7 @@ Save this summary — it goes into the PR body in Step 8.
    - **Infrastructure:** migrations, config changes, route additions
    - **Models & services:** new models, services, concerns (with their tests)
    - **Controllers & views:** controllers, views, JS/React components (with their tests)
-   - **VERSION + docs/changelog.md + docs/plan/todos.md:** always in the final commit
+   - **VERSION + docs/changelog.md + docs/plan/todos.html:** always in the final commit
 
 3. **Rules for splitting:**
    - A model and its test file go in the same commit
@@ -940,8 +940,8 @@ gh pr create --base <base> --title "<type>: <summary>" --body "$(cat <<'EOF'
 ## TODOS
 <If items marked complete: bullet list of completed items with version>
 <If no items completed: "No TODO items completed in this PR.">
-<If docs/plan/todos.md created or reorganized: note that>
-<If docs/plan/todos.md doesn't exist and user skipped: omit this section>
+<If docs/plan/todos.html created or reorganized: note that>
+<If docs/plan/todos.html doesn't exist and user skipped: omit this section>
 
 ## Test plan
 - [x] All Rails tests pass (N runs, 0 failures)
@@ -952,7 +952,53 @@ EOF
 )"
 ```
 
-**Output the PR URL** — this should be the final output the user sees.
+**Output the PR URL.**
+
+---
+
+## Step 8.5: Documentation Update (if docs/ exists)
+
+If `docs/` directory exists, run the docs-update workflow inline:
+
+1. **Sync trace docs** — Cross-reference the diff against `docs/trace/` files.
+   Auto-update factual content (paths, commands, component lists). Leave narrative
+   sections alone.
+
+2. **Update sidebar** — Run `write_index` to rebuild static nav in all HTML docs:
+
+```bash
+python3 -c "
+from tai.commands.docs import write_index, find_docs_root
+write_index(find_docs_root())
+print('Sidebar rebuilt')
+"
+```
+
+3. **Validate** — Run validation, report issues but don't block:
+
+```bash
+python3 -c "
+from tai.commands.docs import validate_all, find_docs_root
+issues = validate_all(find_docs_root())
+if issues:
+    for path, errs in issues.items():
+        for e in errs:
+            print(f'ISSUE: {path}: {e}')
+else:
+    print('All docs valid.')
+"
+```
+
+4. **Commit docs changes** (if any) and push:
+
+```bash
+git add docs/
+git diff --cached --quiet || git commit -m "docs: sync documentation for $(git log -1 --format=%s HEAD~1)"
+git push
+```
+
+This is a lightweight inline version. For full docs audit (CHANGELOG voice polish,
+cross-doc consistency, VERSION check), run `/docs-update` separately.
 
 ---
 
@@ -965,7 +1011,7 @@ EOF
 - **Always use the 4-digit version format** from the VERSION file.
 - **Date format in CHANGELOG:** `YYYY-MM-DD`
 - **Split commits for bisectability** — each commit = one logical change.
-- **docs/plan/todos.md completion detection must be conservative.** Only mark items as completed when the diff clearly shows the work is done.
+- **docs/plan/todos.html completion detection must be conservative.** Only mark items as completed when the diff clearly shows the work is done.
 - **Use Greptile reply templates from greptile-triage.md.** Every reply includes evidence (inline diff, code references, re-rank suggestion). Never post vague replies.
 - **Step 3.4 generates coverage tests.** They must pass before committing. Never commit failing tests.
 - **The goal is: user says `/ship`, next thing they see is the review + PR URL.**
