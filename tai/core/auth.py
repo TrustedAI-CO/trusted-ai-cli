@@ -201,6 +201,19 @@ def current_email(profile: str) -> str | None:
         return None
 
 
+def get_id_token(profile: str, client_id: str) -> str:
+    """Return a valid ID token, refreshing if needed."""
+    try:
+        expiry = float(keystore.retrieve(profile, _KEY_EXPIRY))
+    except Exception:
+        raise AuthError()
+
+    if time.time() >= expiry - 300:
+        _refresh(profile, client_id)
+
+    return keystore.retrieve(profile, _KEY_ID)
+
+
 def get_access_token(profile: str, client_id: str) -> str:
     """Return a valid access token, refreshing if needed."""
     try:
@@ -251,6 +264,8 @@ def _refresh(profile: str, client_id: str) -> str:
     expiry = time.time() + data.get("expires_in", 3600)
     keystore.store(profile, _KEY_ACCESS, new_token)
     keystore.store(profile, _KEY_EXPIRY, str(expiry))
+    if "id_token" in data:
+        keystore.store(profile, _KEY_ID, data["id_token"])
     log.debug("Token refreshed successfully")
     return new_token
 

@@ -35,7 +35,8 @@ def _hub_client(ctx: typer.Context) -> httpx.Client:
     hub_url = getattr(profile_cfg, "hub_base_url", None) or "https://hub.trusted-ai.internal"
 
     try:
-        id_token = keystore.retrieve(app_ctx.profile, "id_token")
+        from tai.core.auth import get_id_token
+        id_token = get_id_token(app_ctx.profile, profile_cfg.oauth_client_id)
     except Exception:
         err_console.print("[bold red]Error:[/bold red] Not authenticated.")
         err_console.print("[dim]Hint: Run: tai login[/dim]")
@@ -79,14 +80,19 @@ def _hub_request(client: httpx.Client, method: str, url: str, **kwargs) -> httpx
     return resp
 
 
+def _hub_json(client: httpx.Client, method: str, url: str, **kwargs):
+    """Execute Hub request and return parsed JSON."""
+    resp = _hub_request(client, method, url, **kwargs)
+    return resp.json()
+
+
 # ── Project resolution ───────────────────────────────────────────────────────
 
 
 def _resolve_project(ctx: typer.Context, name: str | None) -> str:
     """Resolve a project name to a spaceId. Interactive picker when name is None and TTY."""
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", "/api/hub/spaces")
-    spaces = resp.json()
+    spaces = _hub_json(client, "GET", "/api/hub/spaces")
     projects = [s for s in spaces if s.get("type") == "project"]
 
     if name:
@@ -125,8 +131,7 @@ def _resolve_task_ref(ctx: typer.Context, ref: str, space_id: str | None = None)
     params: dict[str, str] = {}
     if space_id:
         params["spaceId"] = space_id
-    resp = _hub_request(client, "GET", "/api/hub/tasks", params=params)
-    tasks = resp.json()
+    tasks = _hub_json(client, "GET", "/api/hub/tasks", params=params)
     matches = [t for t in tasks if str(t.get("number")) == number]
     if not matches:
         err_console.print(f"[bold red]Error:[/bold red] No task found with number {ref}.")
@@ -170,9 +175,7 @@ def _print_tasks_table(tasks: list[dict]) -> None:
             t.get("title", ""),
             f"[{style}]{status}[/{style}]" if style else status,
             t.get("priority") or "—",
-            ", ".join(
-                a.get("name", a.get("userId", "")) for a in t.get("assignees", [])
-            ) or "—",
+            ", ".join(t.get("assignees", [])) or "—",
         )
     console.print(table)
 
@@ -235,9 +238,7 @@ def search(
 ) -> None:
     """Search across the workspace."""
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", "/api/hub/search", params={"q": query})
-    data = resp.json()
-    results = data.get("results", data) if isinstance(data, dict) else data
+    results = _hub_json(client, "GET", "/api/hub/search", params={"q": query})
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(results))
@@ -248,9 +249,12 @@ def search(
         return
 
     for item in results:
-        title = item.get("title") or item.get("name") or "—"
-        kind = item.get("type", "")
-        console.print(f"  [{kind}] {title}")
+        if isinstance(item, str):
+            console.print(f"  {item}")
+        else:
+            title = item.get("title") or item.get("name") or "—"
+            kind = item.get("type", "")
+            console.print(f"  [{kind}] {title}")
 
 
 @app.command()
@@ -260,8 +264,7 @@ def projects(
 ) -> None:
     """List workspace projects."""
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", "/api/hub/spaces")
-    spaces = resp.json()
+    spaces = _hub_json(client, "GET", "/api/hub/spaces")
     project_list = [s for s in spaces if s.get("type") == "project"]
 
     if _is_json(ctx, json_flag):
@@ -323,8 +326,7 @@ def list_pages(
         space_id = _resolve_project(ctx, project)
         params["spaceId"] = space_id
 
-    resp = _hub_request(client, "GET", "/api/hub/pages", params=params)
-    pages = resp.json()
+    pages = _hub_json(client, "GET", "/api/hub/pages", params=params)
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(pages))
@@ -345,8 +347,7 @@ def page_get(
 ) -> None:
     """Get a page by ID or title."""
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", f"/api/hub/page/{id_or_title}")
-    page = resp.json()
+    page = _hub_json(client, "GET", f"/api/hub/page/{id_or_title}")
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(page))
@@ -369,8 +370,7 @@ def page_create(
     """Create a new page."""
     space_id = _resolve_project(ctx, project)
     client = _hub_client(ctx)
-    resp = _hub_request(client, "POST", "/api/hub/page", json={"spaceId": space_id, "title": title})
-    page = resp.json()
+    page = _hub_json(client, "POST", "/api/hub/page", json={"spaceId": space_id, "title": title})
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(page))
@@ -435,8 +435,7 @@ def list_tasks(
     if status:
         params["status"] = status
 
-    resp = _hub_request(client, "GET", "/api/hub/tasks", params=params)
-    tasks = resp.json()
+    tasks = _hub_json(client, "GET", "/api/hub/tasks", params=params)
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(tasks))
@@ -468,8 +467,7 @@ def task_create(
     if due:
         body["dueDate"] = due
 
-    resp = _hub_request(client, "POST", "/api/hub/task", json=body)
-    task = resp.json()
+    task = _hub_json(client, "POST", "/api/hub/task", json=body)
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(task))
@@ -526,8 +524,7 @@ def members(
     """List project members."""
     space_id = _resolve_project(ctx, project)
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", "/api/hub/members", params={"spaceId": space_id})
-    member_list = resp.json()
+    member_list = _hub_json(client, "GET", "/api/hub/members", params={"spaceId": space_id})
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(member_list))
@@ -549,8 +546,7 @@ def milestones(
     """List project milestones."""
     space_id = _resolve_project(ctx, project)
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", "/api/hub/milestones", params={"spaceId": space_id})
-    milestone_list = resp.json()
+    milestone_list = _hub_json(client, "GET", "/api/hub/milestones", params={"spaceId": space_id})
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(milestone_list))
@@ -572,8 +568,7 @@ def deliverables(
     """List deliverables for a task."""
     task_id = _resolve_task_ref(ctx, ref)
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", "/api/hub/deliverables", params={"taskId": task_id})
-    data = resp.json()
+    data = _hub_json(client, "GET", "/api/hub/deliverables", params={"taskId": task_id})
     items = data.get("items", data) if isinstance(data, dict) else data
 
     if _is_json(ctx, json_flag):
@@ -648,8 +643,7 @@ def list_files(
 
     space_id = _resolve_project(ctx, project)
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", "/api/drive/list", params={"spaceId": space_id})
-    data = resp.json()
+    data = _hub_json(client, "GET", "/api/drive/list", params={"spaceId": space_id})
     files = data.get("files", [])
 
     if _is_json(ctx, json_flag):
