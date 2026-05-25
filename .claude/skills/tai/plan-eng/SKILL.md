@@ -308,36 +308,59 @@ If `docs/intent.html` exists, add `design-system` to its children list.
 For each module or component identified in the plan, generate a spec with REQ IDs.
 Extract requirements from the plan's feature descriptions and the test diagram.
 
+Use the **compact table format** (matching `docs/specs/_template.html`):
+
 ```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="doc-type" content="spec">
   <meta name="doc-status" content="draft">
   <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>{Module Name} Module</title>
+  <title>{Feature Name}</title>
   <link rel="stylesheet" href="../_assets/style.css">
-  <script defer src="../_assets/docs.js"></script>
 </head>
 <body>
-  <section data-section="overview">
-    <h1>{Module Name} Module</h1>
-    <p>{Brief description of module purpose}</p>
-  </section>
-  <section data-section="requirements">
-    <h2>Requirements</h2>
-    <h3>REQ-{MOD}-001: {Requirement title}</h3>
-    <ul>
-      <li><strong>Priority:</strong> P0</li>
-      <li><strong>Description:</strong> {What the system must do}</li>
-      <li><strong>Acceptance:</strong> {Observable behavior that proves this works}</li>
-      <li><strong>Edge cases:</strong> {Known edge cases}</li>
-    </ul>
-  </section>
+  <article>
+    <h1>{Feature Name}</h1>
+    <section data-section="problem">
+      <h2>Problem</h2>
+      <p>{Why this needs to exist}</p>
+    </section>
+    <section data-section="requirements">
+      <h2>Requirements</h2>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>REQ-{MOD}-001</td><td>{requirement description}</td><td>must</td><td>open</td></tr>
+        </tbody>
+      </table>
+      <p>Priority: <code>must</code>, <code>should</code>, <code>could</code>, <code>wont</code>.
+      Status: <code>open</code>, <code>in-progress</code>, <code>done</code>, <code>cut</code>.</p>
+    </section>
+    <section data-section="acceptance-criteria">
+      <h2>Acceptance Criteria</h2>
+      <ul>
+        <li>{concrete, testable criterion}</li>
+      </ul>
+    </section>
+    <h2>Dependencies</h2>
+    <ul><li>{dependencies}</li></ul>
+    <h2>Out of Scope</h2>
+    <ul><li>{non-goals}</li></ul>
+  </article>
+  <script src="../_assets/docs.js"></script>
 </body>
 </html>
 ```
+
+**IMPORTANT:** Always use the compact table format for requirements — one row per
+requirement with ID, description, priority, status. Do NOT use verbose list format
+with `<h3>` headers and `<ul>` per requirement. The table is scannable; the list is not.
 
 Derive REQ IDs from the module name: `REQ-AUTH-001`, `REQ-GW-001`, etc.
 Each requirement should map to a testable behavior — if you can't write a test for it,

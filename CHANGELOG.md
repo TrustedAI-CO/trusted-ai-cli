@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.35.1 (2026-05-25)
+
+### Improvements
+
+- **skills**: Plan-eng enforces compact table format for spec requirements
+  (matching `_template.html`). Explicit rule: no verbose list format.
+
+
 ## v0.35.0 (2026-05-25)
 
 ### Features
