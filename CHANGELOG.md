@@ -1,6 +1,16 @@
 # CHANGELOG
 
 
+## v0.35.0 (2026-05-25)
+
+### Features
+
+- **skills**: Review checks spec conformance — verifies diff implements requirements,
+  flags done-but-still-open REQs, detects scope creep vs spec
+- **skills**: Docs-update auto-updates requirement status in specs (open→done)
+  based on diff analysis. Updates spec doc-status when all musts are done.
+
+
 ## v0.34.2 (2026-05-25)
 
 ### Features

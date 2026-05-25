@@ -246,6 +246,37 @@ For each file, classify needed updates as:
 
 ---
 
+## Step 2.5: Requirement Status Update (if specs exist)
+
+If `docs/specs/` has `.html` files (skip `_template.html`):
+
+1. **Read each spec.** Parse the requirements table — each row has ID, description,
+   priority, and status (`open`, `in-progress`, `done`, `cut`).
+
+2. **Cross-reference the diff.** For each requirement with status `open` or `in-progress`:
+   - Check if the diff implements it (new files, new functions, schema changes that match)
+   - If clearly implemented: change status from `open` → `done` (or `in-progress` → `done`)
+   - If partially implemented: change `open` → `in-progress`
+   - Be conservative — only mark `done` when the acceptance criteria are clearly met
+
+3. **Update the HTML.** Use Edit tool to change the `<td>` status cell:
+   ```
+   old: <td>open</td>
+   new: <td>done</td>
+   ```
+
+4. **Update spec doc-status meta.** If ALL `must` requirements are `done`, change
+   `<meta name="doc-status" content="draft">` to `content="implemented"`.
+
+5. **Log changes.** For each status change, note it for the commit summary:
+   `specs/space-meetings.html: REQ-MTG-001 open→done, REQ-MTG-002 open→done`
+
+**Never auto-update:**
+- Requirements where implementation is ambiguous
+- Status from `done` back to `open` (that's a regression — flag it as a finding)
+
+---
+
 ## Step 3: Apply Auto-Updates
 
 Make all clear, factual updates directly using the Edit tool.

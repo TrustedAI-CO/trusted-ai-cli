@@ -243,7 +243,7 @@ _DIFF_FILES=$(git diff --name-only <base>...HEAD 2>/dev/null); SCOPE_FRONTEND=$(
 
 **If `SCOPE_FRONTEND=true`:**
 
-1. **Check for design doc.** Check `docs/design/visual.md`. All design findings are calibrated against it — patterns blessed in the design doc are not flagged. If not found, use universal design principles.
+1. **Check for design doc.** Check `docs/design/visual.html`. All design findings are calibrated against it — patterns blessed in the design doc are not flagged. If not found, use universal design principles.
 
 2. **Read `.claude/skills/review/design-checklist.md`.** If the file cannot be read, skip design review with a note: "Design checklist not found — skipping design review."
 
@@ -271,27 +271,39 @@ Include any design findings alongside the findings from Step 4. They follow the 
 
 ---
 
-## Step 4.7: Traceability Review (conditional)
+## Step 4.7: Spec Conformance + Traceability Review (conditional)
 
-Check if `docs/specs/` and `docs/trace/matrix.md` exist. If not, skip silently.
+Check if `docs/specs/` exists and has `.html` files. If not, skip silently.
 
-If they exist:
+If specs exist:
 
-1. **Collect all REQ IDs from specs:** Grep `docs/specs/*.md` for `### REQ-*` headers.
+1. **Read each spec** in `docs/specs/*.html` (skip `_template.html`). Parse the
+   requirements table — each `<tr>` in the requirements section has: ID, description,
+   priority, status.
 
-2. **Check coverage in matrix:** For each REQ, verify it has a row in `docs/trace/matrix.md`.
-   - Flag REQs with no matrix entry as: `[WARNING] REQ-AUTH-003 has no traceability entry`
+2. **Check implementation matches spec:** For each requirement with status `open` or
+   `in-progress`, check if the diff contains changes that implement it:
+   - Read the requirement description
+   - Search the diff for files/patterns that match
+   - Flag requirements that appear implemented but still marked `open`:
+     `[INFO] REQ-MTG-002 appears implemented in this diff but spec still says "open"`
 
-3. **Scope creep detection:** For each file changed in the diff, check if it appears in
-   any row of `docs/trace/matrix.md`. Files with significant changes (>20 lines added)
-   that are NOT in the matrix are potential scope creep:
-   - Flag as: `[INFO] SCOPE CREEP: {file} changed but not traceable to any REQ`
+3. **Check for spec violations:** For each requirement with status `done`, verify the
+   implementation still exists (hasn't been reverted or broken by this diff):
+   - `[WARNING] REQ-MTG-002 marked done but implementation file was modified/deleted`
 
-4. **REVIEW.md check:** If `docs/REVIEW.md` has PENDING items, note them:
-   - `[INFO] {N} pending review items in docs/REVIEW.md`
+4. **Scope creep detection:** For each file changed in the diff with >20 lines added,
+   check if it relates to any spec requirement. Files with significant changes not
+   traceable to any REQ:
+   - `[INFO] SCOPE CREEP: {file} changed but not traceable to any REQ`
 
-Include these findings in the review output. Traceability warnings are INFORMATIONAL,
-not CRITICAL — they don't block shipping but should be addressed.
+5. **Matrix check:** If `docs/trace/matrix.html` exists, check REQ coverage.
+
+6. **REVIEW.html check:** If `docs/REVIEW.html` has PENDING items, note them:
+   - `[INFO] {N} pending review items in docs/REVIEW.html`
+
+Include these findings in the review output. Spec conformance findings are
+INFORMATIONAL — they guide docs-update to mark requirements done.
 
 ---
 
