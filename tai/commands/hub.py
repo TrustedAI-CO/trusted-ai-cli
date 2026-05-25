@@ -32,7 +32,7 @@ def _hub_client(ctx: typer.Context) -> httpx.Client:
     """Build an HTTP client pointed at Hub with id_token auth."""
     app_ctx = get_ctx(ctx)
     profile_cfg = app_ctx.active_profile()
-    hub_url = getattr(profile_cfg, "hub_base_url", None) or "https://hub.trusted-ai.internal"
+    hub_url = getattr(profile_cfg, "hub_base_url", None) or "https://hub.trusted-ai.co"
 
     try:
         from tai.core.auth import get_id_token
