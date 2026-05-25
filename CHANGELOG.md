@@ -1,6 +1,17 @@
 # CHANGELOG
 
 
+## v0.34.0 (2026-05-25)
+
+### Features
+
+- **skills**: All plan skills (ceo, eng, product, design) now write HTML docs directly
+  — no more TODO stubs. plan-ceo writes intent.html, plan-eng writes system design +
+  specs + ADRs, plan-product writes intent + specs, plan-design writes visual design
+  decisions. All rebuild sidebar via write_index after writing.
+- **skills**: All docs/ file references updated from .md to .html across plan skills
+
+
 ## v0.33.1 (2026-05-24)
 
 ### Features

@@ -123,7 +123,7 @@ SLUG=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || ec
 echo "SLUG: $SLUG"
 ```
 
-1. Read `CLAUDE.md`, `docs/plan/todos.md` if they exist.
+1. Read `CLAUDE.md`, `docs/plan/todos.html` if they exist.
 2. Run `git log --oneline -30` and `git diff origin/main --stat 2>/dev/null` to understand recent context.
 3. Use Grep/Glob to map the codebase areas most relevant to the user's request.
 4. **List existing design docs for this project:**
@@ -507,6 +507,122 @@ Supersedes: {prior filename — omit this line if first design on this branch}
 
 ## What I noticed about how you think
 {observational, mentor-like reflections referencing specific things the user said during the session. Quote their words back to them — don't characterize their behavior. 2-4 bullets.}
+```
+
+---
+
+## Phase 5.5: Write Repo Docs (HTML)
+
+After the design doc is written (Phase 5), persist the product discovery output into
+the repository's `docs/` tree as HTML files. This is mandatory — the design doc in
+`~/.tai-skills/projects/` is a working artifact; the repo docs are the source of truth.
+
+### 1. Write `docs/intent.html`
+
+If `docs/intent.html` already exists, update its sections with real content from the
+session (replace any TODO placeholders). If it does not exist, create it.
+
+Use the product intent discovered during the session — context, problem, solution, and
+success criteria. Write **real content**, not TODOs.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="intent">
+  <meta name="doc-date" content="YYYY-MM-DD">
+  <title>Product Intent</title>
+  <link rel="stylesheet" href="_assets/style.css">
+</head>
+<body>
+  <article>
+    <h1>Product Intent</h1>
+    <section data-section="context">
+      <h2>Context</h2>
+      <p>{Background and context from the session — why this product exists.}</p>
+    </section>
+    <section data-section="problem">
+      <h2>Problem</h2>
+      <p>{The problem this product solves and who it serves, from Phase 2A/2B.}</p>
+    </section>
+    <section data-section="solution">
+      <h2>Solution</h2>
+      <p>{The solution approach and recommended approach from Phase 4.}</p>
+    </section>
+    <section data-section="success-criteria">
+      <h2>Success Criteria</h2>
+      <ul>
+        <li>{Measurable success criteria from the session.}</li>
+      </ul>
+    </section>
+  </article>
+  <script src="_assets/docs.js"></script>
+</body>
+</html>
+```
+
+Replace `YYYY-MM-DD` with the actual date. Replace all `{...}` placeholders with real
+content synthesized from the session.
+
+### 2. Write feature specs as `docs/specs/{slug}.html`
+
+For each distinct feature identified during the discovery session, create a spec file.
+Use a kebab-case slug derived from the feature name.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="spec">
+  <meta name="doc-status" content="draft">
+  <meta name="doc-date" content="YYYY-MM-DD">
+  <title>{Feature Name}</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body>
+  <article>
+    <h1>{Feature Name}</h1>
+    <section data-section="problem">
+      <h2>Problem</h2>
+      <p>{Why this feature needs to exist — user pain or business gap.}</p>
+    </section>
+    <section data-section="requirements">
+      <h2>Requirements</h2>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>REQ-001</td><td>{requirement from session}</td><td>must</td><td>open</td></tr>
+        </tbody>
+      </table>
+    </section>
+    <section data-section="acceptance-criteria">
+      <h2>Acceptance Criteria</h2>
+      <ul>
+        <li>{Concrete, testable criterion from the session.}</li>
+      </ul>
+    </section>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>
+```
+
+Replace `YYYY-MM-DD` with the actual date. Fill all `{...}` placeholders with real
+content from the session. If no distinct features were identified (e.g., the product
+is a single-feature wedge), skip this step.
+
+### 3. Rebuild the sidebar
+
+After writing any docs, run write_index to rebuild the sidebar navigation:
+
+```bash
+python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
 ```
 
 ---
