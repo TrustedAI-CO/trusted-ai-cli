@@ -860,7 +860,7 @@ def _print_meetings_table(meetings: list[dict]) -> None:
     table.add_column("Linked By", style="dim")
     for m in meetings:
         table.add_row(
-            m.get("id", "")[:8],
+            m.get("id", ""),
             m.get("summary", ""),
             m.get("startTime", ""),
             m.get("endTime", ""),
