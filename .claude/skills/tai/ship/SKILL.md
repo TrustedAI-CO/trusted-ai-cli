@@ -147,7 +147,9 @@ You are running the `/ship` workflow. This is a **non-interactive, fully automat
 
 ## Step 1: Pre-flight
 
-1. Check the current branch. If on the base branch or the repo's default branch, **abort**: "You're on the base branch. Ship from a feature branch."
+1. Check the current branch. If on the base branch, that's fine — ship directly.
+   Skip Step 2 (merge base) and Step 8 (create PR) when shipping from the base branch.
+   Just run tests, review, version bump, changelog, commit, and push.
 
 2. Run `git status` (never use `-uall`). Uncommitted changes are always included — no need to ask.
 

@@ -43,6 +43,27 @@ Keep these in English regardless of language:
 
 ---
 
+## Auto-Branch (if on main)
+
+If the current branch is `main` or the repo's default branch, automatically
+create a feature branch before executing:
+
+```bash
+_DEFAULT=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || echo "main")
+if [ "$_BRANCH" = "$_DEFAULT" ]; then
+  _NEW_BRANCH="feat/execute-$(date +%Y%m%d-%H%M%S)"
+  git checkout -b "$_NEW_BRANCH"
+  _BRANCH="$_NEW_BRANCH"
+  _BRANCH_SAFE=$(echo "$_BRANCH" | tr '/' '-')
+  echo "Created branch: $_NEW_BRANCH"
+fi
+```
+
+This protects main from half-done work. After execution, the user can `/ship`
+to merge the branch or continue working on it.
+
+---
+
 # /execute-solo: Autonomous Plan Executor
 
 You are the **orchestrator**. Your job is thin: parse the plan, group tasks into waves,
@@ -64,12 +85,12 @@ If the user provided a path argument, use that file.
 Otherwise, auto-discover:
 
 ```bash
-if [ -f "$_DOCS_DIR/plan/tasks.md" ]; then
-  echo "PLAN_SOURCE: $_DOCS_DIR/plan/tasks.md"
+if [ -f "$_DOCS_DIR/plan/tasks.html" ]; then
+  echo "PLAN_SOURCE: $_DOCS_DIR/plan/tasks.html"
 fi
 ```
 
-If `docs/plan/tasks.md` is not found, stop: **"No plan found for branch {branch}. Run /tai-plan-eng first, or provide a path: /execute-solo path/to/plan.md"**
+If `docs/plan/tasks.html` is not found, stop: **"No plan found for branch {branch}. Run /tai-plan-eng first, or provide a path: /execute-solo path/to/plan.md"**
 
 ### 0B. Parse ## Implementation Tasks
 

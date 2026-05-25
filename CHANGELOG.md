@@ -1,6 +1,15 @@
 # CHANGELOG
 
 
+## v0.34.2 (2026-05-25)
+
+### Features
+
+- **skills**: Ship allows direct push from main — no forced feature branch
+- **skills**: Execute-solo and execute-team auto-create feature branch when on main
+- **skills**: Execute-solo refs updated from .md to .html
+
+
 ## v0.34.1 (2026-05-25)
 
 ### Improvements

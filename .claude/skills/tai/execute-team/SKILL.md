@@ -62,6 +62,23 @@ _SLUG=$(basename "$(git remote get-url origin 2>/dev/null)" .git 2>/dev/null || 
 echo "SLUG: $_SLUG"
 ```
 
+## Auto-Branch (if on main)
+
+If the current branch is `main` or the repo's default branch, automatically
+create a feature branch before executing:
+
+```bash
+_DEFAULT=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null || echo "main")
+if [ "$_BRANCH" = "$_DEFAULT" ]; then
+  _NEW_BRANCH="feat/team-$(date +%Y%m%d-%H%M%S)"
+  git checkout -b "$_NEW_BRANCH"
+  _BRANCH="$_NEW_BRANCH"
+  echo "Created branch: $_NEW_BRANCH"
+fi
+```
+
+This protects main from half-done work. After execution, `/ship` merges the branch.
+
 ## Language
 
 Respond in the user's language. Keep technical terms, branch names, and status
