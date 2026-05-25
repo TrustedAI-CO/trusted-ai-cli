@@ -1,0 +1,1519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="changelog">
+  <meta name="doc-date" content="2026-05-26">
+  <title>Changelog</title>
+  <link rel="stylesheet" href="_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="index.html">Docs</a>
+    <a class="nav-link active" href="changelog.html">Changelog</a>
+    <a class="nav-link" href="contributing.html">Contributing</a>
+    <a class="nav-link" href="REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="intent.html">Product Intent</a>
+    <a class="nav-link" href="index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>Changelog</h1>
+    <h2>v0.35.1 (2026-05-25)</h2>
+    <h3>Improvements</h3>
+    <ul>
+    <li><strong>skills</strong>: Plan-eng enforces compact table format for spec requirements
+     (matching <code>_template.html</code>). Explicit rule: no verbose list format.
+    </ul>
+    <h2>v0.35.0 (2026-05-25)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Review checks spec conformance — verifies diff implements requirements,
+     flags done-but-still-open REQs, detects scope creep vs spec
+    <li><strong>skills</strong>: Docs-update auto-updates requirement status in specs (open→done)
+     based on diff analysis. Updates spec doc-status when all musts are done.
+    </ul>
+    <h2>v0.34.2 (2026-05-25)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Ship allows direct push from main — no forced feature branch
+    <li><strong>skills</strong>: Execute-solo and execute-team auto-create feature branch when on main
+    <li><strong>skills</strong>: Execute-solo refs updated from .md to .html
+    </ul>
+    <h2>v0.34.1 (2026-05-25)</h2>
+    <h3>Improvements</h3>
+    <ul>
+    <li><strong>skills</strong>: Review skill always runs in a fresh subagent to avoid bias from
+     conversation history. Reviewer has no context of who wrote the code.
+    </ul>
+    <h2>v0.34.0 (2026-05-25)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: All plan skills (ceo, eng, product, design) now write HTML docs directly
+     — no more TODO stubs. plan-ceo writes intent.html, plan-eng writes system design +
+     specs + ADRs, plan-product writes intent + specs, plan-design writes visual design
+     decisions. All rebuild sidebar via write_index after writing.
+    <li><strong>skills</strong>: All docs/ file references updated from .md to .html across plan skills
+    </ul>
+    <h2>v0.33.1 (2026-05-24)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Ship skill auto-runs docs-update (Step 8.5) after PR creation
+    <li><strong>skills</strong>: Ship skill references updated from .md to .html for docs/ files
+    </ul>
+    <h2>v0.33.0 (2026-05-24)</h2>
+    <h3>Breaking Changes</h3>
+    <ul>
+    <li><strong>docs</strong>: Remove <code>tai docs serve</code> command — docs are static HTML, just open files directly
+    </ul>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>docs</strong>: Fix <code>write_index</code> failing on re-runs when <code><body></code> already has <code>class="has-nav"</code>
+    </ul>
+    <h2>v0.32.2 (2026-05-24)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Two-pass codebase mapping — scout agent detects 3-8 major concepts,
+     then spawns parallel agents to write one <code>how-{concept}.html</code> per domain.
+     Replaces monolithic <code>code-map.html</code> with <code>overview.html</code> + small focused docs.
+    </ul>
+    <h2>v0.32.1 (2026-05-24)</h2>
+    <h3>Improvements</h3>
+    <ul>
+    <li><strong>skills</strong>: Concept-level trace docs — agents explain how the system works,
+     not file-by-file inventories. Answers: "what is this built with?", "how does
+     it work?", "what do I need to know?", "what should I be careful about?"
+    </ul>
+    <h2>v0.32.0 (2026-05-24)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>docs</strong>: Static sidebar navigation injected into every HTML doc
+     — works on <code>file://</code> protocol, no server or JS required for navigation
+    <li><strong>docs</strong>: Spec and decision doc types with status lifecycle badges
+     (draft/proposed → implemented/accepted → superseded/deprecated)
+    <li><strong>docs</strong>: Spec template with MoSCoW requirements, ADR template, traceability matrix
+    <li><strong>docs</strong>: Search bar, collapsible directory groups, dark mode in sidebar
+    <li><strong>docs</strong>: <code>write_index()</code> rebuilds all nav when docs change
+    </ul>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>docs</strong>: Fix threaded server freeze when SSE blocks page loads
+    <li><strong>docs</strong>: Fix sidebar not loading on <code>file://</code> (static HTML instead of JS)
+    </ul>
+    <h2>v0.31.0 (2026-05-23)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>docs</strong>: Interactive HTML docs with live-reload server
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5fe2c6d"><code>5fe2c6d</code></a>)
+    </ul>
+    <p>Add <code>tai docs serve</code> — threaded HTTP server with SSE hot reload, sidebar navigation,</p>
+    <p>  client-side validation, and dark mode. Documents are semantic HTML with <code>data-</code> attributes;</p>
+    <p>  shared CSS/JS handles all rendering (blueprint/engineering-notebook aesthetic).</p>
+    <p>  Validation schemas enforce required sections per doc type.</p>
+    <h2>v0.30.0 (2026-05-23)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Purge stale tai-* dirs on force install
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/24e20992c6f9dabc3040184336b0bbb81e2d3c67"><code>24e2099</code></a>)
+    </ul>
+    <p>When <code>install_skills(force=True)</code> runs (during <code>tai update</code> or <code>tai claude setup-skills --force</code>),</p>
+    <p>  remove any tai-* directories in the global skills dir that no longer exist in the source bundle.</p>
+    <p>  Prevents renamed/deleted skills from persisting on user machines.</p>
+    <h2>v0.29.1 (2026-05-23)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>skills</strong>: Align 10 skills with docs-philosophy rules
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4463c5f38e7384bb3f6af18b71ea22f27bcefff8"><code>4463c5f</code></a>)
+    </ul>
+    <p>Replace .context/ with .tai/ (retro, smart-compact, design-consultation). Replace project-local</p>
+    <p>  .tai-skills/ with .tai/ (ship, qa, qa-only). Move review-light log from ~/.tai-skills/ to</p>
+    <p>  .tai/state/ and fix copy-paste skill name bug ("plan-eng" → "review-light"). Replace root-level</p>
+    <p>  ARCHITECTURE/PLAN.md references with docs/ paths (document-release, plan-eng, next).</p>
+    <h3>Chores</h3>
+    <ul>
+    <li><strong>skills</strong>: Remove project skill
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/27e569d6fb7845a9c23c0252cc766fb9ee43150c"><code>27e569d</code></a>)
+    </ul>
+    <h3>Refactoring</h3>
+    <ul>
+    <li><strong>skills</strong>: Consolidate and rename 27 skills to 22
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/76b6db9263f7d2fb5833edc0453bcb96f3649631"><code>76b6db9</code></a>)
+    </ul>
+    <p>Removed redundant skills: qa-only (merged into qa), review-light, notion-cli, smart-compact, next,</p>
+    <p>  retro, map (absorbed by docs-init).</p>
+    <p>Renamed for consistent prefixing: - market-research → research-market - tech-research →</p>
+    <p>  research-tech - office-hours → plan-product - content-writer → gen-content - slides → gen-slides -</p>
+    <p>  generate-pdf → gen-pdf - execute → execute-solo - team → execute-team - setup → docs-init -</p>
+    <p>  document-release → docs-update</p>
+    <p>New skill: research-design (competitor UI, UX patterns, design trends).</p>
+    <p>Fixed all cross-references across skills to use new names.</p>
+    <h2>v0.29.0 (2026-05-10)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>vastai</strong>: Connect-first flow, save state early, progress markers
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3bfd204149abc627c0d4fc1416e6b4f6b6b982d4"><code>3bfd204</code></a>)
+    </ul>
+    <p>Reorder <code>tai vastai up</code> so the user can ssh / open VS Code as soon as the repo is on the box; the</p>
+    <p>  bootstrap install (uv, tai, claude-code, codex, skills) runs after the "Ready to connect" line.</p>
+    <p>  Cuts perceived time-to-usable from ~2-3 min to ~30-60s.</p>
+    <p>Also: persist partial state right after <code>create instance</code> so any later failure (smoke test, sync,</p>
+    <p>  bootstrap) is recoverable via <code>tai vastai down <alias></code>. Bump SSH smoke-test deadline 120s -> 240s</p>
+    <p>  since some hosts take longer than that to settle. Add per-step stderr markers and stream bootstrap</p>
+    <p>  output live so progress is visible.</p>
+    <p>Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com></p>
+    <h2>v0.28.0 (2026-05-10)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>vastai</strong>: Install from git+https by default, drop cwd auto-walk
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ba000082bdfaa4bfafc555e2c469eac748e00371"><code>ba00008</code></a>)
+    </ul>
+    <p>The remote bootstrap previously fell back to PyPI when no wheel was shipped — but trusted-ai-cli</p>
+    <p>  isn't published, so <code>tai vastai up</code> would fail unless run from inside the source tree (where</p>
+    <p>  <code>find_tai_source_root</code> walked up to discover pyproject.toml). That made the command silently</p>
+    <p>  location-dependent.</p>
+    <p>The repo is public, so default to:</p>
+    <p>uv tool install --force "git+https://github.com/TrustedAI-CO/trusted-ai-cli.git"</p>
+    <p>This works from anywhere with no auth. <code>--tai-source <path></code> still builds and ships a local wheel</p>
+    <p>  for testing uncommitted changes.</p>
+    <p>Removed the now-dead <code>find_tai_source_root</code> helper and its tests.</p>
+    <p>Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com></p>
+    <h2>v0.27.0 (2026-05-10)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>vastai</strong>: Shred secrets on the box before destroying
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4deb20da3fda4785a7db506fba075a0b293cab4b"><code>4deb20d</code></a>)
+    </ul>
+    <p><code>tai vastai down</code> now ssh's in and <code>rm -rf</code>'s ~/.claude, ~/.codex, /tmp/trusted_ai_cli-*.whl, and</p>
+    <p>  the cloned repo trees before calling <code>vastai destroy instance</code>. This is belt-and-suspenders</p>
+    <p>  against destroy failures and any disk-reuse weirdness on vast.ai's side.</p>
+    <p>Best-effort: short ConnectTimeout and BatchMode=yes so an unreachable box fails fast, and shred</p>
+    <p>  failures are warnings (the destroy still runs). Pass <code>--no-shred</code> to skip the SSH round-trip</p>
+    <p>  entirely.</p>
+    <p>Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com></p>
+    <h2>v0.26.0 (2026-05-10)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>vastai</strong>: Add vastai-quick-gpu skill + commands for spin-up/teardown
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0423e1f4cd4bb9179bec1b83c613f4771ff32c42"><code>0423e1f</code></a>)
+    </ul>
+    <p>Adds a <code>tai vastai</code> command tree (<code>up</code>, <code>down</code>, <code>list</code>, <code>status</code>) and two agent-facing skills</p>
+    <p>  (<code>vastai-quick-gpu</code>, <code>vastai-quick-gpu-clean</code>) that provision a temporary GPU dev box on vast.ai</p>
+    <p>  end-to-end: search cheapest offer, create instance, attach a generated SSH key, write an SSH</p>
+    <p>  config block, build + upload the local trusted-ai-cli wheel, run a remote bootstrap script (uv,</p>
+    <p>  tai, claude-code, codex, skills), git-clone the user's repo over a forwarded agent, and rsync</p>
+    <p>  uncommitted/opt-in gitignored paths. <code>down</code> tears it all back down.</p>
+    <p>Bootstrap is hardened against issues seen during live testing: seeds ~/.ssh/known_hosts for</p>
+    <p>  github/gitlab/bitbucket/azure, removes Ubuntu's libnode-dev/libnode72 before installing NodeSource</p>
+    <p>  Node 20 (claude-code + codex need >= 18), and installs trusted-ai-cli from a wheel uploaded to</p>
+    <p>  /tmp (the package is not on PyPI).</p>
+    <p><code>vastai destroy instance</code> is interactive and exits 0 on aborted prompt — pass <code>-y</code> so cleanup</p>
+    <p>  actually runs instead of silently no-op'ing.</p>
+    <p>Covered by 556 tests.</p>
+    <p>Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com></p>
+    <h2>v0.25.0 (2026-05-09)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>codex</strong>: Support Codex users without disrupting Claude setup
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ce4812097731873b5eea9ffbf7a7c9abaf9d9a3a"><code>ce48120</code></a>)
+    </ul>
+    <p>Codex already had execution support through tai agent, but setup and documentation were Claude-only.</p>
+    <p>  This adds a dedicated Codex command group, platform-aware skill installation, safe AGENTS.md</p>
+    <p>  generation, and best-effort post-update skill refresh while preserving existing Claude commands.</p>
+    <p>Constraint: Existing Claude Code commands and post-update tuple contract must remain</p>
+    <p>  backward-compatible</p>
+    <p>Constraint: Repository AGENTS.md writes must not happen implicitly during update flows</p>
+    <p>Rejected: Add Codex hook/auth parity | no stable in-repo contract or API surface exists to target</p>
+    <p>Rejected: Auto-generate AGENTS.md during post-update | would write into arbitrary repositories</p>
+    <p>  unexpectedly</p>
+    <p>Confidence: high</p>
+    <p>Scope-risk: moderate</p>
+    <p>Directive: Do not make setup-agents overwrite unmanaged AGENTS.md without an explicit --force path</p>
+    <p>Tested: uv run pytest (483 passed, 6 skipped, 83.33% coverage)</p>
+    <p>Tested: uv run tai --json codex status</p>
+    <p>Tested: uv build (succeeds with pre-existing duplicate package-data warnings)</p>
+    <h2>v0.24.0 (2026-04-25)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Add tai-slides skill — presentation renderer
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a6fee0109867ce33db046ae6e2b04866a2f4343f"><code>a6fee01</code></a>)
+    </ul>
+    <p>24 layout types, bilingual JP/EN, deck-stage web component, single self-contained HTML output.</p>
+    <p>  Design tokens from TrustedAI corporate aesthetic. Opens from file://, no server needed.</p>
+    <h2>v0.23.0 (2026-04-17)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Add complexity gate — route complex tasks to Claude Code
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4ea17b13c34219db9d1f3cae14f5a9e5001d2948"><code>4ea17b1</code></a>)
+    </ul>
+    <p>Simple/well-scoped tasks route to Codex/Gemini, while complex tasks (5+ files, cross-module wiring,</p>
+    <p>  deep context needed) stay in Claude Code for better reasoning. Updates both tai-execute and</p>
+    <p>  tai-team skills.</p>
+    <h2>v0.22.0 (2026-04-17)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>agent</strong>: Add subagent command for Codex/Gemini CLI dispatch
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/91677526e31990d00446a56210220123d731e6cb"><code>9167752</code></a>)
+    </ul>
+    <p>Add <code>tai agent</code> command group that spawns AI coding agents (Codex, Gemini) as subprocesses. Includes</p>
+    <p>  single-task execution, parallel dispatch from JSON files, and backend status checking.</p>
+    <p>Update tai-execute and tai-team skills to route coding subagents to Codex/Gemini based on file type</p>
+    <p>  (backend→codex, frontend→gemini) with automatic fallback chain on failure.</p>
+    <h2>v0.21.0 (2026-04-15)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Add team and next skills to bundled collection
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/032cba2b44fde199d9af3d8b99bfc09ef453db3d"><code>032cba2</code></a>)
+    </ul>
+    <p>Add two missing skills that were only available as installed personal skills but not distributed via</p>
+    <p>  <code>tai claude setup-skills</code>: - team: parallel team orchestrator for phase implementation - next:</p>
+    <p>  "what's next" dashboard for pipeline status</p>
+    <h2>v0.20.1 (2026-04-08)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>browser</strong>: Copy full browse tree, not just the binary
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/74">#74</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d4d06a0191f5f1be5dd65cece8b5206000db86de"><code>d4d06a0</code></a>)
+    </ul>
+    <p>The browse binary is a thin CLI client that spawns a Bun server process (server.ts + playwright).</p>
+    <p>  Copying only the binary left it unable to find server.ts at runtime. Now copies the full browse/</p>
+    <p>  directory (src + dist + node_modules) so the server can start.</p>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <h2>v0.20.0 (2026-04-08)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>browser</strong>: Add browser install command for gstack browse tool
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/73">#73</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/506adfb137bbbd66aa4d9b71b9f83669160668cc"><code>506adfb</code></a>)
+    </ul>
+    <p>* feat(browser): add browser install command for gstack browse tool</p>
+    <p>Downloads the gstack browse source to a temp directory, builds the binary with Bun, copies only the</p>
+    <p>  compiled binary to ~/.tai/tools/browse/, and creates a symlink so the /qa skill can find it. The</p>
+    <p>  gstack source is cleaned up after building — no external dependency left behind.</p>
+    <p>New commands: tai browser install [--ref main] tai browser status [--json]</p>
+    <p>* 0.20.0</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>* fix(browser): address review — remove redundant bun check, consistent JSON handling</p>
+    <ul>
+    <li>Remove _check_bun() CLI guard; let install_browse() raise BunNotFoundError caught by the existing
+     BrowserError handler (single source of truth) - Move check_bun/get_browser_status to top-level
+     imports (lightweight fns) - Drop --json flag on status; use global ctx.obj.json_output
+     consistently
+    </ul>
+    <p>---------</p>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h2>v0.19.0 (2026-04-07)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>sales</strong>: Include job details in negotiation view
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1a83eb450bee05eb75cfa27b487348584cf91785"><code>1a83eb4</code></a>)
+    </ul>
+    <p>get_negotiation now also fetches /negotiations/{id}/job to include project details: inquiry content,</p>
+    <p>  hearing notes, budget, delivery, category, max companies, entry conditions.</p>
+    <p>Extracted _parse_job_detail_page as shared parser for both get_job and get_negotiation job pages</p>
+    <p>  (identical HTML structure).</p>
+    <h2>v0.18.2 (2026-04-07)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>sales</strong>: Detect not-found jobs, extract budget/delivery fields
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/26fe2b73d8780547bc123a4661d9c468a2d0b3ee"><code>26fe2b7</code></a>)
+    </ul>
+    <ul>
+    <li>get_job now raises RuntimeError on "Not Found" pages instead of returning an empty dict (e.g. when
+     passing a negotiation ID) - Extract budget (予算) and delivery (納期) from job detail pages, handling
+     the empty spacer div between header and content - Display budget/delivery in CLI output
+    </ul>
+    <ul>
+    <li><strong>sales</strong>: Rewrite get_negotiation with correct selectors
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/35c3ea7ba26dbaba44ea7524fb85efc357871ae1"><code>35c3ea7</code></a>)
+    </ul>
+    <p>Negotiation detail page was returning almost no data because selectors were guesses. Now correctly</p>
+    <p>  extracts: - Title, No., status from job link and header - Company info: name, contact person,</p>
+    <p>  address, email, phone - Self introduction text - Assigned member and plan type - Messages from</p>
+    <p>  div.negotiation-messages (skipping deleted ones) - Read status badges per message</p>
+    <ul>
+    <li><strong>sales</strong>: Use correct selectors for Hnavi negotiations page
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c9c96187fa9dbf8e6a2f0f50ba623320a0689cd4"><code>c9c9618</code></a>)
+    </ul>
+    <p>The negotiations page uses the same card layout as jobs (div.card.mb-4.shadow.position-relative) but</p>
+    <p>  the code was using guessed selectors (.negotiation-item, [class*='negotiation']) that didn't match</p>
+    <p>  any elements, returning empty results.</p>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.18.1.1)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/35a4f242a25ccba548283e258119f18ba66c025a"><code>35a4f24</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h2>v0.18.1 (2026-04-05)</h2>
+    <h3>Documentation</h3>
+    <ul>
+    <li><strong>sales</strong>: Add company context references to skill
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/da0222fc81ad803bf9dcede5d7fd6f5ecc34c07a"><code>da0222f</code></a>)
+    </ul>
+    <ul>
+    <li>Add company-profile.md with team credentials, case studies - Add entry-guidelines.md with tone,
+     templates, NG words - Update SKILL.md to reference the guidelines
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <h2>v0.18.0 (2026-04-04)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>sales</strong>: Correct HTML selectors for Hnavi job listings
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/220c6ad88a696435c490d3663017d5f13d1c26f6"><code>220c6ad</code></a>)
+    </ul>
+    <ul>
+    <li>Fix list_jobs() to use correct CSS selectors matching actual page structure - Job cards are in
+     div.card.mb-4.shadow.position-relative containers - Extract display No. (e.g., 202604020007)
+     separately from URL ID - Add _parse_job_cards() helper method for parsing - Change tag_filter
+     param to category param (e.g., "AI", "システム") - Add include_saas param to fetch jobs from both tabs
+     - AI jobs are in the SaaS tab, not the main 開発・制作 tab - Update CLI to use --category/-c and --saas
+     options - Update docs to reflect new command options
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <h3>Continuous Integration</h3>
+    <ul>
+    <li>Exclude sales modules from coverage (require playwright)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d5e655fae57680830d9c2418773ff40242b11614"><code>d5e655f</code></a>)
+    </ul>
+    <p>Sales modules require the optional <code>playwright</code> dependency which is not installed in CI. Exclude</p>
+    <p>  them from coverage requirements.</p>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <h3>Documentation</h3>
+    <ul>
+    <li><strong>changelog</strong>: Update v0.17.0 with sales improvements
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/80364abc6e97a31ecc16f4166a7e2e9224c7d20d"><code>80364ab</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>sales</strong>: Add sales command for Hnavi and Aimitsu platforms
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5212758f62e3fcbe19d88369e3411266cd5686e0"><code>5212758</code></a>)
+    </ul>
+    <p>Add new <code>tai sales</code> command with browser automation for managing sales pipelines on two Japanese B2B</p>
+    <p>  platforms:</p>
+    <ul>
+    <li><code>tai sales hnavi jobs</code> - list AI jobs - <code>tai sales hnavi active</code> - list active negotiations - `tai
+     sales hnavi send <id> <msg><code> - send message - </code>tai sales aimitsu list<code> - list projects - </code>tai
+     sales aimitsu show <no><code> - show project details - </code>tai sales aimitsu send <no> <msg>` - send
+     message
+    </ul>
+    <p>Features: - Headless browser automation with Playwright - Session caching for faster subsequent</p>
+    <p>  commands - Credentials from environment variables (HNAVI_EMAIL, etc.) - --visible flag for</p>
+    <p>  debugging - --json output support</p>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>sales</strong>: Extract full job details from Hnavi
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3a64d620dbfe2c186d9e5468d0ef7cd6e210d17e"><code>3a64d62</code></a>)
+    </ul>
+    <ul>
+    <li>Update get_job() to extract all job information: - Display No., status, deadline, category - Max
+     companies, company size, location, website status - Entry conditions (numbered list) - Inquiry
+     content and hearing content - Support lookup by display No. (12 digits) in CLI - Improve CLI job
+     detail display with formatted output
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>sales</strong>: Fix Aimitsu send, add Hnavi entry, add skill
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/6571b9932309a77b8a571db238a24c9e02b36445"><code>6571b99</code></a>)
+    </ul>
+    <p>Aimitsu improvements: - Fix list_projects to use PrimeVue .p-card selectors - Fix get_project to</p>
+    <p>  extract dt/dd pairs for full project details - Fix send_message to handle confirmation dialog -</p>
+    <p>  Extract all project fields: background, details, budget, schedule, etc.</p>
+    <p>Hnavi improvements: - Add entry form parsing (questions, team members) - Add entry submission with</p>
+    <p>  interactive prompts - Add entry command with TTY validation</p>
+    <p>Other: - Add sales skill for Claude Code (.claude/skills/tai/sales/) - Update docs with entry</p>
+    <p>  command usage</p>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <h3>Testing</h3>
+    <ul>
+    <li><strong>sales</strong>: Add tests and documentation for sales command
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/57aee51457a85f90a039054c7b9b9d4d03f87252"><code>57aee51</code></a>)
+    </ul>
+    <ul>
+    <li>Add tests for sales CLI commands (test_sales_cmd.py) - Add tests for core sales module
+     (test_sales.py) - Add tests for skills module (test_skills.py) - Add tests for main.py update
+     banner - Update docs.py with sales command reference - Coverage now at 80.06%
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>sales</strong>: Skip SalesBrowser tests when playwright unavailable
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bb4020de81d8a5566d661072366df2a87700c5d9"><code>bb4020d</code></a>)
+    </ul>
+    <p>Add requires_playwright decorator to skip tests that need the playwright package when it's not</p>
+    <p>  installed (e.g., in CI).</p>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <h2>v0.17.0 (2026-04-04)</h2>
+    <h2>v0.16.1 (2026-03-23)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>pdf</strong>: Pass show-logo through lib.typ wrappers
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/72">#72</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/81ae11f05ac1aaa4ca63fe7327fc2db475707421"><code>81ae11f</code></a>)
+    </ul>
+    <p>* feat(pdf): add show-logo parameter to Typst templates</p>
+    <p>Each template function now accepts a <code>show-logo: true</code> parameter (default true) that controls logo</p>
+    <p>  rendering on the first page. When false, the logo block is skipped entirely.</p>
+    <p>* feat(pdf): add --no-logo flag to compile command</p>
+    <p>Thread a new --no-logo option through compile_cmd → _compile_markdown → _wrap_md_with_template,</p>
+    <p>  which injects show-logo: false into the Typst template arguments when set.</p>
+    <p>* test(pdf): add tests for --no-logo flag</p>
+    <p>Cover _wrap_md_with_template with no_logo=True/False and verify the CLI accepts the --no-logo flag</p>
+    <p>  without error.</p>
+    <p>* fix(pdf): pass show-logo through lib.typ wrappers</p>
+    <p>The lib.typ entry points for article, report, and slides were not accepting or forwarding the</p>
+    <p>  show-logo parameter to the underlying template functions, causing a Typst compilation error.</p>
+    <p>---------</p>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <h2>v0.16.0 (2026-03-23)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>pdf</strong>: Add --no-logo flag to omit logo from first page
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/71">#71</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/40a7f1faf01c8a5f09d87935c43c8fef94e7f566"><code>40a7f1f</code></a>)
+    </ul>
+    <p>* feat(pdf): add show-logo parameter to Typst templates</p>
+    <p>Each template function now accepts a <code>show-logo: true</code> parameter (default true) that controls logo</p>
+    <p>  rendering on the first page. When false, the logo block is skipped entirely.</p>
+    <p>* feat(pdf): add --no-logo flag to compile command</p>
+    <p>Thread a new --no-logo option through compile_cmd → _compile_markdown → _wrap_md_with_template,</p>
+    <p>  which injects show-logo: false into the Typst template arguments when set.</p>
+    <p>* test(pdf): add tests for --no-logo flag</p>
+    <p>Cover _wrap_md_with_template with no_logo=True/False and verify the CLI accepts the --no-logo flag</p>
+    <p>  without error.</p>
+    <p>---------</p>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <h2>v0.15.1 (2026-03-23)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li>Trigger release for v0.4.6.0
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d96f436267d8d4f980a50e31d8fe12d8b0c0be42"><code>d96f436</code></a>)
+    </ul>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.4.6.0)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/12ec298e418ef977ce86c663033962c82c32398a"><code>12ec298</code></a>)
+    </ul>
+    <p>Speed up plan-ceo, plan-eng, and ship skills: - Default to fast mode (non-interactive) for plan-ceo</p>
+    <p>  and plan-eng - Batch AskUserQuestion per section instead of per issue in deep mode - Ship skips</p>
+    <p>  optional steps (coverage audit, Greptile, TODOS, design review) by default - Say "deep"/"thorough"</p>
+    <p>  to get the full interactive workflows</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h2>v0.15.0 (2026-03-22)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.4.5.0)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/957afe6c86c7d6802f62bdbbaca0670e3ef4b0e7"><code>957afe6</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Add autonomous plan executor skill (/tai-execute)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/7ed6a3cd5444d875073d5c7dd11fb33bf4aceba7"><code>7ed6a3c</code></a>)
+    </ul>
+    <p>Thin orchestrator + fresh subagent architecture that fills the gap between /tai-plan-eng and</p>
+    <p>  /tai-ship. Supports wave-based parallel execution, 4-tier deviation rules, checkpoint protocol,</p>
+    <p>  self-verification, and resume from interruption. Adds stress-test TODO for parallel wave</p>
+    <p>  execution.</p>
+    <h2>v0.14.0 (2026-03-22)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Add codebase mapping skill (/tai-map)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0eb1a7f23e121076cdfbb30e32bdcc19a9849efb"><code>0eb1a7f</code></a>)
+    </ul>
+    <p>Spawns 4 parallel agents to analyze stack, architecture, conventions, and concerns. Produces</p>
+    <p>  structured Markdown in .tai/map/ that other skills can consume as context. Inspired by GSD's</p>
+    <p>  map-codebase pattern.</p>
+    <p>Also updates TODOS.md with GSD adoption roadmap items (context monitor, file-based state, /tai-map,</p>
+    <p>  /tai-init, fresh-context architecture) including spike findings on statusLine API constraints.</p>
+    <ul>
+    <li><strong>skills</strong>: Add codebase mapping skill (/tai-map)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/68">#68</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2921b717d0837c194f88a00e282d14c8e094cad4"><code>2921b71</code></a>)
+    </ul>
+    <p>Spawns 4 parallel agents to analyze stack, architecture, conventions, and concerns. Produces</p>
+    <p>  structured Markdown in .tai/map/ that other skills can consume as context. Inspired by GSD's</p>
+    <p>  map-codebase pattern.</p>
+    <p>Also updates TODOS.md with GSD adoption roadmap items (context monitor, file-based state, /tai-map,</p>
+    <p>  /tai-init, fresh-context architecture) including spike findings on statusLine API constraints.</p>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <ul>
+    <li><strong>skills</strong>: Add notion-cli skill
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/cf361aee512bbede55044f4e2e09013eb514b130"><code>cf361ae</code></a>)
+    </ul>
+    <p>Add Notion CLI skill from makenotion/skills repo. Enables Claude Code to use the <code>ntn</code> CLI for</p>
+    <p>  Notion API calls, worker management, and file uploads.</p>
+    <p>Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com></p>
+    <h2>v0.13.0 (2026-03-21)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Add office-hours skill (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/67">#67</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/f4359ed962bc0357e2c11f6425a577e826464cf4"><code>f4359ed</code></a>)
+    </ul>
+    <p>* feat(skills): add office-hours skill for product thinking before code</p>
+    <p>Two modes: Startup mode (six forcing questions for demand validation) and Builder mode (design</p>
+    <p>  thinking brainstorm for side projects). Produces design docs, never code. Adapted from gstack with</p>
+    <p>  TAI conventions.</p>
+    <p>* chore: bump version and changelog (v0.4.4.0)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h2>v0.12.0 (2026-03-21)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Resolve CHANGELOG merge conflict (develop ← main)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/26208509ed22413d26cadd1b61c415886ce5965a"><code>2620850</code></a>)
+    </ul>
+    <h2>v0.11.0 (2026-03-21)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>mermaid</strong>: Disable htmlLabels to fix invisible text in PDF output
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2c667b6102fc65d4eb940d33a47486a7582f0c45"><code>2c667b6</code></a>)
+    </ul>
+    <p>mermaid-cli v11+ defaults to htmlLabels: true, rendering node labels as HTML inside SVG</p>
+    <p>  <foreignObject> elements. Typst's SVG renderer does not support foreignObject, so all diagram text</p>
+    <p>  was invisible in compiled PDFs.</p>
+    <p>Always pass htmlLabels: false in the mmdc config to force native SVG <tspan> rendering.</p>
+    <ul>
+    <li><strong>skills</strong>: Remove second-opinion from PR scope
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1864ff5970deb1deb34fdb6404ffc4a228666144"><code>1864ff5</code></a>)
+    </ul>
+    <p>Per PR review comment — second-opinion skill is not part of this PR.</p>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.10.2)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2f92f2cea08a5ca7d95540671cedf374a8ff4fa6"><code>2f92f2c</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Bump version and changelog (v0.4.3.2)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a0666e42ecc9b6c2314c3886970bc306440129d8"><code>a0666e4</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Drop develop branch, simplify to GitHub Flow
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/242191ed092b3e97dee1ccbc908eb36706d8d20e"><code>242191e</code></a>)
+    </ul>
+    <p>Remove develop and staging from CI triggers, update CONTRIBUTING.md to target main directly, and</p>
+    <p>  clean up 7 CHANGELOG entries that existed only to resolve merge conflicts between develop and</p>
+    <p>  main.</p>
+    <ul>
+    <li>Resolve CHANGELOG merge conflict (develop ← main)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4567a775682e1263e6f44b6a3821d22d66583570"><code>4567a77</code></a>)
+    </ul>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>skills</strong>: Sync plan-eng and plan-ceo with gstack structure
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/63e923abe890bb8670ed32a156a1b260b909e4f6"><code>63e923a</code></a>)
+    </ul>
+    <ul>
+    <li>plan-eng: add Completion Status Protocol, staleness detection, review chaining - plan-ceo: upgrade
+     to 11-section Mega Plan Review (Error/Rescue Map, Security, Data Flow, Observability, Deployment,
+     Long-Term Trajectory, Design/UX) - plan-ceo: add PRE-REVIEW SYSTEM AUDIT, Implementation
+     Alternatives, Spec Review Loop, CEO Plan persistence, docs/designs promotion - Rename plan-biz →
+     plan-ceo to match gstack naming - Remove plan-biz-light and plan-eng-light (consolidated into
+     quick mode) - Add investigate and second-opinion skills
+    </ul>
+    <ul>
+    <li><strong>style</strong>: Add TrustedAI matplotlib style
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/60">#60</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/8ca102937431ce10cc7b887cac914e9dca4abfe7"><code>8ca1029</code></a>)
+    </ul>
+    <p>* feat(style): add TrustedAI matplotlib style</p>
+    <p>Brand-matched light theme with warm cream background (#f4f1eb), Hanken Grotesk font, and 6-color</p>
+    <p>  palette from theme.typ.</p>
+    <p>New files: - tai/data/styles/trustedai.mplstyle — the .mplstyle asset - tai/core/style.py — PALETTE,</p>
+    <p>  COLORS constants and install() - tai/commands/style.py — <code>tai style install</code> CLI command - tests/</p>
+    <p>  — 14 tests (palette, bundled file, install, CLI)</p>
+    <p>* feat(style): auto-install style on setup and update</p>
+    <p>run_post_update() now returns a 4-tuple including style_ok. tai setup and tai update show style</p>
+    <p>  install status. Soft-skips when matplotlib is not installed.</p>
+    <p>* docs(generate-pdf): use plt.style.use('trustedai') instead of hardcoded colors</p>
+    <p>Replace the hardcoded COMPANY_COLORS dict in the generate-pdf skill with the new trustedai</p>
+    <p>  matplotlib style.</p>
+    <p>* chore: bump version and changelog (v0.4.3.0)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h2>v0.10.1 (2026-03-20)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Resolve CHANGELOG merge conflict (develop ← feature)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bab7aedcdd1c9c5353c8096d06dd4f04eb42ac2f"><code>bab7aed</code></a>)
+    </ul>
+    <ul>
+    <li>Resolve CHANGELOG merge conflict (develop ← main)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/fc4728fa449676151f7cacc8271e6d3d59f8b75e"><code>fc4728f</code></a>)
+    </ul>
+    <h2>v0.10.0 (2026-03-20)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>pdf</strong>: Resolve inline Markdown image paths in cmarker.render()
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/98baaea15d80e11ebdac9399f57d52b2327efe7d"><code>98baaea</code></a>)
+    </ul>
+    <p>Add scope override to cmarker.render() so images resolve relative to the Typst root instead of</p>
+    <p>  cmarker's package directory. Fixes "file not found" errors when Markdown contains image references</p>
+    <p>  like <code>![alt](path)</code>.</p>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.4.2.2)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/608d5af9974a70e98436a68904dd450b6572e063"><code>608d5af</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Bump version and changelog (v0.4.2.2)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/24e96ffe71b8487ae6eecbd3465beee98448f42f"><code>24e96ff</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Resolve CHANGELOG merge conflict (develop ← main)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/12d36fff980cf8c1caeb4b527564cc8b61c44969"><code>12d36ff</code></a>)
+    </ul>
+    <h3>Documentation</h3>
+    <ul>
+    <li><strong>generate-pdf</strong>: Add diagram and chart best practices
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/dede3d40da131985da473887b638159c777e4830"><code>dede3d4</code></a>)
+    </ul>
+    <p>Recommend Mermaid for flowcharts only, Python matplotlib/seaborn with company color palette for</p>
+    <p>  data-heavy plots.</p>
+    <h2>v0.9.0 (2026-03-20)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>tests</strong>: Add missing mocks to mermaid CI tests
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/53">#53</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2d084880f5384f3791be3a511d597900e9cab5f9"><code>2d08488</code></a>)
+    </ul>
+    <p>* fix(tests): add missing shutil.which mocks to mermaid CI tests</p>
+    <p>Two tests called preprocess() without mocking shutil.which, causing _find_mmdc() to fail in CI where</p>
+    <p>  mmdc is not installed.</p>
+    <p>* chore: bump version and changelog (v0.4.2.1)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.4.2.0)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/96da666b4ce5c79c613bb3e11a3026baa6a3bde2"><code>96da666</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Resolve CHANGELOG merge conflict (develop ← main)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c1d810191c01a10aa838ac60888e802f1059c5dd"><code>c1d8101</code></a>)
+    </ul>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>mermaid</strong>: Replace mermaid.ink API with local mmdc CLI rendering
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/51">#51</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/90e0726ea244ea77fccc5021dec856c8b61f6b3a"><code>90e0726</code></a>)
+    </ul>
+    <p>Mermaid.ink is frequently down, causing PDF compilation failures. Switch to local rendering via the</p>
+    <p>  mermaid CLI (mmdc) for reliability.</p>
+    <ul>
+    <li>Replace httpx calls with subprocess.run to mmdc - Add _find_mmdc() and _build_mmdc_config()
+     helpers - Remove _fix_foreign_objects and SVG post-processing (mmdc produces clean SVG) - Fail
+     with clear install instructions when mmdc is missing - Update all tests to mock subprocess.run
+     instead of httpx.get
+    </ul>
+    <p>Co-authored-by: Tran Thien <tran.thien@trusted-ai.co></p>
+    <h2>v0.8.0 (2026-03-20)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.4.1.3)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1968e3925283dc90181d8454c1e5031861214221"><code>1968e39</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Bump version and changelog (v0.4.1.4)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/582d499d7c772314022a1da843aa6f9e3b31362e"><code>582d499</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Resolve CHANGELOG merge conflict (develop ← main)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5f426b29ccfef50877647d91fb40fd9f2318e830"><code>5f426b2</code></a>)
+    </ul>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>pdf</strong>: Add mermaid diagram rendering for PDF compilation
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ed7a63e13f5f3949fabcba36db2fa2fc941db1d4"><code>ed7a63e</code></a>)
+    </ul>
+    <p>Detect ```mermaid code blocks in markdown, render via mermaid.ink API to SVG, cache by content hash,</p>
+    <p>  and replace with Typst show rules. Includes foreignObject-to-text SVG post-processing for Typst</p>
+    <p>  compat, brand color theming, parallel rendering, and caption support.</p>
+    <ul>
+    <li><strong>templates</strong>: Integrate zebraw for enhanced code blocks
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/1b408258815fcd3ae3485012430fd233dfecbf76"><code>1b40825</code></a>)
+    </ul>
+    <p>Replace basic _code-block styling with zebraw package (v0.6.1) for line numbers, zebra striping, and</p>
+    <p>  language tabs. Fix apply-body-style scoping bug where set/show rules never propagated to body</p>
+    <p>  content.</p>
+    <h2>v0.7.0 (2026-03-20)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.4.1.1)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/38bc125afc334f4516835fbd8b08894c012d2c57"><code>38bc125</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Bump version and changelog (v0.4.1.2)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c224ae09982e0949e109dfa98e6835706698414f"><code>c224ae0</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h2>v0.6.0 (2026-03-20)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.4.1.0)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/e3226841543e5d955922ad94597bac8a86cee9a0"><code>e322684</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>pdf</strong>: Extract single H1 as title for all templates and persist to file
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4b7df90d107790ff206c31bac15e4755e8c47908"><code>4b7df90</code></a>)
+    </ul>
+    <p>H1 → title promotion was article-only. Now works for report, slides, and any future template. When</p>
+    <p>  an H1 is extracted, the title is written back to the source file's frontmatter so subsequent runs</p>
+    <p>  don't re-prompt.</p>
+    <h3>Refactoring</h3>
+    <ul>
+    <li><strong>skills</strong>: Rename plan-ceo to plan-biz
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4af3df8461f6d8c63d49c347cd1a53c1e0478e05"><code>4af3df8</code></a>)
+    </ul>
+    <p>Replace all references to plan-ceo/CEO with plan-biz/Biz across skill definitions, cross-references,</p>
+    <p>  README, and CHANGELOG.</p>
+    <h2>v0.5.4 (2026-03-20)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Resolve merge conflict in CHANGELOG.md (main → develop)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/6f17b3505ae4dfd98cbf00559987381b4dda48d2"><code>6f17b35</code></a>)
+    </ul>
+    <h3>Continuous Integration</h3>
+    <ul>
+    <li>Add style to semantic-release allowed and patch tags
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/aa7c9b9b2e341e8a70fa0a61548d274d75cf15ef"><code>aa7c9b9</code></a>)
+    </ul>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>pdf</strong>: Auto-extract single H1 as article title and prompt for missing frontmatter
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/38202e522ab026d34655788ab27248576b858e79"><code>38202e5</code></a>)
+    </ul>
+    <p>For article template, when exactly one H1 heading exists in the markdown: - Extract it as the</p>
+    <p>  document title (used by template title block) - Remove the H1 from body content - Promote all</p>
+    <p>  remaining headings by one level (## → #, ### → ##)</p>
+    <p>When required frontmatter fields are missing (title/author for article/report): - Prompt the user</p>
+    <p>  interactively - Write the frontmatter back to the source file - Warn in non-interactive mode</p>
+    <h2>v0.5.3 (2026-03-20)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>skills</strong>: Resolve skill discovery for pip/uv-tool installs
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/9a5b87144a4863463d4cebdb42dcf36c832c3a64"><code>9a5b871</code></a>)
+    </ul>
+    <p>Same issue as templates — skills weren't findable outside the repo. Add __file__-relative path</p>
+    <p>  lookup and include .claude/skills/tai in the wheel as tai/data/skills via force-include.</p>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.4.0.1)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/92752def403b27da55387ece7a15aaf74982827f"><code>92752de</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Code Style</h3>
+    <ul>
+    <li><strong>templates</strong>: Update article and report Typst templates
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/b9288b925d3a92e720a4d801f028a3d5146a57e0"><code>b9288b9</code></a>)
+    </ul>
+    <p>Article: add heading numbering (1.1.), figure captions, revert to no page header with single-number</p>
+    <p>  page numbering. Both: hide thematic breaks (---) from rendering in PDF output.</p>
+    <h2>v0.5.2 (2026-03-20)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>pdf</strong>: Resolve template discovery and add setup-templates to post-update
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0b94d86a4fc99089f811f9602c624fcabf35285a"><code>0b94d86</code></a>)
+    </ul>
+    <p>Template discovery failed when running tai from outside the repo because it relied on importlib or</p>
+    <p>  git-root lookups. Add __file__-relative path resolution and include tai/templates/typst in the</p>
+    <p>  wheel build.</p>
+    <p>Also wire setup-templates into post-update and post-setup flows so templates are refreshed alongside</p>
+    <p>  skills and hooks.</p>
+    <h2>v0.5.1 (2026-03-20)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>pdf</strong>: Remove unused logo argument from template() call
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/83264da9a34bb646e3d0e2b109d3b8feedb892d1"><code>83264da</code></a>)
+    </ul>
+    <p>Templates don't accept a <code>logo</code> parameter — the logo is accessed directly from brand assets via</p>
+    <p>  theme.typ. Passing it caused "unexpected argument: logo" compilation errors.</p>
+    <h2>v0.5.0 (2026-03-20)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version to v0.4.0 and update changelog
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2c5dcc46f63307faebc6d85e930c05fec99be3fd"><code>2c5dcc4</code></a>)
+    </ul>
+    <p>Add comprehensive changelog entry for the Typst PDF template system.</p>
+    <h2>v0.4.0 (2026-03-20)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Resolve merge conflict in CHANGELOG.md (develop → main)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/463c0df3d1c725d05eff92b5a442dde7a9f98671"><code>463c0df</code></a>)
+    </ul>
+    <h2>v0.3.1 (2026-03-19)</h2>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.3.1)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/e828fa8747841ef55e13d9914a920ba7ce61e412"><code>e828fa8</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Documentation</h3>
+    <ul>
+    <li>Remove unnecessary --python 3.11 from uv install command
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/65e3abc1338df65ff4d5a711b4502d7d6dd316a1"><code>65e3abc</code></a>)
+    </ul>
+    <p>The project requires Python >=3.11, so pinning to 3.11 is overly restrictive. Let uv pick the best</p>
+    <p>  available compatible Python.</p>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>pdf</strong>: Add template picker and tai pdf templates command
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c68536b6b99a401ab22f309fd3280b1c097a0379"><code>c68536b</code></a>)
+    </ul>
+    <p>Interactive template selection when --template is omitted on .md files. Non-interactive terminals</p>
+    <p>  get an error with available template names. New 'tai pdf templates' subcommand lists installed</p>
+    <p>  templates.</p>
+    <h2>v0.3.0 (2026-03-19)</h2>
+    <h3>Features</h3>
+    <ul>
+    <li><strong>pdf</strong>: Add Typst-based PDF generation
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/26">#26</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5111d93b69c9d1cf8fd4e545df8e31b6fb86e0a0"><code>5111d93</code></a>)
+    </ul>
+    <p>* feat(pdf): add Typst binary detection, version check, and template system</p>
+    <p>Core infrastructure for PDF generation: - TypstError hierarchy in errors.py (TypstNotFoundError,</p>
+    <p>  TypstVersionError, TypstCompileError, TemplateError) - typst.py: find binary, parse version,</p>
+    <p>  compile documents with timeout handling - templates.py: discover, parse typst.toml, install/remove</p>
+    <p>  templates with path traversal validation - Bundled Typst templates (proposal, report) and brand</p>
+    <p>  assets in tai/data/</p>
+    <p>* feat(pdf): add tai pdf compile command and setup-templates CLI</p>
+    <ul>
+    <li>pdf.py: setup-templates (install/list/remove) and compile (md/typ → PDF) - Markdown → Typst
+     wrapper with cmarker package for native MD rendering - Brand injection (company name, logo,
+     colors) with string escaping - Register pdf command group in main.py - Add packaging dependency
+     and data force-include in pyproject.toml - Claude Code skill for agent-friendly PDF generation
+    </ul>
+    <p>* chore: bump version and changelog (v0.2.9)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h2>v0.2.1 (2026-03-19)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>templates</strong>: Correct author name in examples
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5dcba98de166cb7489697691e4d5af7c25c4c28f"><code>5dcba98</code></a>)
+    </ul>
+    <ul>
+    <li><strong>updater</strong>: Detect uv tool installs and use correct update command
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/27">#27</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a880182b99e5d58c822df98531421df05a327a2d"><code>a880182</code></a>)
+    </ul>
+    <p><code>uv pip install</code> installs to system site-packages but doesn't update the <code>tai</code> binary in</p>
+    <p>  ~/.local/bin/ which is managed by uv tool's isolated venv. This caused ModuleNotFoundError when</p>
+    <p>  running <code>tai</code> after installing via <code>uv pip install</code>. Add UV_TOOL installer detection for paths</p>
+    <p>  under ~/.local/share/uv/tools/ and use <code>uv tool install --force</code> for updates. Also fix README</p>
+    <p>  install instructions to use <code>uv tool install</code>.</p>
+    <h3>Chores</h3>
+    <ul>
+    <li>Resolve merge conflict in CHANGELOG.md
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d27ebd5bc61a8245bb3c01f5f7dd82b2c8321b2b"><code>d27ebd5</code></a>)
+    </ul>
+    <ul>
+    <li><strong>templates</strong>: Align example naming and add report-example.md
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d419df07caa817a23448a5a40439fbb886f4d338"><code>d419df0</code></a>)
+    </ul>
+    <p>Rename examples to consistent {type}-example.{ext} pattern. Add report-example.md with frontmatter</p>
+    <p>  for markdown-to-report testing. Remove letter-example.typ (renamed to article-example.typ).</p>
+    <h3>Documentation</h3>
+    <ul>
+    <li>Update install instructions and mark upcoming features
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/197b0e0cc17dbcc1f06240ae1c87b5a00ff52806"><code>197b0e0</code></a>)
+    </ul>
+    <p>Fix install commands to use git+https source since the package is not yet on PyPI. Mark tai ai, tai</p>
+    <p>  api, and tai secret as coming soon.</p>
+    <h3>Features</h3>
+    <ul>
+    <li>Add Typst PDF templates with brand assets
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/f2b5aad9f5000f5715fc96c6f99fb08d86ad83eb"><code>f2b5aad</code></a>)
+    </ul>
+    <p>Add article, report, and slides templates for <code>tai pdf compile</code> with TrustedAI branding (icon, logo,</p>
+    <p>  banner). Includes shared theme tokens, markdown frontmatter parsing, and markdown-to-slides</p>
+    <p>  support with <code>---</code> as slide separator.</p>
+    <ul>
+    <li><strong>article</strong>: Add logo above title, rename letter.typ to article.typ
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3afa9de1d027b8cb47d3247e4027dc5989c6a69b"><code>3afa9de</code></a>)
+    </ul>
+    <p>Add logo on first page above the title block. Rename letter.typ to article.typ for clarity. Remove</p>
+    <p>  unused icon/banner parameters, use single logo asset with default path to brand/logo.png.</p>
+    <ul>
+    <li><strong>pdf</strong>: Add core modules for Typst binary detection and template management
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d0cf7f58a9d6b490684a80302f20c063be66f2b4"><code>d0cf7f5</code></a>)
+    </ul>
+    <ul>
+    <li>tai/core/typst.py: find binary, check version, compile documents - tai/core/templates.py:
+     discover, install, validate, remove templates - tai/core/errors.py: add TypstError, TemplateError
+     hierarchies - tai/commands/pdf.py: fix .typ root path, document escape function - tai/main.py:
+     register pdf command group - tests: 50 new tests for typst, templates, and pdf command
+    </ul>
+    <h3>Refactoring</h3>
+    <ul>
+    <li><strong>slides</strong>: Fix heading hierarchy, simplify footer, embed logo
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/210a5c4847cac81415fa1b95ef9785128c817752"><code>210a5c4</code></a>)
+    </ul>
+    <p>Heading sizes now properly cascade: h1 22pt > h2 20pt > h3 17pt > body 18pt. Simplified footer to</p>
+    <p>  page number only (removed logo and text). Title slide shows logo above title. Cleaned up redundant</p>
+    <p>  parameters (icon, banner, footer-logo). Markdown heading extraction uses proper regex for slide</p>
+    <p>  title parsing.</p>
+    <ul>
+    <li><strong>templates</strong>: Unify metadata, brand assets, and code styling
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/f304cd3791c508cc0b5d0042d6dbdcf9617bd421"><code>f304cd3</code></a>)
+    </ul>
+    <p>Standardize metadata across all templates to: title, subtitle, author, organization, date, version.</p>
+    <p>  Remove per-template params (logo, show-page-numbers, institution, affiliation, extra,</p>
+    <p>  footer-text).</p>
+    <p>Embed logo (brand/logo.png) directly in templates — no longer passed as a parameter. Remove unused</p>
+    <p>  banner.png and icon.png assets. Update logo to current brand.</p>
+    <p>Shared code styling via _code-inline/_code-block in theme.typ: light background with subtle border,</p>
+    <p>  consistent across article, report, and slides. Fix tag() baseline alignment with outset.</p>
+    <p>Report: remove decorative circles, add logo on cover, show author in</p>
+    <p>header. Slides: right-align page number, remove footer text/logo. Consistent author · organization /</p>
+    <p>  date · version layout everywhere.</p>
+    <p>Remove test-md-*.typ wrapper files (not needed for testing).</p>
+    <h2>v0.2.0 (2026-03-19)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>auth</strong>: Handle session expiry gracefully with auto-retry
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/52549ba13c556c982c3876da840d09b4a0c18abf"><code>52549ba</code></a>)
+    </ul>
+    <ul>
+    <li>Widen proactive refresh window from 60s to 300s - Catch network errors in _refresh() with
+     user-friendly message - Add _BearerAuth httpx.Auth subclass for transparent 401 retry - Skip 401
+     in _raise_on_error (auth flow handles it) - Raise AuthExpiredError on double-401 after retry - Add
+     global TaiError catch-all in cli() entry point - Change entry point from app to cli wrapper
+    </ul>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.2.8)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2ff5e8baae5cca3e8455e9459ddb87470a9cab77"><code>2ff5e8b</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Bump version and changelog (v0.2.8)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d55c05af9b5c963cc839c9d8c65de80aa11ac6e5"><code>d55c05a</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Documentation</h3>
+    <ul>
+    <li>Fix install instructions to use git+https source
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/4941326349ef2a5a5c0d8e3be86f6c5113167a70"><code>4941326</code></a>)
+    </ul>
+    <p>Package is not published to PyPI. Updated README to show the correct install command from the GitHub</p>
+    <p>  repository.</p>
+    <ul>
+    <li>Update project documentation for v0.2.7
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c544b6cfd3cf24e80a265b082b836c6b0d618082"><code>c544b6c</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Refactoring</h3>
+    <ul>
+    <li><strong>cli</strong>: Remove tai claude compact-status command
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/e99d8456dddc2488d2b5271fd9ad14efd6972e23"><code>e99d845</code></a>)
+    </ul>
+    <p>Removes the compact-status command, its helper functions, tests, and all references across docs and</p>
+    <p>  skills.</p>
+    <h2>v0.1.2 (2026-03-19)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>ci</strong>: Use sudo to clean dist/ created by semantic-release container
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/32c55ba64b06cf6dd6ed3e21a8a09a929393e2d0"><code>32c55ba</code></a>)
+    </ul>
+    <p>The semantic-release action builds wheels internally with different permissions, making the files</p>
+    <p>  undeletable by the runner user.</p>
+    <h2>v0.1.1 (2026-03-19)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li><strong>ci</strong>: Clean dist/ before wheel build and fix uv cache param
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/530ffb695704f025d13b1ca0d34f91cb390cb2eb"><code>530ffb6</code></a>)
+    </ul>
+    <p>semantic-release may leave artifacts in dist/ that cause permission errors when uv build --wheel</p>
+    <p>  runs. Also fix enable-caching → enable-cache for astral-sh/setup-uv.</p>
+    <h2>v0.1.0 (2026-03-19)</h2>
+    <h3>Bug Fixes</h3>
+    <ul>
+    <li>Add --json as local flag on each command for natural subcommand usage
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/b93b4e7f844e67fa0f2f76da6708e8501625a248"><code>b93b4e7</code></a>)
+    </ul>
+    <ul>
+    <li>Remove unused questionary import and dependency
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/7e039f210017ab67d2254698d6b9daacfabb765b"><code>7e039f2</code></a>)
+    </ul>
+    <ul>
+    <li><strong>ci</strong>: Use python -m build in semantic-release container
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/dc4795ebcd666bd1439d1384605e89b6841070c2"><code>dc4795e</code></a>)
+    </ul>
+    <p>The semantic-release GitHub Action runs inside a Docker container where uv is not available (exit</p>
+    <p>  code 127). Switch build_command to use the standard python build module which is available in all</p>
+    <p>  Python environments.</p>
+    <ul>
+    <li><strong>keystore</strong>: Catch all KeyringError subtypes on macOS
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/11">#11</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/24bcd2f13383398d49226627adc19a6109d52c32"><code>24bcd2f</code></a>)
+    </ul>
+    <p>* fix(keystore): catch all KeyringError subtypes in store and retrieve</p>
+    <p>macOS Keychain can return error -25244 (PasswordSetError) which was not caught, crashing `tai</p>
+    <p>  login`. Broadened exception handling from NoKeyringError to the base KeyringError class so all</p>
+    <p>  keychain failures gracefully fall back to file storage.</p>
+    <p>* chore: bump version and changelog (v0.2.4)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Chores</h3>
+    <ul>
+    <li>Bump version and changelog (v0.1.1)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/fabeba3e3d7bf43bae3741e7dca303f99b58d9e3"><code>fabeba3</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Bump version and changelog (v0.2.0)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ba67a963f06b2bea5a8c938941fdd723e3c45d95"><code>ba67a96</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Bump version and changelog (v0.2.7)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/c831e5bf52e0bfc75d84ff013d74a4ac98d8cb8a"><code>c831e5b</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li>Resolve merge conflicts with main
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/effdc46fc8c0b8145162e389ad09cc7f988fa062"><code>effdc46</code></a>)
+    </ul>
+    <ul>
+    <li>Update uv.lock with python-semantic-release
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/07deed2bb960cc6b5ffc0e64f8306822d3b7c0fb"><code>07deed2</code></a>)
+    </ul>
+    <h3>Continuous Integration</h3>
+    <ul>
+    <li>Add GitHub Actions CI and release workflows with semantic-release
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/2b07280b160b250849dfb4f3d9789462feb4874f"><code>2b07280</code></a>)
+    </ul>
+    <h3>Documentation</h3>
+    <ul>
+    <li>Add README, ARCHITECTURE, CONTRIBUTING, CHANGELOG, and VERSION
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/77b6f864232e556ace13fff3140526609b43f43b"><code>77b6f86</code></a>)
+    </ul>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <h3>Features</h3>
+    <ul>
+    <li>Add --docs flag for LLM-friendly usage reference in Markdown
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3f7a0ab38d61d05e2e36fc67bad611bced827cd7"><code>3f7a0ab</code></a>)
+    </ul>
+    <ul>
+    <li>Initial commit — tai internal CLI
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5b16d3a84de95c8e143ed3b5090f9846d6ae9b6c"><code>5b16d3a</code></a>)
+    </ul>
+    <ul>
+    <li>Google OAuth2 PKCE flow with company domain enforcement (hd claim + JWT validation) -
+     Profile-based config (XDG, TOML) with per-profile overrides - System keychain token storage via
+     keystore module - Commands: auth (login/logout/whoami), secret (set/get/list/delete/rotate/exec),
+     config (get/set/list-profiles), ai, api - Plugin system scaffold - Full test suite (unit +
+     integration, 80%+ coverage)
+    </ul>
+    <ul>
+    <li><strong>claude</strong>: Add tai claude login/logout/status commands
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/cd2361ddb71703b5e66b70167d853f595c7fee4e"><code>cd2361d</code></a>)
+    </ul>
+    <p>Wraps <code>claude auth login</code> subprocess, captures the OAuth URL from stdout and displays it cleanly so</p>
+    <p>  users (or admins) can open it in any browser. Stdin is forwarded so the user can paste the code</p>
+    <p>  back directly. logout and status delegate to claude auth logout/status.</p>
+    <ul>
+    <li><strong>claude</strong>: Implement PKCE OAuth login flow
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/cb33a68e868ee0cd36ba98749e3019a93edb15f2"><code>cb33a68</code></a>)
+    </ul>
+    <p>Replace PTY-wrapped Ink TUI approach with a self-contained PKCE OAuth flow in Python: - Generate</p>
+    <p>  code_verifier + code_challenge (S256) + state (32 bytes) - Display authorization URL; user visits</p>
+    <p>  it in any browser - User pastes the full callback URL (or bare code) after authorizing - Exchange</p>
+    <p>  the code via platform.claude.com/v1/oauth/token - Pass the refresh token to <code>claude auth login</code></p>
+    <p>  via CLAUDE_CODE_OAUTH_REFRESH_TOKEN so Claude handles profile fetch, API-key creation, and</p>
+    <p>  credential storage</p>
+    <p>Eliminates the Ink TUI interaction problem where the paste-code input was gated behind a 3-second</p>
+    <p>  React state timer and raw-mode PTY forwarding that made input unreliable.</p>
+    <ul>
+    <li><strong>cli</strong>: Add tai claude compact-status command
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/fe753fd2f02258de4d1bd4b1d4e8466cf475747d"><code>fe753fd</code></a>)
+    </ul>
+    <p>Show session tool-call count, compaction history, and suggestions for when to run /compact. Supports</p>
+    <p>  --json for scripting. Scans /tmp for counter files by mtime so it works outside the active session</p>
+    <p>  context.</p>
+    <ul>
+    <li><strong>cli</strong>: Add tai claude setup-hooks command
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0105e1d3fe08d8ca37ecf0492b137f948064c4e3"><code>0105e1d</code></a>)
+    </ul>
+    <p>Install curated Claude Code hooks from ECC into ~/.claude/settings.json. Supports --list (preview),</p>
+    <p>  --remove (uninstall), and --json (scripting). Hooks are tagged with [tai] prefix for ownership</p>
+    <p>  tracking and idempotent merge with user's custom hooks.</p>
+    <p>Includes 12 hooks across 6 event types (PreToolUse, PostToolUse, PreCompact, SessionStart, Stop,</p>
+    <p>  SessionEnd), bundled JS scripts and libraries, and comprehensive test coverage.</p>
+    <ul>
+    <li><strong>cli</strong>: Add tai setup interactive config wizard
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/12">#12</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/fb108eb0abdc4d3c3bc88baed89cb5cb535f3c08"><code>fb108eb</code></a>)
+    </ul>
+    <p>* feat(cli): add tai setup interactive config wizard</p>
+    <p>Prompts for every ProfileConfig variable with current values as defaults. Press Enter to skip/keep,</p>
+    <p>  type a new value to update. Sensitive fields (secret, password, token) are masked. Type coercion</p>
+    <p>  for int/float/bool. Guards against non-interactive terminals.</p>
+    <p>* chore: bump version and changelog (v0.2.5)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>cli</strong>: Add tai update command for self-updating from GitHub Releases
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/81a2768a2e4870263c6fa686dd7c05e05badd230"><code>81a2768</code></a>)
+    </ul>
+    <p>Auto-detects installer (uv/pipx/pip), streams wheel download with size verification, and refreshes</p>
+    <p>  skills+hooks post-update. Includes --check flag for dry-run and startup update banner with 24h</p>
+    <p>  cache.</p>
+    <ul>
+    <li><strong>cli</strong>: Agent-friendly improvements — JSON output, TTY detection, quiet mode, exit codes
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/5594545e3975619efe9a2d891b09f8f954265d96"><code>5594545</code></a>)
+    </ul>
+    <ul>
+    <li>ExitCode constants (NOT_FOUND=3, PERMISSION_DENIED=4, CONFLICT=5) - ApiError maps HTTP status to
+     granular exit codes - is_interactive() helper guards fuzzy pickers from non-TTY contexts - tai
+     tasks/meetings: --json outputs structured JSON to stdout - tai tasks/meetings: -q/--quiet outputs
+     bare names for piping - tai tasks done: non-interactive without ID exits with USAGE (2) - tai
+     meetings: non-interactive fallback prints plain list to stdout - tai project link: guards picker
+     with TTY check, clear error for agents - tai project status: --json outputs project data as JSON
+    </ul>
+    <ul>
+    <li><strong>hooks</strong>: Add resume note to pre-compact hook
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/f412b22d42130bd01e303e0906c401c572a4bccf"><code>f412b22</code></a>)
+    </ul>
+    <p>Before compaction, save git branch, uncommitted changes, recent commits, and active tasks to</p>
+    <p>  .context/compact-resume.md so Claude can pick up where it left off after context summarization.</p>
+    <ul>
+    <li><strong>meetings</strong>: Fuzzy picker UI with full searchable pool
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/505f58eefc974db33bb5aaeeaa7a020bfb918023"><code>505f58e</code></a>)
+    </ul>
+    <ul>
+    <li>search_select now passes all items to InquirerPy (no pool cap) - max_height=10 limits visible rows
+     while keeping all items searchable - meetings default: picker → open Notion; remove static table +
+     open subcommand
+    </ul>
+    <ul>
+    <li><strong>project</strong>: Add tai project commands (link, status, set)
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/8aa8f0d13ad11b5128ac8f9303548a5a57a7c09b"><code>8aa8f0d</code></a>)
+    </ul>
+    <ul>
+    <li><strong>project</strong>: Interactive link picker and new project creation
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a2b06f2b08043e23b2f23baaf009b66275e33e5c"><code>a2b06f2</code></a>)
+    </ul>
+    <ul>
+    <li><strong>project</strong>: Table-formatted fuzzy picker with client column, InquirerPy fuzzy search
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3047aa69297388fd9dcc1cb21dff8f4811b2d3fa"><code>3047aa6</code></a>)
+    </ul>
+    <ul>
+    <li><strong>prompt</strong>: Reusable search_select with fuzzy filtering and max 10 results
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/b5eccbb403f25e877531764f20483cb7b9c5648e"><code>b5eccbb</code></a>)
+    </ul>
+    <ul>
+    <li><strong>skills</strong>: Add content-writer skill (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/6">#6</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/93393664a6c2dd5acf5ecdcfab53f31959b75cd7"><code>9339366</code></a>)
+    </ul>
+    <p>* feat(skills): add content-writer skill with voice profiles, slop detection, and templates</p>
+    <p>Interactive content creation workflow supporting 7 content types (blog, tutorial, release</p>
+    <p>  announcement, case study, comparison, how-to, changelog). Includes voice profile system for</p>
+    <p>  consistent tone, AI-slop detection with ~60 patterns across 9 categories, codebase-aware technical</p>
+    <p>  writing, git-aware release announcements, and 6 structured templates.</p>
+    <p>* chore: bump version and changelog (v0.1.2)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>skills</strong>: Add light versions of plan-ceo, plan-eng, and review skills
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/39a0efa018e397b984c476dc3fd680a229c0c155"><code>39a0efa</code></a>)
+    </ul>
+    <p>Speed-optimized variants that trade thoroughness for fast feedback: - plan-ceo-light: premise</p>
+    <p>  challenge + dream state + top 3 risks (no 10-section walkthrough) - plan-eng-light: scope</p>
+    <p>  challenge + architecture diagram + top concerns (no interactive stops) - review-light:</p>
+    <p>  CRITICAL-only single-pass review (SQL, race conditions, LLM trust, enums)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>skills</strong>: Add market-research skill for startup competitive analysis, sizing, and validation
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ee64c98f43465e0ebb07ed8ec96879c378515f99"><code>ee64c98</code></a>)
+    </ul>
+    <p>Bundled Claude Code skill with 3 research modes: - Competitor analysis (SWOT, competitive matrix,</p>
+    <p>  positioning gaps) - Market sizing (TAM/SAM/SOM, top-down + bottom-up) - Idea validation (demand</p>
+    <p>  signals, go/no-go assessment)</p>
+    <p>Includes mandatory web search integration and quality gates.</p>
+    <ul>
+    <li><strong>skills</strong>: Add multilingual language policy to all TAI skills
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/8">#8</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/14afe49834a17ec49573534792bc4357129c64ef"><code>14afe49</code></a>)
+    </ul>
+    <p>* feat(skills): add multilingual language policy to all TAI skills</p>
+    <p>Add a Language section to all 15 SKILL.md files instructing Claude to respond in the user's</p>
+    <p>  conversational language (Japanese, Vietnamese, etc.) while keeping severity labels, verdict</p>
+    <p>  strings, section headers, and technical terms in English for greppability and consistency.</p>
+    <p>* chore: bump version and changelog (v0.2.1)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>skills</strong>: Add strategic compact skill for Claude Code
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/7bb7e28824697211674417cc9219192257f3bb0c"><code>7bb7e28</code></a>)
+    </ul>
+    <p>tai-workflow-aware compaction guide that teaches Claude when and how to compact based on phase</p>
+    <p>  transitions (/plan-ceo → /plan-eng → implement → /review → /ship). Documents what survives</p>
+    <p>  compaction, hook behavior, and best practices.</p>
+    <ul>
+    <li><strong>skills</strong>: Add tai skills setup/update commands with bundled Claude Code skills
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/ee425adfe00f336006c95ed9a0a79eaf86c5cb9b"><code>ee425ad</code></a>)
+    </ul>
+    <p>Add 11 Claude Code skills (review, ship, qa, design-review, etc.) bundled in .claude/skills/tai/ and</p>
+    <p>  installable to ~/.claude/skills/tai-<name>/ via <code>tai skills setup</code> and <code>tai skills update</code>.</p>
+    <p>Skills are discovered as personal Claude Code skills with tai- prefix (e.g. tai-review, tai-ship)</p>
+    <p>  and include [TAI] in descriptions.</p>
+    <ul>
+    <li><strong>skills</strong>: Add tai-project skill for CLI project management
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/15">#15</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/3378a8f706408690bd1787dbeed23486a999a85a"><code>3378a8f</code></a>)
+    </ul>
+    <p>* refactor(hooks): extract shared counter file path helper</p>
+    <p>Move the counter file path convention (claude-tool-count-{sessionId}) into a shared</p>
+    <p>  getCounterFilePath() utility in hooks/lib/utils.js. Keeps suggest-compact.js and the Python</p>
+    <p>  compact-status command in sync.</p>
+    <p>* feat(hooks): add resume note to pre-compact hook</p>
+    <p>Before compaction, save git branch, uncommitted changes, recent commits, and active tasks to</p>
+    <p>  .context/compact-resume.md so Claude can pick up where it left off after context summarization.</p>
+    <p>* feat(cli): add tai claude compact-status command</p>
+    <p>Show session tool-call count, compaction history, and suggestions for when to run /compact. Supports</p>
+    <p>  --json for scripting. Scans /tmp for counter files by mtime so it works outside the active session</p>
+    <p>  context.</p>
+    <p>* feat(skills): add strategic compact skill for Claude Code</p>
+    <p>tai-workflow-aware compaction guide that teaches Claude when and how to compact based on phase</p>
+    <p>  transitions (/plan-ceo → /plan-eng → implement → /review → /ship). Documents what survives</p>
+    <p>  compaction, hook behavior, and best practices.</p>
+    <p>* chore: bump version and changelog (v0.1.1)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>* feat(skills): add content-writer skill (#6)</p>
+    <p>* feat(skills): add content-writer skill with voice profiles, slop detection, and templates</p>
+    <p>Interactive content creation workflow supporting 7 content types (blog, tutorial, release</p>
+    <p>  announcement, case study, comparison, how-to, changelog). Includes voice profile system for</p>
+    <p>  consistent tone, AI-slop detection with ~60 patterns across 9 categories, codebase-aware technical</p>
+    <p>  writing, git-aware release announcements, and 6 structured templates.</p>
+    <p>* chore: bump version and changelog (v0.1.2)</p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>* refactor(skills): rename compact skill to smart-compact (#7)</p>
+    <p>"compact" implied clearing/wiping context. "smart-compact" better conveys the intent: compacting at</p>
+    <p>  intelligent workflow boundaries rather than arbitrarily.</p>
+    <p>* feat(skills): add visualization support to content-writer (#9)</p>
+    <p>* feat(skills): add market-research skill for startup competitive analysis, sizing, and validation</p>
+    <p>Bundled Claude Code skill with 3 research modes: - Competitor analysis (SWOT, competitive matrix,</p>
+    <p>  positioning gaps) - Market sizing (TAM/SAM/SOM, top-down + bottom-up) - Idea validation (demand</p>
+    <p>  signals, go/no-go assessment)</p>
+    <p>Includes mandatory web search integration and quality gates.</p>
+    <p>* chore: bump version and changelog (v0.2.0)</p>
+    <p>* feat(skills): add multilingual language policy to all TAI skills (#8)</p>
+    <p>* feat(skills): add multilingual language policy to all TAI skills</p>
+    <p>Add a Language section to all 15 SKILL.md files instructing Claude to respond in the user's</p>
+    <p>  conversational language (Japanese, Vietnamese, etc.) while keeping severity labels, verdict</p>
+    <p>  strings, section headers, and technical terms in English for greppability and consistency.</p>
+    <p>* chore: bump version and changelog (v0.2.1)</p>
+    <p>* feat(skills): add visualization support to content-writer</p>
+    <p>Add Mermaid diagram guidance to the content-writer skill: - Step 0E: visualization preference</p>
+    <p>  briefing question - Step 2: writing rules for diagram inclusion - Step 3D: visualization quality</p>
+    <p>  gate with opportunity detection - Per-template visualization hints for all 7 templates - New</p>
+    <p>  references/visualization-guide.md with diagram type matrix</p>
+    <p>* chore: bump version and changelog (v0.2.2)</p>
+    <p>* feat(skills): add tech-research skill (#10)</p>
+    <p>* feat(skills): add tech-research skill</p>
+    <p>4 research modes: library/tool comparison, architecture decision records, technology deep dives, and</p>
+    <p>  troubleshooting research. Includes output templates for each mode, research quality checklist, and</p>
+    <p>  optional context7/chub integration for documentation lookup.</p>
+    <p>* chore: bump version and changelog (v0.2.3)</p>
+    <p>* fix(keystore): catch all KeyringError subtypes on macOS (#11)</p>
+    <p>* fix(keystore): catch all KeyringError subtypes in store and retrieve</p>
+    <p>macOS Keychain can return error -25244 (PasswordSetError) which was not caught, crashing `tai</p>
+    <p>  login`. Broadened exception handling from NoKeyringError to the base KeyringError class so all</p>
+    <p>  keychain failures gracefully fall back to file storage.</p>
+    <p>* chore: bump version and changelog (v0.2.4)</p>
+    <p>* feat(cli): add tai setup interactive config wizard (#12)</p>
+    <p>* feat(cli): add tai setup interactive config wizard</p>
+    <p>Prompts for every ProfileConfig variable with current values as defaults. Press Enter to skip/keep,</p>
+    <p>  type a new value to update. Sensitive fields (secret, password, token) are masked. Type coercion</p>
+    <p>  for int/float/bool. Guards against non-interactive terminals.</p>
+    <p>* chore: bump version and changelog (v0.2.5)</p>
+    <p>* feat(skills): add tai-project skill for CLI project management</p>
+    <p>Teaches Claude Code how to use tai CLI project commands: linking repos to Notion, viewing status,</p>
+    <p>  managing tasks/meetings, and opening linked tools. Includes non-interactive patterns for agent</p>
+    <p>  usage.</p>
+    <p>* chore: bump version and changelog (v0.2.6)</p>
+    <ul>
+    <li><strong>skills</strong>: Add tech-research skill
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/10">#10</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/6a9670c7eb24989979954712ce74dde7afbdd13c"><code>6a9670c</code></a>)
+    </ul>
+    <p>* feat(skills): add tech-research skill</p>
+    <p>4 research modes: library/tool comparison, architecture decision records, technology deep dives, and</p>
+    <p>  troubleshooting research. Includes output templates for each mode, research quality checklist, and</p>
+    <p>  optional context7/chub integration for documentation lookup.</p>
+    <p>* chore: bump version and changelog (v0.2.3)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>skills</strong>: Add visualization support to content-writer
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/9">#9</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/47ce17050a1b2be8b0369fe4398a9fcac06f3959"><code>47ce170</code></a>)
+    </ul>
+    <p>* feat(skills): add market-research skill for startup competitive analysis, sizing, and validation</p>
+    <p>Bundled Claude Code skill with 3 research modes: - Competitor analysis (SWOT, competitive matrix,</p>
+    <p>  positioning gaps) - Market sizing (TAM/SAM/SOM, top-down + bottom-up) - Idea validation (demand</p>
+    <p>  signals, go/no-go assessment)</p>
+    <p>Includes mandatory web search integration and quality gates.</p>
+    <p>* chore: bump version and changelog (v0.2.0)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>* feat(skills): add multilingual language policy to all TAI skills (#8)</p>
+    <p>* feat(skills): add multilingual language policy to all TAI skills</p>
+    <p>Add a Language section to all 15 SKILL.md files instructing Claude to respond in the user's</p>
+    <p>  conversational language (Japanese, Vietnamese, etc.) while keeping severity labels, verdict</p>
+    <p>  strings, section headers, and technical terms in English for greppability and consistency.</p>
+    <p>* chore: bump version and changelog (v0.2.1)</p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>* feat(skills): add visualization support to content-writer</p>
+    <p>Add Mermaid diagram guidance to the content-writer skill: - Step 0E: visualization preference</p>
+    <p>  briefing question - Step 2: writing rules for diagram inclusion - Step 3D: visualization quality</p>
+    <p>  gate with opportunity detection - Per-template visualization hints for all 7 templates - New</p>
+    <p>  references/visualization-guide.md with diagram type matrix</p>
+    <p>* chore: bump version and changelog (v0.2.2)</p>
+    <ul>
+    <li><strong>skills</strong>: Upgrade market-research to v2.0 with depth framework
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/14">#14</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/69e80d1cbf8f276d085e9763121fdcec6267a505"><code>69e80d1</code></a>)
+    </ul>
+    <p>* feat(skills): upgrade market-research to v2.0 with depth framework</p>
+    <p>Add 10 Market Thinking Frameworks as cognitive patterns (Jobs-to-be-Done, Porter's Five Forces,</p>
+    <p>  Inversion, Timing, Moat Classification, Blue Ocean, Proxy Skepticism, Willingness-to-Pay,</p>
+    <p>  Distribution, Second-Order Thinking).</p>
+    <p>Add interactive research refinement with AskUserQuestion stops, 3-tier depth levels</p>
+    <p>  (quick/standard/deep), cross-research persistence with staleness detection, and preamble with</p>
+    <p>  context detection.</p>
+    <p>Add external templates for competitor analysis, market sizing, idea validation, and investor-ready</p>
+    <p>  output format. Add market-specific research quality checklist.</p>
+    <p>* chore: bump version and changelog (v0.2.7)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>skills</strong>: Upgrade tech-research to v2.0 with depth framework
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/13">#13</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bb6bb818308cc987fe175481a396dc1182bcfcb0"><code>bb6bb81</code></a>)
+    </ul>
+    <p>* feat(skills): upgrade tech-research skill to v2.0 with depth framework</p>
+    <p>Transplant plan-ceo's proven depth patterns into tech-research: - Research Prime Directives and</p>
+    <p>  Thinking Instincts for structured analysis - Depth modes (Quick/Standard/Deep) with user selection</p>
+    <p>  - Multi-source triangulation protocol for claim verification - Adversarial red team section with</p>
+    <p>  confidence calibration - Interactive checkpoints for mid-research steering - Forcing questions per</p>
+    <p>  research mode - Completion summary dashboard - Enhanced templates with red team sections and</p>
+    <p>  failure modes - Strengthened quality checklist with depth indicators</p>
+    <p>* chore: bump version and changelog (v0.2.6)</p>
+    <p>Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <p>---------</p>
+    <p>Co-authored-by: Claude Opus 4.6 <noreply@anthropic.com></p>
+    <ul>
+    <li><strong>tasks,meetings</strong>: Add tasks and meetings command groups with filtering
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/d00cc4c5bdc22fca350eebd0c3fcfd6b63ff8c2d"><code>d00cc4c</code></a>)
+    </ul>
+    <ul>
+    <li>tai tasks: list, add, done (fuzzy picker) — scoped to linked project - tai meetings: list, add,
+     open (with clickable Notion link on ID) — scoped to linked project - -a/--all: show across all
+     projects (no .tai.toml required) - -n/--limit: limit number of results - -f/--filter:
+     case-insensitive substring filter on name/title - Meetings list sorted by date descending; date
+     shown as YYYY-MM-DD only - tai link/unlink/open promoted to top level; tai auth removed
+     (login/logout/whoami at top level) - tai set removed — tool bindings managed directly in Notion
+    </ul>
+    <h3>Refactoring</h3>
+    <ul>
+    <li>Replace --docs flag with tai docs subcommand
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/0b6a392a7abbb047674f56bd032c2e2775f3b8b0"><code>0b6a392</code></a>)
+    </ul>
+    <ul>
+    <li><strong>hooks</strong>: Extract shared counter file path helper
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/58f96e5703224f4812eb749daa71e5776e4c8ed9"><code>58f96e5</code></a>)
+    </ul>
+    <p>Move the counter file path convention (claude-tool-count-{sessionId}) into a shared</p>
+    <p>  getCounterFilePath() utility in hooks/lib/utils.js. Keeps suggest-compact.js and the Python</p>
+    <p>  compact-status command in sync.</p>
+    <ul>
+    <li><strong>skills</strong>: Move skills command to tai claude setup-skills
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bbc64fd69665fdf2e7987fba619694aa504692c5"><code>bbc64fd</code></a>)
+    </ul>
+    <p>Consolidate setup/update into a single <code>tai claude setup-skills</code> command. Skips existing by default,</p>
+    <p>  <code>--force</code> overwrites. Remove standalone <code>tai skills</code> subcommand.</p>
+    <ul>
+    <li><strong>skills</strong>: Rename compact skill to smart-compact
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/pull/7">#7</a>,
+     <a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/7fe4285b2f859633a3403d81176742774119075c"><code>7fe4285</code></a>)
+    </ul>
+    <p>"compact" implied clearing/wiping context. "smart-compact" better conveys the intent: compacting at</p>
+    <p>  intelligent workflow boundaries rather than arbitrarily.</p>
+    <ul>
+    <li><strong>skills</strong>: Rename plan-xxx-review to plan-xxx
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/bc7c783cbe4f471d9391a82f26f902b406544539"><code>bc7c783</code></a>)
+    </ul>
+    <p>Shorter, cleaner skill names: - plan-ceo-review → plan-ceo - plan-design-review → plan-design -</p>
+    <p>  plan-eng-review → plan-eng</p>
+    <p>Updated all cross-references across skill files.</p>
+    <h3>Testing</h3>
+    <ul>
+    <li>Fix tests broken by auth top-level promotion and picker pool change
+     (<a href="https://github.com/TrustedAI-CO/trusted-ai-cli/commit/a1729efe45dc5ef671769c3f27fdd5e10df04bfa"><code>a1729ef</code></a>)
+    </ul>
+  </article>
+  <script src="_assets/docs.js"></script>
+</body>
+</html>

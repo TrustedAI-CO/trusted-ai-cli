@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>Known Concerns</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link active" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>Known Concerns</h1>
+
+    <h2>Tech Debt</h2>
+    <ul>
+      <li><strong><code>tai/commands/vastai.py</code> is 425 lines with a 220-line <code>up()</code> function.</strong> The <code>up</code> command handles offer search, SSH key generation, instance creation, state persistence, SSH config writing, repo sync, bootstrap, and credential copy in a single function. It should be decomposed into a pipeline with named stages — each testable in isolation.</li>
+      <li><strong><code>tai/core/sales/hnavi.py</code> is 884 lines</strong> and contains 21 functions plus 7 classes covering login, job listing, negotiation fetching, message parsing, form submission, and DOM scraping. This is a God object. The scraping logic and domain models should be in separate modules.</li>
+      <li><strong><code>tai/core/vastai/bootstrap.py</code> embeds a multi-step bash script as an inline string template.</strong> The <code>_INSTALL_SCRIPT_TEMPLATE</code> constant is a 40-line bash program concatenated with Python string interpolation. Changes to the install flow require editing a raw string — no syntax checking, no tests that actually execute it.</li>
+      <li><strong>The <code>run_post_update()</code> function in <code>updater.py</code> returns a 4-tuple of booleans</strong> (<code>skills_ok, hooks_ok, templates_ok, style_ok</code>) rather than a structured result. Any future extension requires adding another positional return value, breaking callers.</li>
+    </ul>
+
+    <h2>Fragile Areas</h2>
+    <ul>
+      <li><strong>OAuth callback server uses a hardcoded port 8765.</strong> In <code>tai/core/auth.py</code>, <code>_CALLBACK_PORT = 8765</code> is non-configurable. If the port is in use (another process, another <code>tai login</code> tab, a Docker mapping), the <code>HTTPServer</code> bind fails with an unhandled <code>OSError</code> — the user sees a Python traceback, not an actionable message. The server thread also has a hard 120 s timeout with no cancellation path if the browser never opens.</li>
+      <li><strong><code>build_clone_cmd()</code> in <code>sync.py</code> interpolates <code>origin_url</code> directly into a shell string passed to <code>ssh ... bash -c</code>.</strong> The URL comes from <code>git remote get-url origin</code>, which is user-controlled data. A URL containing shell metacharacters (spaces, semicolons, backticks) would break or be executed. The <code>branch</code> parameter has the same problem.</li>
+      <li><strong>The keystore file fallback (<code>secrets.json</code>) is plaintext.</strong> The module docstring calls it "Encrypted file fallback" but <code>_file_store</code> writes unencrypted JSON to <code>~/.config/tai/secrets.json</code>. Any process running as the same user, or a world-readable misconfiguration, exposes all stored credentials. The naming mismatch with the docstring makes this easy to miss.</li>
+      <li><strong><code>wait_for_ssh()</code> in <code>provision.py</code> contains a bare <code>assert isinstance(data, dict)</code>.</strong> Python strips <code>assert</code> statements when run with <code>-O</code>. If the vastai API returns a list without an element, the subscript access <code>data[0]</code> is guarded but the assert is not — this is a control-flow dependency on optimisation flags.</li>
+      <li><strong><code>hub.py</code> has duplicated error-handling blocks.</strong> The <code>file_upload</code> and <code>file_download</code> commands manually re-implement the 401/4xx logic that <code>_hub_request()</code> already handles, because they bypass it. If the Hub auth model changes, these paths will diverge silently.</li>
+    </ul>
+
+    <h2>Missing Coverage</h2>
+    <ul>
+      <li><strong><code>tai/commands/hub.py</code> has zero tests.</strong> It was added in the most recent feature push and covers 10 commands (projects, tasks, pages, files, members, milestones, deliverables, search, summary, comment). All Hub API interactions, the project resolution logic, and file upload/download are untested.</li>
+      <li><strong><code>tai/commands/agent.py</code> and <code>tai/core/agent.py</code> have no test file.</strong> The <code>run_parallel()</code> and <code>run_agent()</code> functions, and the <code>_build_codex_args</code> / <code>_build_gemini_args</code> builders, have never been exercised by the test suite.</li>
+      <li><strong>Sales modules (<code>hnavi.py</code>, <code>aimitsu.py</code>) are explicitly excluded from coverage</strong> via <code>pyproject.toml</code> <code>[tool.coverage.run] omit</code>. They contain the most complex browser automation logic in the codebase and are tested only via <code>test_sales.py</code> which mocks Playwright at a high level.</li>
+      <li><strong>The OAuth callback server thread path is not tested.</strong> <code>test_auth_core.py</code> mocks at the HTTP level. The <code>_run_callback_server</code> function — including timeout behaviour and error capture — has no direct tests.</li>
+    </ul>
+
+    <h2>Security Surfaces</h2>
+    <ul>
+      <li><strong>Shell injection via git remote URL in <code>sync.py:build_clone_cmd()</code>.</strong> <code>origin_url</code> and <code>branch</code> are read from <code>git remote get-url origin</code> and interpolated into a bash string sent over SSH. A compromised or malicious remote URL could inject arbitrary shell commands on the remote GPU instance. These values must be quoted with <code>shlex.quote()</code> before interpolation.</li>
+      <li><strong>Asset name validation in <code>updater.py</code> is bypassable on Windows.</strong> <code>_validate_asset_name()</code> uses <code>Path(name).name</code> to strip directory components, but <code>Path</code> on POSIX treats <code>\</code> as a literal character. A release asset named <code>foo\..\..\evil.whl</code> would pass validation on Linux/macOS but traverse on Windows.</li>
+      <li><strong>User-supplied CLI arguments flow into subprocess commands without sanitisation.</strong> In <code>agent.py</code>, <code>task.prompt</code> is passed directly as a CLI argument to <code>codex exec</code> or <code>gemini --prompt</code>. While subprocess list form prevents shell injection, the agent itself will execute the prompt verbatim — there is no content-level guard.</li>
+      <li><strong>ID token used as Hub Bearer token is never re-validated client-side after storage.</strong> <code>hub.py</code> retrieves the raw <code>id_token</code> JWT from keystore and forwards it as a Bearer header. Google ID tokens expire in 1 hour; the Hub client has no refresh logic — a stale token will silently produce 401 errors rather than an explicit re-login prompt.</li>
+    </ul>
+
+    <h2>Dependency Risks</h2>
+    <ul>
+      <li><strong><code>inquirerpy>=0.3.4</code> — last PyPI release was 2022, no recent activity.</strong> The project appears unmaintained. It provides the interactive fuzzy-search prompts used in <code>tai/core/prompt.py</code>. Any Python 3.13+ compatibility issue or security patch would require a fork or replacement.</li>
+      <li><strong><code>playwright>=1.40</code> is an optional dependency but is not installed in the default environment.</strong> The sales commands silently skip at import time, and the <code>noqa: F401</code> guard in <code>commands/sales.py</code> masks the import failure. If Playwright's browser binaries are missing (installed via <code>pip</code> but <code>playwright install</code> not run), the error surfaces at runtime inside a try/except that prints nothing.</li>
+      <li><strong>The package is not on PyPI.</strong> Bootstrap and update flows fall back to <code>git+https://github.com/TrustedAI-CO/trusted-ai-cli.git</code>. This means remote GPU instances pull directly from the default branch — there is no pinning. A broken commit to <code>main</code> will immediately break all new GPU provisions until reverted.</li>
+      <li><strong><code>google-auth-oauthlib</code> transitively pulls in <code>requests</code> while the rest of the HTTP stack uses <code>httpx</code>.</strong> Two HTTP clients are maintained simultaneously. The <code>id_token.verify_oauth2_token()</code> call uses <code>google.auth.transport.requests.Request()</code>, meaning token validation makes a synchronous <code>requests</code> call to Google's JWKS endpoint — invisible in the dependency graph and unable to share the <code>httpx</code> client configuration (timeouts, proxies).</li>
+    </ul>
+
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

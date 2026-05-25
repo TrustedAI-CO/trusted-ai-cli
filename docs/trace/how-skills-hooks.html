@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>Skills &amp; Hooks</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link active" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>Skills &amp; Hooks</h1>
+
+    <h2>What it does</h2>
+    <p>
+      Skills are Markdown prompt files that Claude Code and Codex load as slash commands (e.g. <code>/tai-review</code>,
+      <code>/tai-ship</code>). Hooks are Node.js scripts that Claude Code runs automatically at lifecycle events —
+      before a Bash call, after a file edit, when a session ends. Both are bundled inside the tai package and
+      installed into the right home-directory locations by a single command.
+    </p>
+
+    <h2>How skills work</h2>
+    <ol>
+      <li>
+        <strong>Source location:</strong> Bundled skills live in <code>tai/data/skills/</code> inside the package.
+        Each skill is a directory containing a <code>SKILL.md</code> file with YAML front matter (<code>name</code>,
+        <code>version</code>, <code>description</code>) followed by the prompt body.
+      </li>
+      <li>
+        <strong>Discovery:</strong> <code>discover_skills(source_dir)</code> walks the directory, finds every
+        subdirectory that has a <code>SKILL.md</code>, and parses the front matter. The result is a list of
+        <code>SkillInfo</code> dataclasses.
+      </li>
+      <li>
+        <strong>Install — Claude Code:</strong> <code>install_skills(source_dir)</code> copies each skill directory
+        to <code>~/.claude/skills/tai-{name}/</code>. With <code>--force</code>, stale <code>tai-*</code> directories
+        that no longer exist in the source are removed first, keeping the install directory clean.
+      </li>
+      <li>
+        <strong>Install — Codex:</strong> The same function accepts a <code>target=SkillTarget.CODEX</code> argument,
+        which points at <code>~/.codex/skills/</code> instead. The logic is identical.
+      </li>
+      <li>
+        <strong>Dev mode fallback:</strong> When running from a git checkout (no package install), <code>find_skill_source()</code>
+        walks up to the repo root and finds skills in <code>.claude/skills/tai/</code>. This means skills can be
+        edited and tested without reinstalling the package.
+      </li>
+    </ol>
+
+    <h2>How hooks work</h2>
+    <ol>
+      <li>
+        <strong>Definitions:</strong> <code>tai/hooks/hooks.json</code> is the manifest. Each entry has an event
+        type (e.g. <code>PostToolUse</code>), a matcher (e.g. <code>Edit|Write|MultiEdit</code>), a description
+        starting with <code>[tai]</code>, and a command using <code>${SCRIPTS_DIR}</code> as a placeholder.
+      </li>
+      <li>
+        <strong>Resolution:</strong> <code>resolve_hooks()</code> replaces <code>${SCRIPTS_DIR}</code> and
+        <code>${LIB_DIR}</code> with the absolute paths to the bundled scripts inside the installed package.
+        This means hooks still work after the package is upgraded to a new path.
+      </li>
+      <li>
+        <strong>Merge into settings:</strong> <code>merge_hooks()</code> reads <code>~/.claude/settings.json</code>,
+        removes any existing entries whose description starts with <code>[tai]</code>, then appends the newly
+        resolved hooks. Non-tai hooks are preserved. The result is written back atomically.
+      </li>
+      <li>
+        <strong>Tagging:</strong> Every tai-managed hook has a description starting with <code>"[tai]"</code>.
+        This tag is the only marker used to identify and remove tai hooks — no separate manifest file.
+      </li>
+    </ol>
+
+    <h2>Key decisions</h2>
+    <ul>
+      <li>
+        <strong>Prefix naming (<code>tai-*</code>):</strong> All installed skills are prefixed so they never
+        collide with user-created skills and are easy to identify and clean up.
+      </li>
+      <li>
+        <strong>Hooks are Node.js:</strong> Claude Code's hook runtime executes arbitrary shell commands.
+        Node.js was chosen for the scripts because it is reliably available on developer machines (required
+        anyway for many projects) and handles JSON parsing more cleanly than shell scripts.
+      </li>
+      <li>
+        <strong>Absolute paths at install time:</strong> Hooks resolve their script paths at install time, not
+        at runtime. This is simpler and avoids PATH issues, but it means hooks must be re-installed after
+        upgrading tai (the install path may change).
+      </li>
+    </ul>
+
+    <h2>Where to change things</h2>
+    <ul>
+      <li><code>tai/data/skills/</code> — add or modify bundled skill prompt files.</li>
+      <li><code>tai/hooks/hooks.json</code> + <code>tai/hooks/scripts/</code> — add or change hook triggers and the Node.js scripts they run.</li>
+      <li><code>tai/core/skills.py</code> — skill discovery and install logic; <code>tai/hooks/__init__.py</code> — hook resolution and settings merge logic.</li>
+    </ul>
+
+    <h2>Gotchas</h2>
+    <ul>
+      <li>Re-running <code>tai claude setup-skills</code> without <code>--force</code> skips already-installed skills. Pass <code>--force</code> to update existing ones after editing the source.</li>
+      <li>After running <code>tai claude setup-hooks</code>, Claude Code must be restarted for hooks to take effect — hooks are loaded at session start, not dynamically.</li>
+      <li>The <code>[tai]</code> tag in hook descriptions is load-bearing. Changing it will cause subsequent runs to duplicate hooks rather than replace them.</li>
+    </ul>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>tai CLI — Codebase Overview</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link active" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>tai CLI — Codebase Overview</h1>
+
+    <h2>What it does</h2>
+    <p>
+      <code>tai</code> is the TrustedAI internal CLI — a Python tool built with Typer that centralises the company's
+      developer toolchain. It authenticates engineers with Google OAuth (enforcing the company domain), manages secrets
+      in the OS keychain, installs AI-agent skills and quality-gate hooks into Claude Code and Codex, compiles branded
+      PDFs from Markdown, manages workspace projects and tasks through a Hub API, and provisions on-demand GPU
+      instances on vast.ai for ML workloads. Every command surfaces a <code>--json</code> flag for scripting, and all
+      commands share one <code>AppContext</code> carrying the active profile, verbosity, and loaded config.
+    </p>
+
+    <h2>Key concepts</h2>
+    <ul>
+      <li><strong>CLI Entrypoint &amp; AppContext</strong> — Typer wires every subcommand together; a single <code>AppContext</code> object is built once in the global callback and threaded through every command via <code>typer.Context.obj</code>.</li>
+      <li><strong>Authentication</strong> — Two independent OAuth flows: Google PKCE (company login) and Claude.ai PKCE (Claude Code login); tokens live in the keychain, never on disk unprotected.</li>
+      <li><strong>Configuration &amp; Profiles</strong> — TOML-based config with XDG paths; user-level and project-level (<code>.tai.toml</code>) files are deep-merged; named profiles allow switching between dev / staging / prod.</li>
+      <li><strong>Secret Management</strong> — Three-layer fallback: OS keychain → encrypted JSON file (CI) → <code>TAI_SECRET_*</code> env vars; never written to flags or plain config.</li>
+      <li><strong>Skills &amp; Hooks</strong> — Bundled Claude Code / Codex skills (Markdown files with YAML front matter) are discovered and copied to <code>~/.claude/skills/</code>; hooks are Node.js scripts wired into <code>~/.claude/settings.json</code> to run quality gates and session tracking automatically.</li>
+      <li><strong>PDF Generation</strong> — Markdown or Typst source is compiled to branded PDF via the <code>typst</code> CLI; Typst templates ship as package data and are installed to <code>~/.tai/templates/</code>; brand colours come from a <code>brand.toml</code>.</li>
+      <li><strong>Hub API</strong> — REST client for the internal Hub service; commands manage workspace projects, pages, tasks, and members; auth uses the Google <code>id_token</code> from the keychain as a Bearer token.</li>
+      <li><strong>GPU Provisioning (vast.ai)</strong> — Wraps the <code>vastai</code> CLI to find the cheapest matching GPU offer, create an SSH keypair, boot an instance, sync the user's repo, and tear it back down; state is persisted locally so aliases survive restarts.</li>
+    </ul>
+
+    <h2>How parts connect</h2>
+    <pre>
+ User
+  │
+  ▼
+tai (main.py) ──load_config()──► Config + Profile
+  │                                   │
+  └──── builds AppContext ◄────────────┘
+           │
+           ├──► Auth (Google PKCE) ──stores/reads──► Keystore
+           │         │                                  │
+           │         └── id_token ─────────────────► Hub API
+           │
+           ├──► Skills/Hooks ──reads bundled data──► ~/.claude/skills/
+           │                                         ~/.claude/settings.json
+           │
+           ├──► PDF ──────────────────────────────► typst CLI
+           │
+           └──► GPU Provisioning ─────────────────► vastai CLI + SSH
+    </pre>
+
+    <h2>Where to look</h2>
+    <table>
+      <thead><tr><th>Task</th><th>Concept doc</th></tr></thead>
+      <tbody>
+        <tr><td>Understanding command registration and global options</td><td><a href="how-entrypoint.html">Entrypoint &amp; AppContext</a></td></tr>
+        <tr><td>Tracing login / logout / token refresh</td><td><a href="how-auth.html">Authentication</a></td></tr>
+        <tr><td>Adding or changing config keys / profiles</td><td><a href="how-config.html">Configuration &amp; Profiles</a></td></tr>
+        <tr><td>Understanding how secrets are stored and retrieved</td><td><a href="how-secrets.html">Secret Management</a></td></tr>
+        <tr><td>Adding a new skill or changing a hook</td><td><a href="how-skills-hooks.html">Skills &amp; Hooks</a></td></tr>
+        <tr><td>Changing PDF templates or brand colours</td><td><a href="how-pdf.html">PDF Generation</a></td></tr>
+        <tr><td>Adding a Hub API endpoint or command</td><td><a href="how-hub.html">Hub API</a></td></tr>
+        <tr><td>Debugging GPU provisioning or adding offer filters</td><td><a href="how-gpu.html">GPU Provisioning</a></td></tr>
+      </tbody>
+    </table>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

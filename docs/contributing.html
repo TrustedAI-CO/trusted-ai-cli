@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="guide">
+  <meta name="doc-date" content="2026-05-26">
+  <title>Contributing</title>
+  <link rel="stylesheet" href="_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="index.html">Docs</a>
+    <a class="nav-link" href="changelog.html">Changelog</a>
+    <a class="nav-link active" href="contributing.html">Contributing</a>
+    <a class="nav-link" href="REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="intent.html">Product Intent</a>
+    <a class="nav-link" href="index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>Contributing</h1>
+    <section data-section="overview">
+    <h2>Setup</h2>
+    <pre><code>
+    git clone https://github.com/TrustedAI-CO/trusted-ai-cli.git
+    cd trusted-ai-cli
+    uv sync --all-extras        # Install all dependencies including dev
+    </code></pre>
+    <p>Requires Python 3.11+ and <a href="https://docs.astral.sh/uv/">uv</a>.</p>
+    <h2>Running tests</h2>
+    <pre><code>
+    pytest                      # Full suite with 80% coverage check
+    pytest tests/test_config.py # Single file
+    pytest -k "test_login"      # By name
+    pytest --no-cov             # Skip coverage (faster iteration)
+    </code></pre>
+    <p>Coverage must stay at or above 80%. The CI will fail if it drops below.</p>
+    <h2>Project structure</h2>
+    <pre><code>
+    tai/
+    ├── main.py          # Entry point
+    ├── core/            # Shared library (auth, config, errors, http, etc.)
+    ├── commands/        # CLI command groups (one file per group)
+    ├── hooks/           # Claude Code hooks (Node.js scripts)
+    ├── data/codex/      # Codex AGENTS.md template
+    └── plugins/         # Entry-point plugin discovery
+    tests/
+    ├── conftest.py      # Shared fixtures
+    ├── test_*.py        # Core module tests
+    └── commands/        # Command-level tests
+    </code></pre>
+    <h2>Development workflow</h2>
+    <ol>
+    <li>Create a feature branch from <code>main</code></li>
+    <li>Write tests first (TDD) — see <a href="#testing-rules">testing rules</a></li>
+    <li>Implement the feature</li>
+    <li>Run <code>pytest</code> and verify 80%+ coverage</li>
+    <li>Commit with <a href="https://www.conventionalcommits.org/">conventional commits</a>: <code>feat:</code>, <code>fix:</code>, <code>refactor:</code>, etc.</li>
+    <li>Open a PR against <code>main</code></li>
+    </ul>
+    <h2>Testing rules</h2>
+    <ul>
+    <li>Write the test before the implementation</li>
+    <li>Every new function gets a test</li>
+    <li>Every bug fix gets a regression test</li>
+    <li>Mock external services (<code>respx</code> for HTTP, <code>pytest-httpx</code> for httpx)</li>
+    <li>Never hardcode secrets or API keys in tests — use fixtures</li>
+    </ul>
+    <h2>Code style</h2>
+    <ul>
+    <li>Python 3.11+ with type hints</li>
+    <li>Immutable data: use <code>model_copy()</code> or new objects, never mutate in place</li>
+    <li>Small functions (< 50 lines), small files (< 400 lines)</li>
+    <li>Error handling: raise <code>TaiError</code> subclasses with a <code>hint</code> for the user</li>
+    <li><code>--json</code> support: every user-facing command should support JSON output</li>
+    </ul>
+    <h2>Adding a new command</h2>
+    <ol>
+    <li>Create <code>tai/commands/mycommand.py</code> with a <code>typer.Typer()</code> app</li>
+    <li>Register it in <code>tai/main.py</code> via <code>app.add_typer()</code></li>
+    <li>Add tests in <code>tests/commands/test_mycommand_cmd.py</code></li>
+    <li>Update <code>tai/docs.py</code> with the new command's reference</li>
+    </ul>
+    <h2>Adding a new skill</h2>
+    <ol>
+    <li>Create <code>.claude/skills/tai/my-skill/SKILL.md</code> with YAML frontmatter:</li>
+     ```yaml
+     ---
+     name: my-skill
+     version: 1.0.0
+     description: |
+     One-line description of what this skill does.
+     allowed-tools:
+     - Read
+     - Grep
+     - Glob
+     - Bash
+     ---
+     ```
+    <li>Write the skill instructions in markdown below the frontmatter</li>
+    <li>Run <code>tai claude setup-skills --force</code> to install it for Claude Code</li>
+    <li>Run <code>tai codex setup-skills --force</code> to install it for Codex</li>
+    <li>Test the skill in Claude Code with <code>/my-skill</code> and verify Codex sees it under <code>~/.codex/skills/tai-my-skill</code></li>
+    </ul>
+    <h2>Codex setup</h2>
+    <p>Use <code>tai codex status</code> to inspect local Codex integration. Use <code>tai codex setup-agents</code> to create a tai-managed <code>AGENTS.md</code>; it will not replace an unmanaged guide unless <code>--force</code> is supplied.</p>
+    <h2>Commit messages</h2>
+    <p>Follow <a href="https://www.conventionalcommits.org/">Conventional Commits</a>:</p>
+    <pre><code>
+    feat: add new command for X
+    fix: handle empty response in tasks list
+    refactor: extract auth token refresh to helper
+    docs: update README with new skills table
+    test: add coverage for secret rotation
+    chore: update dependencies
+    </code></pre>
+    </section>
+  </article>
+  <script src="_assets/docs.js"></script>
+</body>
+</html>

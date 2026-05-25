@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>Technology Stack</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link active" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>Technology Stack</h1>
+
+    <h2>Language</h2>
+    <dl>
+      <dt>Python 3.11+</dt>
+      <dd>
+        Chosen for its rich ecosystem of CLI and HTTP libraries, rapid iteration speed,
+        and the team's existing fluency; the 3.11 floor specifically enables the standard-library
+        <code>tomllib</code> (no extra dep for reading TOML config) and improved
+        <code>typing</code> ergonomics.
+      </dd>
+    </dl>
+
+    <h2>CLI Framework</h2>
+    <dl>
+      <dt>Typer</dt>
+      <dd>
+        Drives the entire command surface (<code>tai/main.py</code>) because it turns
+        type-annotated Python functions into fully documented, shell-completable subcommands
+        with zero boilerplate, while the <code>[all]</code> extra pulls in
+        <strong>Rich</strong> for coloured terminal output automatically.
+      </dd>
+      <dt>Rich</dt>
+      <dd>
+        Used directly for tables, progress spinners, and styled error messages throughout
+        the commands; keeps output readable for humans without requiring the caller to
+        format strings manually.
+      </dd>
+      <dt>InquirerPy</dt>
+      <dd>
+        Powers interactive prompts and fuzzy-search selectors (e.g. <code>search_select</code>
+        in <code>tai/core/prompt.py</code>) for commands that need the user to pick from
+        a list rather than type a free-form value.
+      </dd>
+    </dl>
+
+    <h2>Configuration &amp; Secrets</h2>
+    <dl>
+      <dt>TOML (stdlib <code>tomllib</code> + <code>tomli-w</code>)</dt>
+      <dd>
+        Config is stored in <code>~/.config/tai/config.toml</code> and optionally
+        overridden by a per-project <code>.tai.toml</code>; TOML is preferred over JSON
+        or INI because it is human-editable, comment-friendly, and strongly typed.
+      </dd>
+      <dt>Pydantic + pydantic-settings</dt>
+      <dd>
+        <code>ProfileConfig</code> and <code>TaiConfig</code> are Pydantic models so that
+        config values are validated and coerced at load time, catching bad values before
+        any command runs.
+      </dd>
+      <dt>keyring</dt>
+      <dd>
+        OAuth tokens and API secrets are stored in the OS-native credential store
+        (macOS Keychain / Windows Credential Manager / GNOME Keyring) with a plain-file
+        fallback for headless CI, meaning secrets never live in environment variables
+        or on disk unprotected on developer machines.
+      </dd>
+      <dt>python-dotenv</dt>
+      <dd>
+        Allows <code>.env</code> files to inject <code>TAI_*</code> environment variables
+        during development without polluting the shell permanently.
+      </dd>
+    </dl>
+
+    <h2>Networking</h2>
+    <dl>
+      <dt>httpx</dt>
+      <dd>
+        All outbound HTTP — to the TrustedAI internal API, Google OAuth endpoints, and
+        external services — goes through a single <code>build_client()</code> factory
+        (<code>tai/core/http.py</code>) that attaches a <code>_BearerAuth</code> flow
+        capable of transparently refreshing the access token on a 401 and retrying once,
+        so commands never have to manage token lifecycle themselves.
+      </dd>
+    </dl>
+
+    <h2>Authentication</h2>
+    <dl>
+      <dt>Google OAuth 2.0 PKCE</dt>
+      <dd>
+        Company identity is verified via Google Workspace; the PKCE flow (no client
+        secret required) opens the system browser, spins up a transient local callback
+        server on port 8765, and enforces the <code>trusted-ai.co</code> hosted domain
+        at both the authorization URL (<code>hd=</code>) and JWT claim validation levels.
+      </dd>
+    </dl>
+
+    <h2>Document Generation</h2>
+    <dl>
+      <dt>Typst</dt>
+      <dd>
+        Branded PDF output (<code>tai pdf</code>) is compiled by the Typst binary
+        rather than a Python PDF library; Typst's template language is more maintainable
+        for design-heavy documents and produces smaller, higher-quality PDFs than
+        HTML-to-PDF pipelines.
+      </dd>
+    </dl>
+
+    <h2>Browser Automation</h2>
+    <dl>
+      <dt>Playwright (optional extra)</dt>
+      <dd>
+        The <code>sales</code> command group uses Playwright for scraping Hnavi and
+        Aimitsu sales portals; it is an optional dependency (<code>pip install trusted-ai-cli[sales]</code>)
+        so the core CLI stays lightweight for users who don't need it.
+      </dd>
+    </dl>
+
+    <h2>External Services</h2>
+    <dl>
+      <dt>TrustedAI Hub API (<code>https://api.trusted-ai.internal</code>)</dt>
+      <dd>
+        The primary backend; manages projects, tasks, workspace members, and file
+        assets — consumed by the <code>tai hub</code> command group.
+      </dd>
+      <dt>Anthropic / Claude (<code>tai ai</code>, <code>tai agent</code>)</dt>
+      <dd>
+        AI features are routed through the internal API (not the Anthropic SDK directly),
+        keeping model selection and billing centralised; the default model is
+        <code>claude-sonnet-4-6</code> set in <code>ProfileConfig</code>.
+      </dd>
+      <dt>vast.ai (<code>tai vastai</code>)</dt>
+      <dd>
+        On-demand GPU provisioning for ML workloads is delegated to vast.ai via its CLI,
+        wrapped by the <code>vastai</code> command group so engineers can spin up and
+        tear down instances without leaving the terminal.
+      </dd>
+      <dt>Google OAuth / Google APIs</dt>
+      <dd>
+        Used solely for company identity verification; no Google Workspace data APIs
+        are called by the CLI itself.
+      </dd>
+    </dl>
+
+    <h2>Build &amp; Packaging</h2>
+    <dl>
+      <dt>Hatchling + uv</dt>
+      <dd>
+        Hatchling is the PEP 517 build backend; <code>uv</code> manages the virtual
+        environment and lock file (<code>uv.lock</code>) for fast, reproducible installs
+        in CI and on developer machines.
+      </dd>
+      <dt>python-semantic-release</dt>
+      <dd>
+        Automates version bumps and GitHub Release creation from conventional commit
+        messages on every push to <code>main</code>, so release is a side-effect of a
+        well-written commit rather than a manual step.
+      </dd>
+    </dl>
+
+    <h2>Testing</h2>
+    <dl>
+      <dt>pytest + pytest-httpx / respx</dt>
+      <dd>
+        Unit and integration tests run with pytest; <code>pytest-httpx</code> and
+        <code>respx</code> mock <code>httpx</code> transports so network calls never
+        escape the test suite, and the <code>--cov-fail-under=80</code> flag enforces
+        the 80 % coverage floor on every CI run.
+      </dd>
+    </dl>
+
+    <h2>Deployment Target</h2>
+    <p>
+      The CLI is distributed as a Python wheel attached to GitHub Releases and installed
+      locally on developer machines via <code>uv</code> or <code>pip</code>.
+      There is no server deployment — it is a developer-side tool only.
+      A plugin entry-point mechanism (<code>tai.plugins</code>) allows internal teams
+      to ship additional command groups as separate packages without forking the core.
+    </p>
+
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

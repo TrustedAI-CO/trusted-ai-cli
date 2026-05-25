@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="plan">
+  <meta name="doc-date" content="2026-05-26">
+  <title>TODOs</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link active" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>TODOs</h1>
+    <p>Deferred work organized by priority. Each item has context for pickup months later.</p>
+    <section data-section="phases">
+      <h2>P1 — High</h2>
+      <h3>Python-native hooks (ruff, pytest, mypy)</h3>
+    <p><strong>What:</strong> Write Python-specific post-edit hooks that run <code>ruff check</code>, <code>mypy</code>, or <code>pytest</code> after file edits — equivalent to ECC's JS-specific hooks but for Python.</p><p><strong>Why:</strong> The curated hook set skips JS-specific hooks (Prettier, tsc). Python devs would benefit from equivalent quality tooling hooks.</p><p><strong>Context:</strong> Natural follow-up after base hook infrastructure lands. These hooks would be written fresh (in JS or Python), not ported from ECC. Need to handle tool detection (is ruff installed?) gracefully.</p><p><strong>Depends on:</strong> None (setup-hooks has landed).</p>
+    <h3>Additional PDF template types (invoice, letter, contract)</h3>
+    <p><strong>What:</strong> Add more Typst document templates beyond the initial Proposal and Technical Report.</p><p><strong>Why:</strong> Broader template coverage means more team use cases handled without ad-hoc formatting — sales pipeline (invoice/quote), legal (contract), formal correspondence (letter).</p><p><strong>Pros:</strong> Same infrastructure, incremental effort per template. Each template is self-contained.</p><p><strong>Cons:</strong> Each template needs design work (layout, sections, brand integration) and testing.</p><p><strong>Context:</strong> The <code>tai pdf</code> command group ships with Proposal and Technical Report templates. Adding more types follows the exact same pattern — create a new directory under <code>tai/data/templates/</code>, add TEMPLATE.yaml metadata, write the .typ file. Priority: P2. Effort: S per template (human: ~4h / CC: ~15 min each).</p><p><strong>Depends on:</strong> <code>tai pdf</code> feature shipping first (thien-trustedai/typst-pdf-tool).</p>
+    <h3>Context monitor hook (agent-facing context warnings)</h3>
+    <p><strong>What:</strong> A PostToolUse hook that reads context window usage metrics and injects warnings into the agent's conversation at 35% and 25% remaining context.</p><p><strong>Why:</strong> Long-running skills (/plan-ceo, /qa, /ship) consume significant context. The agent has no awareness it's running low until it hits the wall mid-task. GSD (38K stars) solved this with a context monitor that makes the agent itself aware of context pressure.</p><p><strong>Pros:</strong> Immediate quality improvement for every long-running skill. Simple hook, no architectural changes.</p><p><strong>Cons:</strong> Requires a statusLine hook to produce a bridge file (PostToolUse hooks do NOT receive context_window data — verified via spike 2026-03-22). Claude Code only supports one statusLine handler, so this conflicts with any existing statusLine config (e.g., @wyattjoh/claude-status-line). A wrapper approach works but adds complexity.</p><p><strong>Context:</strong> Inspired by GSD's <code>gsd-context-monitor.js</code>. TAI has <code>suggest-compact.js</code> but it notifies the user, not the agent. This hook would inject warnings into the model's conversation so the AI can proactively save state. Priority: P2 (downgraded from P1 due to statusLine conflict). Effort: M (human: ~1 week / CC: ~30 min) — includes statusLine wrapper component.</p><p><strong>Spike findings (2026-03-22):</strong> PostToolUse stdin contains tool_name, tool_input, tool_response, session_id, cwd — NO context_window data. Only statusLine hooks receive <code>context_window.remaining_percentage</code>. GSD uses a two-component bridge: statusLine writes <code>/tmp/claude-ctx-{session_id}.json</code>, PostToolUse reads it. The wrapper approach (TAI statusLine reads metrics + writes bridge file, then shells out to existing statusLine for display) is the cleanest path but was deferred due to invasiveness.</p><p><strong>Depends on:</strong> None, but conflicts with existing statusLine configuration.</p>
+    <h3>File-based project state (.tai/ directory)</h3>
+    <p><strong>What:</strong> A local directory structure for persisting structured skill outputs (review results, QA reports, codebase maps, plan decisions) that survive context resets.</p><p><strong>Why:</strong> TAI skills produce valuable analysis that is lost when the context window resets. A file-based state directory makes skill outputs persistent, git-trackable, and readable by other skills. GSD's <code>.planning/</code> directory is the proven pattern.</p><p><strong>Pros:</strong> Foundation for skill interconnection — /review can check if /qa passed, /ship can verify review status, /tai-map output feeds into planning. State survives <code>/clear</code>.</p><p><strong>Cons:</strong> Needs careful schema design to avoid fragmentation. Must define gitignore behavior (default ignored, user opts in). Existing skills need incremental updates to read from .tai/ (check-if-exists pattern, no big-bang migration).</p><p><strong>Context:</strong> Directory structure: <code>.tai/state.md</code>, <code>.tai/map/</code>, <code>.tai/reviews/</code>, <code>.tai/qa/</code>, <code>.tai/init/</code>. Each skill writes to its own subdirectory. Integration contract: "check if file exists, load if present, otherwise proceed without." Priority: P1. Effort: M (human: ~1 week / CC: ~30 min).</p><p><strong>Depends on:</strong> None (but items below depend on this).</p>
+    <h3>Codebase mapping skill (/tai-map)</h3>
+    <p><strong>What:</strong> A skill that spawns subagents to analyze an existing codebase and produces structured context documents (stack, architecture, conventions, concerns).</p><p><strong>Why:</strong> Every TAI skill that touches code re-discovers the same codebase context. A one-time mapping produces reusable structured analysis that feeds into planning, review, and initialization skills. GSD's <code>/gsd:map-codebase</code> is the proven pattern.</p><p><strong>Pros:</strong> Run once, benefit everywhere. Parallel agent analysis covers stack, architecture, conventions, and concerns in separate focused passes. Output is human-readable Markdown.</p><p><strong>Cons:</strong> Analysis can become stale as codebase evolves. Needs a staleness detection mechanism or re-run trigger.</p><p><strong>Context:</strong> Writes output to <code>.tai/map/</code> (4 files: stack.md, architecture.md, conventions.md, concerns.md). Each subagent has a focused scope — no overlap. Priority: P2. Effort: M (human: ~1 week / CC: ~30 min).</p><p><strong>Depends on:</strong> File-based project state (.tai/ directory).</p>
+    <h3>Project initialization skill (/tai-init)</h3>
+    <p><strong>What:</strong> A skill that takes a project idea through structured discovery (adaptive questioning) -> research -> scoped requirements -> phased roadmap, producing structured documents in <code>.tai/init/</code>.</p><p><strong>Why:</strong> TAI has planning and review skills but no build pipeline entry point. GSD's <code>/gsd:new-project</code> proves that structured initialization dramatically improves AI coding consistency. This is the most strategic addition — it gives TAI a complete lifecycle from idea to shipped code.</p><p><strong>Pros:</strong> Fills TAI's biggest gap vs GSD. Produces requirements with unique IDs and a phased roadmap that downstream skills can reference. Research phase surfaces pitfalls before coding starts.</p><p><strong>Cons:</strong> Largest item (L effort). Adaptive questioning is non-deterministic — needs a hard question cap (~15) and a coverage checklist. Research subagent scope needs tight boundaries to avoid bloat.</p><p><strong>Context:</strong> Output: <code>.tai/init/project.md</code>, <code>requirements.md</code>, <code>roadmap.md</code>, <code>research/</code>. If <code>/tai-map</code> has been run, loads <code>.tai/map/</code> files as context during discovery. Priority: P2. Effort: L (human: ~2 weeks / CC: ~1 hour).</p><p><strong>Depends on:</strong> File-based project state (.tai/ directory). Optionally reads /tai-map output.</p>
+    <h3>Fresh-context architecture for long-running skills</h3>
+    <p><strong>What:</strong> Rethink skill architecture so multi-section workflows (/plan-ceo, /qa) can orchestrate each section as a fresh subagent with file-based state passing via .tai/.</p><p><strong>Why:</strong> Long-running skills suffer from context rot — quality degrades as the context window fills. GSD's core architectural insight is spawning fresh 200K context windows per task. This would bring the same benefit to TAI's mega-reviews.</p><p><strong>Pros:</strong> Eliminates context rot for the most complex skills. Each section gets full context budget.</p><p><strong>Cons:</strong> Fundamental architecture change. Requires rethinking how skills communicate state. L-XL effort.</p><p><strong>Context:</strong> Deferred from GSD adoption CEO review (2026-03-22). Requires understanding Claude Code's subagent context isolation model. Priority: P3. Effort: XL (human: ~2-3 weeks / CC: ~2-4 hours).</p><p><strong>Depends on:</strong> File-based project state (.tai/ directory).</p>
+    <h3>Stress-test /tai-execute parallel wave execution</h3>
+    <p><strong>What:</strong> Run /tai-execute on a 10+ task plan with 3+ waves to stress-test parallel execution, file overlap detection, and checkpoint concurrency handling.</p><p><strong>Why:</strong> Parallel execution is the highest-risk feature in /tai-execute. Real-world stress testing will surface edge cases that spec review can't predict — race conditions, state file contention, transitive file conflicts.</p><p><strong>Pros:</strong> Catches real bugs before users hit them. Builds confidence in the wave system.</p><p><strong>Cons:</strong> Requires a sufficiently complex plan to exercise all code paths.</p><p><strong>Context:</strong> /tai-execute ships with wave-based parallel execution, deviation rules, and checkpoint protocol. This TODO is a validation pass specifically targeting the parallel execution path. Priority: P1 (after /tai-execute ships). Effort: S (human: ~2h / CC: ~15 min).</p><p><strong>Depends on:</strong> /tai-execute skill shipping.</p>
+      <h2>Completed</h2>
+    </section>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

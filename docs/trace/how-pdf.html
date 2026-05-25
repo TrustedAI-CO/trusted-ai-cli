@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>PDF Generation</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link active" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>PDF Generation</h1>
+
+    <h2>What it does</h2>
+    <p>
+      <code>tai pdf compile</code> turns a Markdown or Typst source file into a branded PDF. The pipeline loads a
+      Typst template from a local install directory, optionally injects brand colours from a <code>brand.toml</code>,
+      renders any Mermaid diagram blocks to SVG, then invokes the <code>typst</code> CLI to produce the final PDF.
+      Templates and brand assets are bundled inside the tai package and installed once with
+      <code>tai pdf setup-templates</code>.
+    </p>
+
+    <h2>How it works</h2>
+    <ol>
+      <li>
+        <strong>Template setup (one-time):</strong> <code>tai pdf setup-templates</code> discovers templates in
+        <code>tai/data/templates/</code> (each is a directory with a <code>typst.toml</code> manifest), then copies
+        them to <code>~/.tai/templates/</code>. Brand assets from <code>tai/data/brand/</code> go to
+        <code>~/.tai/brand/</code>. With <code>--force</code>, existing templates are overwritten.
+      </li>
+      <li>
+        <strong>Template resolution:</strong> When compiling, the user passes a template name. The code calls
+        <code>validate_template_name()</code> (guards against path traversal), then looks up the template directory
+        in <code>~/.tai/templates/{name}/</code>. If it is not there, a <code>TemplateNotFoundError</code> is raised
+        with a "run setup-templates" hint.
+      </li>
+      <li>
+        <strong>Brand injection:</strong> If a <code>brand.toml</code> exists (in the project or user config dir),
+        <code>load_brand_colors()</code> reads the company name and hex colour values. These are passed as Typst
+        variables so the template can use <code>#company-name</code> and <code>#primary-color</code> without
+        hard-coding them.
+      </li>
+      <li>
+        <strong>Mermaid pre-processing:</strong> Fenced code blocks tagged as <code>mermaid</code> in the Markdown
+        source are extracted, rendered to SVG by calling the Mermaid CLI (via Bun), and replaced with inline SVG
+        references before the content reaches Typst. This happens in a temporary directory.
+      </li>
+      <li>
+        <strong>Typst compilation:</strong> <code>tai.core.typst</code> checks that the <code>typst</code> binary
+        exists and meets the minimum version requirement, then runs <code>typst compile</code> with the template
+        as the root file and the processed content as input. Stderr from typst is surfaced as a
+        <code>TypstCompileError</code> hint.
+      </li>
+    </ol>
+
+    <h2>Key decisions</h2>
+    <ul>
+      <li>
+        <strong>Typst over LaTeX:</strong> Typst compiles in milliseconds vs. LaTeX's multi-second runs, has a
+        clean programmable syntax, and produces reproducible output. The trade-off is that users must install the
+        <code>typst</code> CLI.
+      </li>
+      <li>
+        <strong>Templates installed to <code>~/.tai/</code>, not the package:</strong> Templates can be edited by
+        the user after installation (to customise for a client engagement, for example). Installing them to a user
+        directory makes this natural without modifying the package itself.
+      </li>
+      <li>
+        <strong>Mermaid via Bun:</strong> The Mermaid CLI is a JavaScript tool. Rather than requiring a full
+        Node.js + npm install, tai uses Bun's zero-install execution to run the CLI. This is why
+        <code>BunNotFoundError</code> exists — Bun must be on the PATH for Mermaid to work.
+      </li>
+    </ul>
+
+    <h2>Where to change things</h2>
+    <ul>
+      <li><code>tai/data/templates/</code> — add new Typst templates (each needs a <code>typst.toml</code> manifest).</li>
+      <li><code>tai/data/brand/</code> — default brand assets and the example <code>brand.toml</code>.</li>
+      <li><code>tai/core/typst.py</code> — version checking and <code>typst compile</code> invocation; <code>tai/core/mermaid.py</code> — Mermaid SVG rendering.</li>
+    </ul>
+
+    <h2>Gotchas</h2>
+    <ul>
+      <li>The <code>typst</code> binary must be on the PATH. On macOS: <code>brew install typst</code>. The minimum required version is checked at compile time; too-old versions raise <code>TypstVersionError</code>.</li>
+      <li>Mermaid diagrams only work if Bun is installed (<code>curl -fsSL https://bun.sh/install | bash</code>). A document with no Mermaid blocks compiles fine without Bun.</li>
+      <li>Template names must match <code>^[a-zA-Z0-9][a-zA-Z0-9_-]*$</code>. A name with slashes or dots will fail validation before touching the filesystem.</li>
+    </ul>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

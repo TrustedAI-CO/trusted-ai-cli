@@ -39,3 +39,4 @@ htmlcov/
 .claude/scheduled_tasks.lock
 .gstack/
 .omx/
+.tai/

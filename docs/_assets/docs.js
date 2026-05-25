@@ -1,6 +1,6 @@
 /* ── tai docs — runtime ──────────────────────────────────────────────────
-   Simple: fetch file tree from server, build sidebar, search, navigate.
-   All links absolute. No broken paths.
+   Sidebar is static HTML (injected by write_index).
+   This JS adds: search, collapsible groups, validation, theme, hot reload.
    ────────────────────────────────────────────────────────────────────── */
 
 (function () {
@@ -8,132 +8,56 @@
 
   var served = location.protocol.startsWith("http");
 
-  /* ── Sidebar ──────────────────────────────────────────────────────── */
+  /* ── Sidebar search + collapsible groups ──────────────────────────── */
 
-  function buildSidebar() {
-    /* try server API first, fall back to static index file */
-    var urls = served
-      ? ["/_api/docs", "_assets/_index.json"]
-      : ["_assets/_index.json", "../_assets/_index.json"];
+  function enhanceSidebar() {
+    var nav = document.querySelector("nav.docs-nav");
+    if (!nav) return;
 
-    fetchFirst(urls).then(function (docs) {
-      if (!docs) return;
-        var nav = document.createElement("nav");
-        nav.className = "docs-nav";
-
-        /* title */
-        var title = document.createElement("a");
-        title.className = "nav-title";
-        title.href = "/";
-        title.textContent = "Docs";
-        nav.appendChild(title);
-
-        /* search */
-        var search = document.createElement("input");
-        search.className = "nav-search";
-        search.type = "text";
-        search.placeholder = "Search...";
-        search.addEventListener("input", function () {
-          var q = search.value.toLowerCase();
-          nav.querySelectorAll(".nav-link").forEach(function (a) {
-            a.style.display = a.textContent.toLowerCase().includes(q) ? "" : "none";
-          });
-          nav.querySelectorAll(".nav-group").forEach(function (g) {
-            var links = g.nextElementSibling;
-            if (!links || !links.classList.contains("nav-group-items")) return;
-            var anyVisible = false;
-            links.querySelectorAll(".nav-link").forEach(function (a) {
-              if (a.style.display !== "none") anyVisible = true;
-            });
-            g.style.display = anyVisible || !q ? "" : "none";
-            links.style.display = anyVisible || !q ? "" : "none";
-          });
+    /* add search input after title */
+    var title = nav.querySelector(".nav-title");
+    var search = document.createElement("input");
+    search.className = "nav-search";
+    search.type = "text";
+    search.placeholder = "Search...";
+    search.addEventListener("input", function () {
+      var q = search.value.toLowerCase();
+      nav.querySelectorAll(".nav-link").forEach(function (a) {
+        a.style.display = a.textContent.toLowerCase().indexOf(q) !== -1 ? "" : "none";
+      });
+      nav.querySelectorAll(".nav-group").forEach(function (g) {
+        var items = g.nextElementSibling;
+        if (!items || !items.classList.contains("nav-group-items")) return;
+        var anyVisible = false;
+        items.querySelectorAll(".nav-link").forEach(function (a) {
+          if (a.style.display !== "none") anyVisible = true;
         });
-        nav.appendChild(search);
-
-        /* back button — show parent dir */
-        var current = location.pathname.replace(/^\//, "");
-        var parts = current.split("/");
-        if (parts.length > 1) {
-          var back = document.createElement("a");
-          back.className = "nav-back";
-          back.href = "/" + parts.slice(0, -1).join("/") + "/";
-          back.textContent = "\u2190 " + (parts.length > 2 ? parts[parts.length - 2] : "root");
-          nav.appendChild(back);
-        }
-
-        /* build tree: group by first directory */
-        var tree = {};
-        docs.forEach(function (doc) {
-          var segs = doc.path.split("/");
-          var dir = segs.length > 1 ? segs[0] : "";
-          if (!tree[dir]) tree[dir] = [];
-          tree[dir].push(doc);
-        });
-
-        /* render root files first, then directories */
-        var dirs = Object.keys(tree).sort(function (a, b) {
-          if (a === "") return -1;
-          if (b === "") return 1;
-          return a.localeCompare(b);
-        });
-
-        dirs.forEach(function (dir) {
-          if (dir) {
-            var heading = document.createElement("div");
-            heading.className = "nav-group";
-            heading.textContent = dir;
-            heading.addEventListener("click", function () {
-              var items = heading.nextElementSibling;
-              if (items) items.classList.toggle("collapsed");
-              heading.classList.toggle("collapsed");
-            });
-            nav.appendChild(heading);
-
-            var container = document.createElement("div");
-            container.className = "nav-group-items";
-            /* auto-expand current directory */
-            if (!current.startsWith(dir + "/")) {
-              container.classList.add("collapsed");
-              heading.classList.add("collapsed");
-            }
-
-            tree[dir]
-              .sort(function (a, b) { return a.title.localeCompare(b.title); })
-              .forEach(function (doc) { container.appendChild(makeLink(doc, current)); });
-            nav.appendChild(container);
-          } else {
-            tree[dir]
-              .sort(function (a, b) { return a.title.localeCompare(b.title); })
-              .forEach(function (doc) { nav.appendChild(makeLink(doc, current)); });
-          }
-        });
-
-        document.body.prepend(nav);
-        document.body.classList.add("has-nav");
-      })
+        g.style.display = anyVisible || !q ? "" : "none";
+        items.style.display = anyVisible || !q ? "" : "none";
+      });
     });
-  }
-
-  function fetchFirst(urls) {
-    var i = 0;
-    function tryNext() {
-      if (i >= urls.length) return Promise.resolve(null);
-      return fetch(urls[i++])
-        .then(function (r) { return r.ok ? r.json() : tryNext(); })
-        .catch(function () { return tryNext(); });
+    if (title && title.nextSibling) {
+      title.parentNode.insertBefore(search, title.nextSibling);
     }
-    return tryNext();
-  }
 
-  function makeLink(doc, current) {
-    var a = document.createElement("a");
-    a.href = "/" + doc.path;
-    a.className = "nav-link";
-    a.textContent = doc.title;
-    if (current === doc.path) a.classList.add("active");
-    if (doc.type) a.dataset.type = doc.type;
-    return a;
+    /* make groups collapsible */
+    nav.querySelectorAll(".nav-group").forEach(function (g) {
+      var items = g.nextElementSibling;
+      if (!items || !items.classList.contains("nav-group-items")) return;
+
+      /* auto-collapse groups without active link */
+      var hasActive = items.querySelector(".nav-link.active");
+      if (!hasActive) {
+        items.classList.add("collapsed");
+        g.classList.add("collapsed");
+      }
+
+      g.style.cursor = "pointer";
+      g.addEventListener("click", function () {
+        items.classList.toggle("collapsed");
+        g.classList.toggle("collapsed");
+      });
+    });
   }
 
   /* ── Metadata display ─────────────────────────────────────────────── */
@@ -215,7 +139,6 @@
       });
     }
 
-    /* badge */
     var badge = document.createElement("div");
     badge.className = "validation-badge " + (issues.length ? "validation-fail" : "validation-pass");
     badge.textContent = issues.length ? issues.length + " issue" + (issues.length > 1 ? "s" : "") : "\u2713 Valid";
@@ -245,7 +168,7 @@
     document.body.appendChild(badge);
   }
 
-  /* ── Hot reload ───────────────────────────────────────────────────── */
+  /* ── Hot reload (server only) ─────────────────────────────────────── */
 
   function hotReload() {
     if (!served) return;
@@ -300,7 +223,7 @@
   document.addEventListener("DOMContentLoaded", function () {
     loadFonts();
     renderMeta();
-    buildSidebar();
+    enhanceSidebar();
     validate();
     hotReload();
     initTheme();

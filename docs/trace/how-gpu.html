@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>GPU Provisioning (vast.ai)</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link active" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>GPU Provisioning (vast.ai)</h1>
+
+    <h2>What it does</h2>
+    <p>
+      <code>tai vastai up</code> provisions the cheapest available GPU on vast.ai that meets a spec (GPU model, RAM,
+      disk), generates a dedicated SSH keypair, waits until SSH is reachable, syncs the user's current repo to the
+      instance, and records the instance under a local alias. <code>tai vastai down</code> tears it back down and
+      cleans up the SSH config and state files. The whole flow is designed to be driven by the
+      <code>vastai-quick-gpu</code> Claude skill without human copy-pasting.
+    </p>
+
+    <h2>How it works</h2>
+    <ol>
+      <li>
+        <strong>Offer search:</strong> <code>tai.core.vastai.offers</code> queries the vast.ai API (via the
+        <code>vastai</code> CLI) for available GPU instances matching the requested spec, sorted by price. The
+        first result becomes the target.
+      </li>
+      <li>
+        <strong>SSH keypair generation:</strong> <code>provision.generate_ssh_key(alias)</code> creates an
+        ed25519 keypair at <code>~/.ssh/vastai_{alias}_ed25519</code> if one does not already exist. The public
+        key is uploaded to the instance at creation time.
+      </li>
+      <li>
+        <strong>Instance creation:</strong> <code>tai.core.vastai.provision.Provisioner</code> calls
+        <code>vastai create instance …</code> as a subprocess, passing the offer ID, SSH key, and disk size.
+        It then polls SSH readiness — trying to connect every few seconds until the instance responds or a
+        timeout is hit.
+      </li>
+      <li>
+        <strong>SSH config entry:</strong> <code>tai.core.vastai.ssh_config</code> appends a Host block to
+        <code>~/.ssh/config</code> for the alias, setting <code>HostName</code>, <code>Port</code>,
+        <code>User root</code>, and <code>IdentityFile</code>. This means the instance is reachable as just
+        <code>ssh {alias}</code> from anywhere.
+      </li>
+      <li>
+        <strong>State persistence:</strong> <code>tai.core.vastai.state</code> writes a JSON record
+        (instance ID, alias, SSH details, creation time) to a file in <code>~/.tai/vastai/</code>. This is how
+        <code>tai vastai list</code> and <code>tai vastai down</code> know what exists without querying vast.ai
+        every time.
+      </li>
+      <li>
+        <strong>Repo sync:</strong> <code>tai.core.vastai.sync</code> uses <code>rsync</code> over SSH to copy
+        the current working directory to the instance. It respects <code>.gitignore</code> patterns to avoid
+        uploading build artefacts.
+      </li>
+      <li>
+        <strong>Teardown:</strong> <code>tai vastai down</code> runs <code>vastai destroy instance {id}</code>,
+        removes the SSH config block, deletes the local keypair, and removes the state record.
+      </li>
+    </ol>
+
+    <h2>Key decisions</h2>
+    <ul>
+      <li>
+        <strong>Provisioner as an injectable class:</strong> The <code>Provisioner</code> class accepts a
+        <code>runner</code> (subprocess hook) and <code>sleeper</code> (time.sleep hook). Tests can substitute
+        both to simulate instance creation and SSH polling without spending money or waiting.
+      </li>
+      <li>
+        <strong>Dedicated SSH key per alias:</strong> Using a separate keypair per instance makes teardown clean —
+        deleting the alias deletes exactly its key, without touching the user's other SSH keys.
+      </li>
+      <li>
+        <strong>State file instead of always querying vast.ai:</strong> The vast.ai API has rate limits and latency.
+        Storing instance metadata locally makes <code>list</code> and <code>status</code> instant, and means the
+        CLI works for read operations even when the vast.ai API is slow.
+      </li>
+    </ul>
+
+    <h2>Where to change things</h2>
+    <ul>
+      <li><code>tai/core/vastai/offers.py</code> — offer query logic; change GPU filters or sort criteria here.</li>
+      <li><code>tai/core/vastai/provision.py</code> — instance creation, SSH key generation, SSH readiness polling.</li>
+      <li><code>tai/core/vastai/sync.py</code> — rsync options and gitignore integration.</li>
+    </ul>
+
+    <h2>Gotchas</h2>
+    <ul>
+      <li>The <code>vastai</code> CLI must be installed and authenticated separately (<code>vastai set api-key …</code>). tai does not manage vast.ai credentials — it just shells out to the binary.</li>
+      <li>SSH polling uses a fixed sleep interval. If a large disk image takes longer than the polling timeout to boot, the <code>up</code> command will fail even though the instance eventually starts. Increase the timeout or retry manually.</li>
+      <li>The state file is the source of truth for <code>down</code>. If it is deleted manually, <code>tai vastai down {alias}</code> will not know the instance ID and cannot destroy it — you would need to run <code>vastai destroy instance {id}</code> directly.</li>
+    </ul>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

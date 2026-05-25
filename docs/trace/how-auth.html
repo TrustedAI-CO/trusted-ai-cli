@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>Authentication</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link active" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>Authentication</h1>
+
+    <h2>What it does</h2>
+    <p>
+      There are two independent auth flows. The <strong>company login</strong> (<code>tai login</code>) gets a
+      Google OAuth token for the user's <code>@trusted-ai.co</code> account — this token is then used to talk to the
+      Hub API. The <strong>Claude Code login</strong> (<code>tai claude login</code>) gets a refresh token from
+      Claude.ai and passes it to the <code>claude</code> binary to authenticate the AI agent. Both flows use PKCE
+      to avoid ever needing a client secret in the binary.
+    </p>
+
+    <h2>How it works — company login (Google)</h2>
+    <ol>
+      <li>
+        <code>tai login</code> calls <code>tai.core.auth.login()</code>. It generates a PKCE
+        <em>verifier</em> (64 random bytes, base64url) and derives the <em>challenge</em> (SHA-256 of the verifier).
+      </li>
+      <li>
+        A local HTTP server starts on <code>localhost:8765</code> in a daemon thread, waiting for the redirect.
+        The browser is opened to Google's auth URL with <code>hd=trusted-ai.co</code> (Google pre-filters non-company accounts)
+        and the PKCE challenge.
+      </li>
+      <li>
+        Google redirects to <code>localhost:8765/callback?code=…</code>. The server captures the code and stops.
+      </li>
+      <li>
+        The code is exchanged for tokens at Google's token endpoint, sending the original verifier as proof.
+        The returned <code>id_token</code> JWT is then verified with <code>google-auth</code>, and the <code>hd</code>
+        claim is checked — both at the Google pre-filter level and in the JWT — to prevent domain bypass attacks.
+      </li>
+      <li>
+        All five tokens (access, refresh, id, expiry, email) are written to the OS keychain via
+        <code>tai.core.keystore</code> under the active profile name.
+      </li>
+    </ol>
+
+    <h2>How it works — Claude Code login</h2>
+    <ol>
+      <li>
+        <code>tai claude login</code> generates its own PKCE pair and builds an auth URL for <code>claude.ai/oauth/authorize</code>.
+        Because there is no local server to receive the redirect (the callback goes to <code>platform.claude.com</code>),
+        the user is shown the URL, completes the browser flow, then pastes the callback URL or raw code back into the terminal.
+      </li>
+      <li>
+        The code is exchanged at <code>platform.claude.com/v1/oauth/token</code> for a refresh token.
+      </li>
+      <li>
+        The refresh token is injected as an environment variable (<code>CLAUDE_CODE_OAUTH_REFRESH_TOKEN</code>)
+        and <code>claude auth login</code> is run as a subprocess. This hands off the final onboarding to the
+        official Claude binary, so tai does not need to know the Claude internal token format.
+      </li>
+    </ol>
+
+    <h2>Token refresh</h2>
+    <p>
+      When a command needs an access token, <code>get_access_token()</code> checks the stored expiry. If the
+      token expires within 5 minutes, it refreshes using the stored refresh token — silently, in the background.
+      If the refresh fails (network error or revoked token), it raises <code>AuthExpiredError</code>, which the
+      error handler turns into a friendly "run tai login" message.
+    </p>
+
+    <h2>Key decisions</h2>
+    <ul>
+      <li>
+        <strong>Dual domain enforcement:</strong> The <code>hd</code> parameter is set in the auth URL (Google pre-filter)
+        <em>and</em> validated in the returned JWT. An attacker who intercepted the token exchange cannot supply a
+        personal Google account token because the JWT would fail the <code>hd</code> claim check.
+      </li>
+      <li>
+        <strong>PKCE without a client secret:</strong> The OAuth client ID is embedded in the binary (this is
+        intentional and safe for public desktop apps; the comment in the code says so). PKCE provides the security
+        that a client secret normally would.
+      </li>
+      <li>
+        <strong>Claude login delegates to the claude binary:</strong> Rather than reimplementing Claude's session
+        management, tai just provides the refresh token. This means Claude Code updates do not break tai auth.
+      </li>
+    </ul>
+
+    <h2>Where to change things</h2>
+    <ul>
+      <li><code>tai/core/auth.py</code> — all Google OAuth logic, PKCE helpers, token refresh.</li>
+      <li><code>tai/commands/claude.py</code> — Claude Code OAuth flow (URL building, code exchange, subprocess handoff).</li>
+      <li><code>tai/commands/auth.py</code> — the <code>login</code>, <code>logout</code>, <code>whoami</code> commands that call into <code>tai.core.auth</code>.</li>
+    </ul>
+
+    <h2>Gotchas</h2>
+    <ul>
+      <li>The local callback server uses a 120-second timeout. If the browser flow takes longer (slow network, user distracted), login will fail with "timed out" and the user must restart.</li>
+      <li>Port 8765 is hardcoded. If something else is using that port, login will fail with a bind error.</li>
+      <li>The <code>id_token</code> — not the <code>access_token</code> — is what the Hub API uses as a Bearer token. Make sure the keystore is storing and retrieving <code>"id_token"</code>, not <code>"access_token"</code>, when debugging Hub auth failures.</li>
+    </ul>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

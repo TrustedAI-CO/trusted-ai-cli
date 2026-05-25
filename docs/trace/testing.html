@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>Testing Trace</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link active" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>Testing Trace</h1>
+
+    <h2>Framework and Runner</h2>
+    <p>
+      Tests use <strong>pytest 8+</strong> with <strong>pytest-cov</strong> for coverage,
+      <strong>respx</strong> and <strong>pytest-httpx</strong> for mocking <code>httpx</code> calls,
+      and Typer's built-in <code>CliRunner</code> for end-to-end command invocations.
+    </p>
+
+    <h2>Running Tests</h2>
+    <pre><code># Full suite with coverage (default — enforces 80% threshold)
+uv run pytest
+
+# Single file
+uv run pytest tests/test_http.py
+
+# Specific test
+uv run pytest tests/commands/test_ai_cmd.py::test_ai_complete
+
+# Skip coverage enforcement
+uv run pytest --no-cov
+</code></pre>
+
+    <h2>Coverage Configuration</h2>
+    <p>
+      Configured in <code>pyproject.toml</code> under <code>[tool.pytest.ini_options]</code> and
+      <code>[tool.coverage.run]</code>:
+    </p>
+    <ul>
+      <li>Source measured: <code>tai/</code></li>
+      <li>Minimum threshold: <strong>80%</strong> — build fails below this</li>
+      <li>Report: <code>term-missing</code> (line numbers of uncovered lines printed inline)</li>
+      <li>Excluded from coverage: <code>tai/core/sales/</code>, <code>tai/commands/sales.py</code>,
+          <code>tai/core/sales/aimitsu.py</code>, <code>tai/core/sales/hnavi.py</code>
+          (require optional <code>playwright</code> dependency)</li>
+    </ul>
+
+    <h2>Test Layout</h2>
+    <p>
+      Tests mirror the source tree under <code>tests/</code>:
+    </p>
+    <ul>
+      <li><code>tests/</code> — top-level unit tests for core modules
+          (<code>test_http.py</code>, <code>test_config.py</code>, <code>test_errors.py</code>, etc.)</li>
+      <li><code>tests/commands/</code> — CLI integration tests, one file per command module</li>
+      <li><code>tests/core/</code> — additional unit tests for core utilities
+          (<code>test_mermaid.py</code>, <code>test_style.py</code>, <code>test_brand_colors.py</code>)</li>
+      <li><code>tests/conftest.py</code> — shared fixtures: <code>runner</code>, <code>default_profile</code>,
+          <code>app_ctx</code></li>
+    </ul>
+
+    <h2>Testing Philosophy</h2>
+    <p>
+      Command tests invoke the real Typer app via <code>CliRunner.invoke(app, [...], obj=ctx_obj)</code>,
+      injecting a pre-built <code>AppContext</code> to bypass filesystem config loading.
+      HTTP calls are mocked by patching <code>build_client</code> to return a
+      <code>MagicMock</code>, or by using <code>@respx.mock</code> decorators for lower-level
+      <code>httpx</code> transport tests.
+    </p>
+    <p>
+      The fixture pattern repeats across command test files: construct a minimal
+      <code>TaiConfig</code> with a <code>ProfileConfig</code>, wrap it in an <code>AppContext</code>,
+      pass it as <code>obj</code>. Conftest provides a default version; override locally when
+      you need specific field values.
+    </p>
+    <p>
+      Config tests use <code>monkeypatch</code> to redirect <code>CONFIG_DIR</code>,
+      <code>CONFIG_FILE</code>, and <code>PROJECT_CONFIG_FILE</code> into <code>tmp_path</code>,
+      ensuring no test touches real user config on disk.
+    </p>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>

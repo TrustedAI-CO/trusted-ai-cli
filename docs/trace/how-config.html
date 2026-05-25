@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="doc-type" content="trace">
+  <meta name="doc-date" content="2026-05-26">
+  <title>Configuration &amp; Profiles</title>
+  <link rel="stylesheet" href="../_assets/style.css">
+</head>
+<body class="has-nav">
+<nav class="docs-nav">
+  <a class="nav-title" href="../index.html">Docs</a>
+    <a class="nav-link" href="../changelog.html">Changelog</a>
+    <a class="nav-link" href="../contributing.html">Contributing</a>
+    <a class="nav-link" href="../REVIEW.html">Human Attention Log</a>
+    <a class="nav-link" href="../intent.html">Product Intent</a>
+    <a class="nav-link" href="../index.html">tai CLI — Documentation</a>
+  <div class="nav-group">decisions</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../decisions/_template.html">ADR-{NNN}: {Decision Title}</a>
+    <a class="nav-link" href="../decisions/001-html-docs.html">Use HTML for Project Documentation</a>
+  </div>
+  <div class="nav-group">design</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../design/system.html">System Design</a>
+  </div>
+  <div class="nav-group">plan</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../plan/tasks.html">Execution Tasks</a>
+    <a class="nav-link" href="../plan/milestones.html">Milestones</a>
+    <a class="nav-link" href="../plan/todos.html">TODOs</a>
+  </div>
+  <div class="nav-group">specs</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../specs/_template.html">{Feature Name}</a>
+  </div>
+  <div class="nav-group">trace</div>
+  <div class="nav-group-items">
+    <a class="nav-link" href="../trace/how-auth.html">Authentication</a>
+    <a class="nav-link active" href="../trace/how-config.html">Configuration &amp; Profiles</a>
+    <a class="nav-link" href="../trace/conventions.html">Conventions — tai CLI</a>
+    <a class="nav-link" href="../trace/how-entrypoint.html">Entrypoint &amp; AppContext</a>
+    <a class="nav-link" href="../trace/how-gpu.html">GPU Provisioning (vast.ai)</a>
+    <a class="nav-link" href="../trace/how-hub.html">Hub API</a>
+    <a class="nav-link" href="../trace/concerns.html">Known Concerns</a>
+    <a class="nav-link" href="../trace/how-pdf.html">PDF Generation</a>
+    <a class="nav-link" href="../trace/matrix.html">Requirements Traceability Matrix</a>
+    <a class="nav-link" href="../trace/how-secrets.html">Secret Management</a>
+    <a class="nav-link" href="../trace/how-skills-hooks.html">Skills &amp; Hooks</a>
+    <a class="nav-link" href="../trace/stack.html">Technology Stack</a>
+    <a class="nav-link" href="../trace/testing.html">Testing Trace</a>
+    <a class="nav-link" href="../trace/overview.html">tai CLI — Codebase Overview</a>
+  </div>
+</nav>
+<article>
+    <h1>Configuration &amp; Profiles</h1>
+
+    <h2>What it does</h2>
+    <p>
+      The config system gives each engineer a single TOML file at <code>~/.config/tai/config.toml</code> that controls
+      API endpoints, AI model choice, company domain, and OAuth settings. Profiles let them switch between environments
+      (dev, staging, prod) by name. A per-repo <code>.tai.toml</code> file can override any setting for that project.
+      The entire thing is resolved and merged once at startup, before any command runs.
+    </p>
+
+    <h2>How it works</h2>
+    <ol>
+      <li>
+        <strong>Two TOML files are loaded:</strong> the user-level config at the XDG path
+        (<code>$XDG_CONFIG_HOME/tai/config.toml</code>, defaulting to <code>~/.config/tai/</code>) and an
+        optional project-level <code>.tai.toml</code> in the current working directory.
+      </li>
+      <li>
+        <strong>Shallow + deep merge:</strong> Top-level keys from the project file override the user file.
+        Profile dictionaries are merged key-by-key, so a project <code>.tai.toml</code> can override just
+        <code>api_base_url</code> inside the <code>default</code> profile without replacing all other keys.
+      </li>
+      <li>
+        <strong>Pydantic validation:</strong> The merged dict is passed to <code>TaiConfig.model_validate()</code>.
+        Unknown extra keys in a profile are silently allowed (<code>extra = "allow"</code>), which lets plugins
+        add their own config keys to the same file.
+      </li>
+      <li>
+        <strong>Profile selection:</strong> If <code>--profile</code> is passed (or the <code>TAI_PROFILE</code>
+        env var is set), <code>load_config()</code> checks that the named profile exists and sets
+        <code>config.current_profile</code>. If it doesn't exist, it raises <code>ConfigError</code> with
+        a helpful hint.
+      </li>
+      <li>
+        <strong>Active profile access:</strong> Commands call <code>app_ctx.active_profile()</code> which
+        delegates to <code>config.active()</code> — returning the <code>ProfileConfig</code> for the selected profile,
+        or a default <code>ProfileConfig</code> if nothing is configured.
+      </li>
+    </ol>
+
+    <h2>Precedence (highest to lowest)</h2>
+    <ol>
+      <li>CLI flags (e.g. <code>--profile</code>)</li>
+      <li>Environment variables (<code>TAI_PROFILE</code>, <code>TAI_JSON</code>)</li>
+      <li>Project config (<code>.tai.toml</code> in CWD)</li>
+      <li>User config (<code>~/.config/tai/config.toml</code>)</li>
+      <li>Hardcoded defaults in <code>ProfileConfig</code></li>
+    </ol>
+
+    <h2>Key decisions</h2>
+    <ul>
+      <li>
+        <strong>XDG compliance:</strong> Using <code>$XDG_CONFIG_HOME</code> means the config respects users who
+        keep dotfiles organised (e.g. <code>~/.config/</code>), rather than littering the home directory.
+      </li>
+      <li>
+        <strong>Pydantic for validation:</strong> Rather than hand-rolling type checks, <code>ProfileConfig</code>
+        is a Pydantic <code>BaseModel</code>. Typos in TOML keys that don't match any field are silently
+        allowed (via <code>extra = "allow"</code>) so plugin keys don't cause startup failures.
+      </li>
+      <li>
+        <strong>Separate brand config:</strong> <code>load_brand_colors()</code> reads a <code>brand.toml</code>
+        — a separate file used only by the PDF pipeline. This keeps brand identity (company name, hex colours)
+        decoupled from API/auth config.
+      </li>
+    </ul>
+
+    <h2>Where to change things</h2>
+    <ul>
+      <li><code>tai/core/config.py</code> — add new config fields to <code>ProfileConfig</code>, change merge logic, or change default values.</li>
+      <li><code>tai/commands/config.py</code> — the user-facing <code>tai config get/set/list</code> commands that read and write this file.</li>
+      <li><code>.tai.toml</code> (repo root) — project-level overrides; can be committed to version control.</li>
+    </ul>
+
+    <h2>Gotchas</h2>
+    <ul>
+      <li>If <code>~/.config/tai/config.toml</code> is missing, the CLI starts fine with all defaults — there is no hard requirement to run <code>tai setup</code> first.</li>
+      <li>Profile keys are case-sensitive. <code>--profile Dev</code> will not match a profile named <code>dev</code>.</li>
+      <li><code>save_config()</code> writes the full config back, including any profiles that came from the project file. If you call it from a command, previously-project-only settings get permanently written to the user file — consider whether that is intentional.</li>
+    </ul>
+  </article>
+  <script src="../_assets/docs.js"></script>
+</body>
+</html>
