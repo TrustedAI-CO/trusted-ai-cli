@@ -3,16 +3,13 @@
 DOCS = """\
 # tai — TrustedAI Internal CLI
 
-tai is a cross-tool orchestrator for TrustedAI. It links git repositories to Notion
-projects and provides structured access to tasks, meetings, and tool integrations.
-All data is fetched from the TrustedAI API server, which proxies to Notion, GitHub,
-and Google Workspace.
+tai is a cross-tool orchestrator for TrustedAI. It provides AI tools, API access,
+secret management, and hub-based project workflows.
 
 ## Setup
 
 ```bash
 tai login              # authenticate with Google (opens browser)
-tai link               # link this repo to a Notion project (interactive picker)
 ```
 
 ## Global Options
@@ -47,89 +44,6 @@ tai login              # sign in with Google (opens browser)
 tai logout             # revoke credentials
 tai whoami             # show currently logged-in account
 tai whoami --json      # → {"email": "...", "profile": "..."}
-```
-
-### Project Linking
-
-Requires a `.tai.toml` in the repo root (created by `tai link`).
-
-```
-tai link               # interactive: pick Notion project → writes .tai.toml
-tai unlink             # remove .tai.toml
-tai project new        # create a new Notion project and link this repo
-tai project status     # show all tool bindings (Notion, GitHub, Drive, GChat)
-tai project status --json
-```
-
-```
-tai open github        # open linked GitHub repo in browser
-tai open notion        # open linked Notion project page
-tai open drive         # open linked Google Drive folder
-tai open chat          # open linked Google Chat space
-```
-
-### Tasks
-
-List and manage Notion tasks for the current project.
-
-```
-tai tasks                          # show task table (requires linked project)
-tai tasks --json                   # → [{task_id, short_id, name, status, due_date, assignee}]
-tai tasks -q                       # one task name per line (pipe-friendly)
-tai tasks -a                       # all projects
-tai tasks -n 10                    # limit to 10 results
-tai tasks -f "deploy"              # filter by name (case-insensitive)
-tai tasks -a -f "bug" --json       # combine flags
-
-tai tasks add                      # prompt for name → create task
-tai tasks add --json               # → {task_id, short_id, name, status}
-
-tai tasks done <short_id>          # mark task as Done by ID prefix
-tai tasks done                     # interactive picker (TTY only)
-tai tasks done --json              # → {task_id, short_id, name, status: "Done"}
-```
-
-Task object shape:
-```json
-{
-  "task_id": "aabbccdd11223344aabbccdd11223344",
-  "short_id": "aabbccdd",
-  "name": "Write tests",
-  "status": "In progress",
-  "description": null,
-  "due_date": null,
-  "assignee": null
-}
-```
-
-### Meetings
-
-List and manage Notion meetings. Only meetings from the last 6 months are returned.
-
-```
-tai meetings                       # interactive picker → opens Notion page (TTY)
-                                   # non-TTY: prints plain list to stdout
-tai meetings --json                # → [{meeting_id, short_id, title, date, notion_url}]
-tai meetings -q                    # one meeting title per line
-tai meetings -a                    # all projects
-tai meetings -n 5                  # limit results
-tai meetings -f "sprint"           # filter by title
-
-tai meetings add                   # prompt for title, date, type → create meeting
-tai meetings add --json            # → {meeting_id, short_id, title, date, notion_url}
-```
-
-Meeting object shape:
-```json
-{
-  "meeting_id": "aabbccdd11223344aabbccdd11223344",
-  "short_id": "aabbccdd",
-  "title": "Sprint Planning",
-  "date": "2026-03-20",
-  "meeting_type": ["Project meeting"],
-  "lead": null,
-  "notion_url": "https://notion.so/aabbccdd11223344aabbccdd11223344"
-}
 ```
 
 ### Config
@@ -228,34 +142,6 @@ Options:
 - `--visible` — show browser window (default: headless)
 - `--json` — output as JSON
 
-## Non-Interactive Usage (Agents & CI)
-
-tai detects whether stdin is a TTY. In non-interactive contexts:
-
-- `tai tasks` — prints table as usual (no picker)
-- `tai meetings` — prints plain list instead of launching picker
-- `tai tasks done` (no ID) — exits with code 2; pass `<short_id>` explicitly
-- `tai link` — exits with code 2; must be run in a real terminal
-
-Recommended patterns for AI agents:
-
-```bash
-# Get all open tasks as JSON
-tai tasks --json | jq '[.[] | select(.status != "Done")]'
-
-# Get task names only
-tai tasks -q
-
-# Mark a specific task done
-tai tasks done a1b2c3d4 --json
-
-# List recent meetings
-tai meetings --json | jq '.[0]'
-
-# Check project bindings
-tai project status --json
-```
-
 ## Configuration File
 
 Location: `~/.config/tai/config.toml` (or `$TAI_CONFIG_PATH`)
@@ -269,12 +155,4 @@ oauth_client_id = ""
 company_domain = "trusted-ai.co"
 ```
 
-## Project Manifest
-
-Each linked repo has `.tai.toml` at the repo root:
-
-```toml
-[project]
-notion_page = "2ef55eff03158039b95cf6e8ff60d632"
-```
 """
