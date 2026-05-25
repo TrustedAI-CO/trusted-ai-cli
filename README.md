@@ -46,6 +46,14 @@ tai tasks
 | `tai claude setup-skills` | Install bundled Claude Code skills |
 | `tai claude setup-hooks` | Install Claude Code hooks for quality gates and session management |
 | `tai codex status` / `setup-skills` / `setup-agents` | Manage Codex CLI skills and AGENTS.md guidance |
+| `tai hub projects` / `search` / `summary` | Workspace projects via Hub API |
+| `tai hub page list` / `get` / `create` | Manage project pages (wiki & private) |
+| `tai hub task` / `create` / `update` | Manage project tasks |
+| `tai hub meeting` / `link` / `unlink` | Link/unlink calendar events to projects |
+| `tai hub email` / `read` / `send` / `compose` | Gmail: search, read, compose, send |
+| `tai hub cal` / `create` | Google Calendar: list & create events |
+| `tai hub file` / `upload` / `download` | Project file management |
+| `tai hub members` | List project members |
 | `tai link` / `unlink` / `open` | Link repos to Notion projects |
 | `tai project new` / `status` | Create or inspect projects |
 | `tai tasks` / `add` / `done` | Manage Notion tasks |
@@ -157,7 +165,7 @@ uv sync --all-extras
 pytest                        # Runs with 80% coverage requirement
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md) for internals and [CONTRIBUTING.md](CONTRIBUTING.md) for the development workflow.
+See [docs/trace/overview.html](docs/trace/overview.html) for internals and [docs/contributing.html](docs/contributing.html) for the development workflow.
 
 ## License
 

@@ -58,9 +58,10 @@
 
     <h2>What it does</h2>
     <p>
-      The <code>tai hub</code> commands let engineers manage workspace projects, pages, tasks, and members through
-      the internal Hub service — without opening a browser. Authentication reuses the Google <code>id_token</code>
-      already stored in the keychain from <code>tai login</code>, so there is no separate hub login step.
+      The <code>tai hub</code> commands let engineers manage workspace projects, pages, tasks, members, meetings,
+      email (Gmail), calendar events, and project files through the internal Hub service — without opening a browser.
+      Authentication reuses the Google <code>id_token</code> already stored in the keychain from <code>tai login</code>,
+      with automatic refresh when near expiry, so there is no separate hub login step.
     </p>
 
     <h2>How it works</h2>
@@ -68,8 +69,9 @@
       <li>
         <strong>Client construction:</strong> Every <code>hub</code> subcommand starts by calling
         <code>_hub_client(ctx)</code>. This reads the active profile's <code>hub_base_url</code> (defaulting to
-        <code>https://hub.trusted-ai.internal</code>), retrieves the <code>id_token</code> from the keychain,
-        and returns an <code>httpx.Client</code> pre-configured with the Bearer token and a timeout.
+        <code>https://hub.trusted-ai.internal</code>), calls <code>get_id_token()</code> which auto-refreshes
+        if the token is within 5 minutes of expiry, and returns an <code>httpx.Client</code> pre-configured
+        with the Bearer token and a timeout.
       </li>
       <li>
         <strong>Request execution:</strong> Every API call goes through <code>_hub_request()</code>. It wraps
@@ -98,6 +100,11 @@
         server verify company domain membership without a separate user lookup.
       </li>
       <li>
+        <strong>--project accepts ID or UUID prefix:</strong> <code>_resolve_project()</code> accepts a full UUID
+        or a unique prefix (e.g. first 6 chars). Ambiguous prefixes error with a list of matches.
+        In interactive mode with no flag, a fuzzy-search picker appears.
+      </li>
+      <li>
         <strong>Hub URL is a profile config key:</strong> The base URL is read from <code>profile_cfg.hub_base_url</code>
         so dev / staging / prod environments can point at different Hub instances by switching profiles.
       </li>
@@ -108,16 +115,31 @@
       </li>
     </ul>
 
+    <h2>Command groups</h2>
+    <table>
+      <thead><tr><th>Group</th><th>Commands</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>tai hub</code></td><td>search, projects, summary, members</td><td>Workspace-level queries</td></tr>
+        <tr><td><code>tai hub page</code></td><td>list, get, create, update, rename</td><td>Wiki &amp; private pages</td></tr>
+        <tr><td><code>tai hub task</code></td><td>list, create, update</td><td>Project tasks</td></tr>
+        <tr><td><code>tai hub meeting</code></td><td>list, link, unlink</td><td>Link Google Calendar events to projects</td></tr>
+        <tr><td><code>tai hub email</code></td><td>search, read, drafts, compose, send, reply-context</td><td>Gmail via Hub API</td></tr>
+        <tr><td><code>tai hub cal</code></td><td>list, create</td><td>Google Calendar events</td></tr>
+        <tr><td><code>tai hub file</code></td><td>list, search, upload, download, delete</td><td>Project file storage</td></tr>
+      </tbody>
+    </table>
+
     <h2>Where to change things</h2>
     <ul>
       <li><code>tai/commands/hub.py</code> — all hub subcommands and the HTTP client helpers (<code>_hub_client</code>, <code>_hub_request</code>).</li>
+      <li><code>tai/core/auth.py</code> (<code>get_id_token()</code>) — auto-refresh logic for id_token.</li>
       <li><code>tai/core/config.py</code> (<code>ProfileConfig</code>) — add <code>hub_base_url</code> as a typed field if you want default validation (currently read via <code>getattr</code> with a fallback).</li>
       <li><code>tai/core/prompt.py</code> — the interactive fuzzy-select helper used for project/task pickers.</li>
     </ul>
 
     <h2>Gotchas</h2>
     <ul>
-      <li>The <code>id_token</code> has a shorter expiry than the <code>access_token</code> (typically 1 hour). If Hub calls fail with 401 after a long session, running <code>tai login</code> again will refresh it.</li>
+      <li>The <code>id_token</code> auto-refreshes via <code>get_id_token()</code> when within 5 minutes of expiry. If the refresh token itself is invalid (e.g. revoked), Hub calls return 401 and the user must run <code>tai login</code> again.</li>
       <li><code>hub_base_url</code> is read via <code>getattr(profile_cfg, "hub_base_url", None)</code> because it is an extra key (not a declared field on <code>ProfileConfig</code>). This works due to Pydantic's <code>extra = "allow"</code> but means no type checking — consider declaring it explicitly.</li>
       <li>The <code>httpx.Client</code> is used as a context manager inside each command. It is not shared across commands, which means each invocation opens a new connection. For bulk operations, refactoring to share a client would improve performance.</li>
     </ul>

@@ -74,7 +74,7 @@
       <li><strong>Secret Management</strong> — Three-layer fallback: OS keychain → encrypted JSON file (CI) → <code>TAI_SECRET_*</code> env vars; never written to flags or plain config.</li>
       <li><strong>Skills &amp; Hooks</strong> — Bundled Claude Code / Codex skills (Markdown files with YAML front matter) are discovered and copied to <code>~/.claude/skills/</code>; hooks are Node.js scripts wired into <code>~/.claude/settings.json</code> to run quality gates and session tracking automatically.</li>
       <li><strong>PDF Generation</strong> — Markdown or Typst source is compiled to branded PDF via the <code>typst</code> CLI; Typst templates ship as package data and are installed to <code>~/.tai/templates/</code>; brand colours come from a <code>brand.toml</code>.</li>
-      <li><strong>Hub API</strong> — REST client for the internal Hub service; commands manage workspace projects, pages, tasks, and members; auth uses the Google <code>id_token</code> from the keychain as a Bearer token.</li>
+      <li><strong>Hub API</strong> — REST client for the internal Hub service; commands manage workspace projects, pages, tasks, members, meetings (linked calendar events), email (Gmail search/read/compose/send), calendar events (list/create), and project files; auth uses the Google <code>id_token</code> (auto-refreshed) as a Bearer token.</li>
       <li><strong>GPU Provisioning (vast.ai)</strong> — Wraps the <code>vastai</code> CLI to find the cheapest matching GPU offer, create an SSH keypair, boot an instance, sync the user's repo, and tear it back down; state is persisted locally so aliases survive restarts.</li>
     </ul>
 

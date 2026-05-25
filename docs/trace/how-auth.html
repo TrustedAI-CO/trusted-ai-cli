@@ -109,8 +109,9 @@
 
     <h2>Token refresh</h2>
     <p>
-      When a command needs an access token, <code>get_access_token()</code> checks the stored expiry. If the
-      token expires within 5 minutes, it refreshes using the stored refresh token — silently, in the background.
+      When a command needs a token, <code>get_access_token()</code> or <code>get_id_token()</code> checks the stored
+      expiry. If the token expires within 5 minutes, it refreshes using the stored refresh token — silently, in the
+      background. Hub commands use <code>get_id_token()</code>; other API calls use <code>get_access_token()</code>.
       If the refresh fails (network error or revoked token), it raises <code>AuthExpiredError</code>, which the
       error handler turns into a friendly "run tai login" message.
     </p>
