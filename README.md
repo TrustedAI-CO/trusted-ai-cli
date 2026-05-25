@@ -168,6 +168,34 @@ pytest                        # Runs with 80% coverage requirement
 
 See [docs/trace/overview.html](docs/trace/overview.html) for internals and [docs/contributing.html](docs/contributing.html) for the development workflow.
 
+## Releasing
+
+The version is the single source of truth in `pyproject.toml`. The `VERSION` file must stay in sync. Users update via `tai update`, which downloads the wheel from the latest GitHub Release.
+
+```bash
+# 1. Bump version in both places
+#    Edit pyproject.toml: version = "X.Y.Z"
+#    Edit VERSION: X.Y.Z
+
+# 2. Commit and push
+git add pyproject.toml VERSION
+git commit -m "chore: bump version to X.Y.Z"
+git push
+
+# 3. Build the wheel
+uv build --wheel
+
+# 4. Create (or replace) the GitHub Release
+gh release delete vX.Y.Z --yes 2>/dev/null  # safe if doesn't exist
+gh release create vX.Y.Z dist/trusted_ai_cli-X.Y.Z-py3-none-any.whl \
+  --title "vX.Y.Z" --notes "Release notes here"
+
+# 5. Verify
+tai update  # should pick up the new version
+```
+
+If you push additional fixes after creating a release, rebuild the wheel and recreate the release (`gh release delete` + `gh release create`) so `tai update` picks up the latest code.
+
 ## License
 
 Internal — TrustedAI Co.
