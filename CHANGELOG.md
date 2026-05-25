@@ -1,6 +1,14 @@
 # CHANGELOG
 
 
+## v0.34.1 (2026-05-25)
+
+### Improvements
+
+- **skills**: Review skill always runs in a fresh subagent to avoid bias from
+  conversation history. Reviewer has no context of who wrote the code.
+
+
 ## v0.34.0 (2026-05-25)
 
 ### Features

@@ -6,6 +6,7 @@ description: |
   boundary violations, conditional side effects, and other structural issues. Use when
   asked to "review this PR", "code review", "pre-landing review", or "check my diff".
 allowed-tools:
+  - Agent
   - Bash
   - Read
   - Edit
@@ -14,6 +15,35 @@ allowed-tools:
   - Glob
   - AskUserQuestion
 ---
+
+## Unbiased Review — Always Use Subagent
+
+**CRITICAL:** The review MUST run in a fresh subagent to avoid bias from the
+current conversation. If you wrote the code being reviewed, you cannot objectively
+review it — a subagent with no conversation history can.
+
+When this skill is invoked, immediately spawn an Agent with:
+- The full review instructions (everything below)
+- The branch name and base branch (from preamble)
+- The repo path
+
+Do NOT run the review steps yourself. The subagent does all the work and reports
+back findings. You then present findings to the user and handle AskUserQuestion
+interactions for fix decisions.
+
+```
+Agent prompt template:
+"You are a code reviewer. You have NOT seen this code before — review it fresh.
+Repo: {repo_path}
+Branch: {branch}
+Base: {base_branch}
+
+Follow the review checklist below exactly. Be honest and critical.
+Report findings as: [SEVERITY] file:line — description.
+
+{paste all steps below into the agent prompt}
+"
+```
 
 ## Preamble (run first)
 
