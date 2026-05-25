@@ -844,6 +844,112 @@ def file_delete(
         console.print(f"[green]Deleted[/green] file {file_id[:12]}.")
 
 
+# ── Meeting commands ────────────────────────────────────────────────────────
+
+meeting_app = typer.Typer(name="meeting", help="Manage project meetings.")
+app.add_typer(meeting_app)
+
+
+def _print_meetings_table(meetings: list[dict]) -> None:
+    table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    table.add_column("ID", style="dim", no_wrap=True)
+    table.add_column("Summary")
+    table.add_column("Start", style="dim")
+    table.add_column("End", style="dim")
+    table.add_column("Meeting URL", style="dim")
+    table.add_column("Linked By", style="dim")
+    for m in meetings:
+        table.add_row(
+            m.get("id", "")[:8],
+            m.get("summary", ""),
+            m.get("startTime", ""),
+            m.get("endTime", ""),
+            m.get("meetingUrl") or "—",
+            m.get("linkedByName") or "—",
+        )
+    console.print(table)
+
+
+@meeting_app.callback(invoke_without_command=True)
+def list_meetings(
+    ctx: typer.Context,
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """List meetings linked to a project."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    space_id = _resolve_project(ctx, project)
+    client = _hub_client(ctx)
+    meetings = _hub_json(client, "GET", "/api/hub/meetings", params={"spaceId": space_id})
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(meetings))
+        return
+
+    if not meetings:
+        console.print("[dim]No meetings linked.[/dim]")
+        return
+
+    _print_meetings_table(meetings)
+
+
+@meeting_app.command("link")
+def meeting_link(
+    ctx: typer.Context,
+    event_id: Annotated[str, typer.Argument(help="Google Calendar event ID.")],
+    summary: Annotated[str, typer.Argument(help="Meeting title.")],
+    start: Annotated[str, typer.Argument(help="Start time (ISO 8601).")],
+    end: Annotated[str, typer.Argument(help="End time (ISO 8601).")],
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
+    html_link: Optional[str] = typer.Option(None, "--html-link", help="Google Calendar event URL."),
+    description: Optional[str] = typer.Option(None, "--description", help="Meeting description."),
+    meeting_url: Optional[str] = typer.Option(None, "--meeting-url", help="Video meeting URL."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Link a calendar event to a project."""
+    space_id = _resolve_project(ctx, project)
+    client = _hub_client(ctx)
+
+    body: dict = {
+        "spaceId": space_id,
+        "calendarEventId": event_id,
+        "summary": summary,
+        "startTime": start,
+        "endTime": end,
+    }
+    if html_link:
+        body["htmlLink"] = html_link
+    if description:
+        body["description"] = description
+    if meeting_url:
+        body["meetingUrl"] = meeting_url
+
+    result = _hub_json(client, "POST", "/api/hub/meeting", json=body)
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(result))
+    else:
+        console.print(f"[green]Linked[/green] \"{result.get('summary', summary)}\" — id:{result.get('id', '')[:8]}")
+
+
+@meeting_app.command("unlink")
+def meeting_unlink(
+    ctx: typer.Context,
+    meeting_id: Annotated[str, typer.Argument(help="Meeting link UUID (from list).")],
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Unlink a meeting from its project."""
+    client = _hub_client(ctx)
+    resp = _hub_request(client, "DELETE", f"/api/hub/meeting/{meeting_id}")
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(resp.json() if resp.text.strip() else {}))
+    else:
+        console.print(f"[green]Unlinked[/green] meeting {meeting_id[:8]}.")
+
+
 # ── Email commands ──────────────────────────────────────────────────────────
 
 email_app = typer.Typer(name="email", help="Manage email (Gmail).")
