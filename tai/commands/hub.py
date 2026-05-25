@@ -898,40 +898,23 @@ def list_meetings(
 @meeting_app.command("link")
 def meeting_link(
     ctx: typer.Context,
-    event_id: Annotated[str, typer.Argument(help="Google Calendar event ID.")],
-    summary: Annotated[str, typer.Argument(help="Meeting title.")],
-    start: Annotated[str, typer.Argument(help="Start time (ISO 8601).")],
-    end: Annotated[str, typer.Argument(help="End time (ISO 8601).")],
+    event_id: Annotated[str, typer.Argument(help="Google Calendar event ID (from 'tai hub cal').")],
     project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
-    html_link: Optional[str] = typer.Option(None, "--html-link", help="Google Calendar event URL."),
-    description: Optional[str] = typer.Option(None, "--description", help="Meeting description."),
-    meeting_url: Optional[str] = typer.Option(None, "--meeting-url", help="Video meeting URL."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
-    """Link a calendar event to a project."""
+    """Link a calendar event to a project. Event details fetched from Google Calendar automatically."""
     space_id = _resolve_project(ctx, project)
     client = _hub_client(ctx)
 
-    body: dict = {
+    result = _hub_json(client, "POST", "/api/hub/meeting", json={
         "spaceId": space_id,
         "calendarEventId": event_id,
-        "summary": summary,
-        "startTime": start,
-        "endTime": end,
-    }
-    if html_link:
-        body["htmlLink"] = html_link
-    if description:
-        body["description"] = description
-    if meeting_url:
-        body["meetingUrl"] = meeting_url
-
-    result = _hub_json(client, "POST", "/api/hub/meeting", json=body)
+    })
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(result))
     else:
-        console.print(f"[green]Linked[/green] \"{result.get('summary', summary)}\" — id:{result.get('id', '')[:8]}")
+        console.print(f"[green]Linked[/green] \"{result.get('summary', '')}\" — id:{result.get('id', '')[:8]}")
 
 
 @meeting_app.command("unlink")
