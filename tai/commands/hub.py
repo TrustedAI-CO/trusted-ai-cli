@@ -307,23 +307,28 @@ def summary(
 ) -> None:
     """Show workspace summary."""
     client = _hub_client(ctx)
-    resp = _hub_request(client, "GET", "/api/hub/summary")
+    data = _hub_json(client, "GET", "/api/hub/summary")
 
-    content_type = resp.headers.get("content-type", "")
-    if "application/json" in content_type:
-        data = resp.json()
-        if _is_json(ctx, json_flag):
-            console.print_json(json.dumps(data))
-        else:
-            lines = data.get("lines", []) if isinstance(data, dict) else []
-            for line in lines:
-                console.print(line)
-    else:
-        text = resp.text
-        if _is_json(ctx, json_flag):
-            console.print_json(json.dumps({"text": text}))
-        else:
-            console.print(text)
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(data))
+        return
+
+    if not data:
+        console.print("[dim]No workspace data.[/dim]")
+        return
+
+    for space in data:
+        status_str = f" ({space['status']})" if space.get("status") else ""
+        console.print(f"\n[bold]{space['name']}[/bold] [{space['type']}]{status_str}")
+        counts = space.get("taskCounts")
+        if counts:
+            console.print(f"  Tasks: {counts['total']} (todo:{counts['todo']} in-progress:{counts['in-progress']} review:{counts['review']} done:{counts['done']})")
+        pages = space.get("pageCount", 0)
+        if pages:
+            console.print(f"  Pages: {pages}")
+        for ms in space.get("milestones", []):
+            due = f" due:{ms['dueDate']}" if ms.get("dueDate") else ""
+            console.print(f"  Milestone: {ms['title']} [{ms['status']}] {ms['doneTasks']}/{ms['totalTasks']}{due}")
 
 
 # ── Page commands ────────────────────────────────────────────────────────────
@@ -502,6 +507,7 @@ def task_create(
 def task_update(
     ctx: typer.Context,
     ref: Annotated[str, typer.Argument(help="Task reference (#number or UUID).")],
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name (required for #number refs)."),
     status: Optional[str] = typer.Option(None, "--status", "-s", help="New status."),
     title: Optional[str] = typer.Option(None, "--title", help="New title."),
     priority: Optional[str] = typer.Option(None, "--priority", help="New priority."),
@@ -509,7 +515,8 @@ def task_update(
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Update an existing task."""
-    task_id = _resolve_task_ref(ctx, ref)
+    space_id = _resolve_project(ctx, project) if ref.startswith("#") else None
+    task_id = _resolve_task_ref(ctx, ref, space_id)
     client = _hub_client(ctx)
 
     body: dict = {}
@@ -585,24 +592,24 @@ def milestones(
 def deliverables(
     ctx: typer.Context,
     ref: Annotated[str, typer.Argument(help="Task reference (#number or UUID).")],
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name (required for #number refs)."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """List deliverables for a task."""
-    task_id = _resolve_task_ref(ctx, ref)
+    space_id = _resolve_project(ctx, project) if ref.startswith("#") else None
+    task_id = _resolve_task_ref(ctx, ref, space_id)
     client = _hub_client(ctx)
     data = _hub_json(client, "GET", "/api/hub/deliverables", params={"taskId": task_id})
-    items = data.get("items", data) if isinstance(data, dict) else data
 
     if _is_json(ctx, json_flag):
-        console.print_json(json.dumps(items))
+        console.print_json(json.dumps(data))
         return
 
-    if not items:
+    formatted = data.get("formatted", "") if isinstance(data, dict) else str(data)
+    if not formatted or "No deliverables" in formatted:
         console.print("[dim]No deliverables found.[/dim]")
-        return
-
-    for item in items:
-        console.print(f"  - {item.get('title') or item.get('name') or item}")
+    else:
+        console.print(formatted)
 
 
 @app.command()
@@ -611,11 +618,13 @@ def comment(
     target_type: Annotated[str, typer.Argument(help="Target type (task, page).")],
     ref: Annotated[str, typer.Argument(help="Target reference (#number, UUID, or page ID).")],
     body: Annotated[str, typer.Argument(help="Comment body.")],
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name (required for #number refs)."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Add a comment to a task or page."""
     if target_type == "task":
-        target_id = _resolve_task_ref(ctx, ref)
+        space_id = _resolve_project(ctx, project) if ref.startswith("#") else None
+        target_id = _resolve_task_ref(ctx, ref, space_id)
     else:
         target_id = ref
 
