@@ -849,3 +849,324 @@ def file_delete(
         console.print_json(json.dumps(resp.json() if resp.text.strip() else {}))
     else:
         console.print(f"[green]Deleted[/green] file {file_id[:12]}.")
+
+
+# ── Email commands ──────────────────────────────────────────────────────────
+
+email_app = typer.Typer(name="email", help="Manage email (Gmail).")
+app.add_typer(email_app)
+
+
+@email_app.callback(invoke_without_command=True)
+def email_search(
+    ctx: typer.Context,
+    query: Optional[str] = typer.Option(None, "--query", "-q", help="Gmail search query."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Search email threads. Default: recent inbox."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    client = _hub_client(ctx)
+    params: dict[str, str] = {}
+    if query:
+        params["q"] = query
+    data = _hub_json(client, "GET", "/api/email/threads", params=params)
+    threads = data.get("threads", data) if isinstance(data, dict) else data
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(threads))
+        return
+
+    if not threads:
+        console.print("[dim]No emails found.[/dim]")
+        return
+
+    table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    table.add_column("ID", style="dim", no_wrap=True)
+    table.add_column("Subject")
+    table.add_column("From", style="dim")
+    table.add_column("Date", style="dim")
+    table.add_column("", style="dim")
+    for t in threads:
+        unread = "[bold cyan]●[/bold cyan]" if t.get("unread") else ""
+        table.add_row(
+            t.get("id", "")[:12],
+            t.get("subject", ""),
+            t.get("from", ""),
+            t.get("date", ""),
+            unread,
+        )
+    console.print(table)
+
+
+@email_app.command("read")
+def email_read(
+    ctx: typer.Context,
+    thread_id: Annotated[str, typer.Argument(help="Thread ID from search results.")],
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Read an email thread."""
+    client = _hub_client(ctx)
+    data = _hub_json(client, "GET", f"/api/email/threads/{thread_id}")
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(data))
+        return
+
+    console.print(f"[bold]{data.get('subject', '')}[/bold]\n")
+    for msg in data.get("messages", []):
+        console.print(f"[dim]--- {msg.get('from', '')} ({msg.get('date', '')}) ---[/dim]")
+        body = msg.get("bodyText") or msg.get("bodyHtml", "")
+        console.print(body[:2000])
+        console.print()
+
+
+@email_app.command("drafts")
+def email_drafts(
+    ctx: typer.Context,
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """List email drafts."""
+    client = _hub_client(ctx)
+    data = _hub_json(client, "GET", "/api/email/drafts")
+    drafts = data.get("drafts", data) if isinstance(data, dict) else data
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(drafts))
+        return
+
+    if not drafts:
+        console.print("[dim]No drafts.[/dim]")
+        return
+
+    table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    table.add_column("ID", style="dim", no_wrap=True)
+    table.add_column("Subject")
+    table.add_column("To", style="dim")
+    for d in drafts:
+        table.add_row(d.get("id", "")[:12], d.get("subject", ""), d.get("to", ""))
+    console.print(table)
+
+
+@email_app.command("draft")
+def email_create_draft(
+    ctx: typer.Context,
+    to: Annotated[str, typer.Argument(help="Recipient email.")],
+    subject: Annotated[str, typer.Argument(help="Subject line.")],
+    body: Annotated[str, typer.Argument(help="Email body.")],
+    cc: Optional[str] = typer.Option(None, "--cc", help="CC recipients."),
+    bcc: Optional[str] = typer.Option(None, "--bcc", help="BCC recipients."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Create an email draft (does not send)."""
+    client = _hub_client(ctx)
+    payload: dict = {"to": to, "subject": subject, "body": body}
+    if cc:
+        payload["cc"] = cc
+    if bcc:
+        payload["bcc"] = bcc
+
+    data = _hub_json(client, "POST", "/api/email/drafts", json=payload)
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(data))
+    else:
+        console.print(f"[green]Draft created[/green] — {data.get('draftId', '')[:12]}")
+
+
+@email_app.command("send")
+def email_send(
+    ctx: typer.Context,
+    to: Annotated[str, typer.Argument(help="Recipient email.")],
+    subject: Annotated[str, typer.Argument(help="Subject line.")],
+    body: Annotated[str, typer.Argument(help="Email body.")],
+    cc: Optional[str] = typer.Option(None, "--cc", help="CC recipients."),
+    bcc: Optional[str] = typer.Option(None, "--bcc", help="BCC recipients."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Send an email."""
+    client = _hub_client(ctx)
+    payload: dict = {"to": to, "subject": subject, "body": body}
+    if cc:
+        payload["cc"] = cc
+    if bcc:
+        payload["bcc"] = bcc
+
+    data = _hub_json(client, "POST", "/api/email/send", json=payload)
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(data))
+    else:
+        console.print(f"[green]Sent[/green] to {to}")
+
+
+@email_app.command("reply-context")
+def email_reply_context(
+    ctx: typer.Context,
+    message_id: Annotated[str, typer.Argument(help="Message ID (from email read).")],
+    reply_all: bool = typer.Option(False, "--all", help="Reply-all context."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Get reply context for composing a response."""
+    client = _hub_client(ctx)
+    params = {"messageId": message_id}
+    if reply_all:
+        params["replyAll"] = "true"
+    data = _hub_json(client, "GET", "/api/email/reply-context", params=params)
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(data))
+        return
+
+    console.print(f"  To: {data.get('to', '')}")
+    console.print(f"  Cc: {data.get('cc', '')}")
+    console.print(f"  Subject: {data.get('subject', '')}")
+
+
+# ── Calendar commands ───────────────────────────────────────────────────────
+
+cal_app = typer.Typer(name="cal", help="Manage calendar events.")
+app.add_typer(cal_app)
+
+
+@cal_app.callback(invoke_without_command=True)
+def cal_list(
+    ctx: typer.Context,
+    from_date: Optional[str] = typer.Option(None, "--from", help="Start date (ISO 8601)."),
+    to_date: Optional[str] = typer.Option(None, "--to", help="End date (ISO 8601)."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """List calendar events. Default: next 7 days."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime.now(timezone.utc)
+    time_min = from_date or now.isoformat()
+    time_max = to_date or (now + timedelta(days=7)).isoformat()
+
+    client = _hub_client(ctx)
+    data = _hub_json(client, "GET", "/api/calendar/events", params={"timeMin": time_min, "timeMax": time_max})
+    events = data.get("events", data) if isinstance(data, dict) else data
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(events))
+        return
+
+    if not events:
+        console.print("[dim]No events found.[/dim]")
+        return
+
+    table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    table.add_column("ID", style="dim", no_wrap=True)
+    table.add_column("Event")
+    table.add_column("Start", style="dim")
+    table.add_column("End", style="dim")
+    table.add_column("Status", style="dim")
+    for e in events:
+        start = e.get("start", {})
+        end = e.get("end", {})
+        start_str = start.get("dateTime", start.get("date", ""))[:16]
+        end_str = end.get("dateTime", end.get("date", ""))[:16]
+        table.add_row(
+            e.get("id", "")[:12],
+            e.get("summary", ""),
+            start_str,
+            end_str,
+            e.get("status", ""),
+        )
+    console.print(table)
+
+
+@cal_app.command("create")
+def cal_create(
+    ctx: typer.Context,
+    title: Annotated[str, typer.Argument(help="Event title.")],
+    start: Annotated[str, typer.Argument(help="Start time (ISO 8601).")],
+    end: Annotated[str, typer.Argument(help="End time (ISO 8601).")],
+    description: Optional[str] = typer.Option(None, "--desc", help="Event description."),
+    location: Optional[str] = typer.Option(None, "--location", help="Location."),
+    all_day: bool = typer.Option(False, "--all-day", help="All-day event."),
+    timezone_str: Optional[str] = typer.Option(None, "--tz", help="Timezone (e.g. Asia/Tokyo)."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Create a calendar event."""
+    client = _hub_client(ctx)
+    payload: dict = {"summary": title, "start": start, "end": end}
+    if description:
+        payload["description"] = description
+    if location:
+        payload["location"] = location
+    if all_day:
+        payload["allDay"] = True
+    if timezone_str:
+        payload["timeZone"] = timezone_str
+
+    data = _hub_json(client, "POST", "/api/calendar/events", json=payload)
+    event = data.get("event", data) if isinstance(data, dict) else data
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(event))
+    else:
+        console.print(f"[green]Created[/green] event — {title}")
+
+
+@cal_app.command("update")
+def cal_update(
+    ctx: typer.Context,
+    event_id: Annotated[str, typer.Argument(help="Event ID.")],
+    title: Optional[str] = typer.Option(None, "--title", help="New title."),
+    start: Optional[str] = typer.Option(None, "--start", help="New start (ISO 8601)."),
+    end: Optional[str] = typer.Option(None, "--end", help="New end (ISO 8601)."),
+    description: Optional[str] = typer.Option(None, "--desc", help="New description."),
+    location: Optional[str] = typer.Option(None, "--location", help="New location."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Update a calendar event."""
+    client = _hub_client(ctx)
+    payload: dict = {}
+    if title:
+        payload["summary"] = title
+    if start:
+        payload["start"] = start
+    if end:
+        payload["end"] = end
+    if description:
+        payload["description"] = description
+    if location:
+        payload["location"] = location
+
+    if not payload:
+        err_console.print("[bold red]Error:[/bold red] No fields to update.")
+        raise typer.Exit(ExitCode.USAGE)
+
+    data = _hub_json(client, "PUT", f"/api/calendar/events/{event_id}", json=payload)
+    event = data.get("event", data) if isinstance(data, dict) else data
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(event))
+    else:
+        console.print(f"[green]Updated[/green] event {event_id[:12]}.")
+
+
+@cal_app.command("rsvp")
+def cal_rsvp(
+    ctx: typer.Context,
+    event_id: Annotated[str, typer.Argument(help="Event ID.")],
+    response: Annotated[str, typer.Argument(help="Response: accepted, declined, tentative.")],
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Respond to a calendar event invitation."""
+    if response not in ("accepted", "declined", "tentative"):
+        err_console.print("[bold red]Error:[/bold red] Response must be: accepted, declined, or tentative.")
+        raise typer.Exit(ExitCode.USAGE)
+
+    client = _hub_client(ctx)
+    data = _hub_json(client, "PATCH", f"/api/calendar/events/{event_id}", json={"response": response})
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(data))
+    else:
+        console.print(f"[green]{response.capitalize()}[/green] event {event_id[:12]}.")
