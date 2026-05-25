@@ -143,6 +143,37 @@ def _resolve_project(ctx: typer.Context, project: str | None) -> str:
     return chosen["id"]
 
 
+def _resolve_wiki(ctx: typer.Context) -> str:
+    """Return the first wiki space ID."""
+    client = _hub_client(ctx)
+    spaces = _hub_json(client, "GET", "/api/hub/spaces")
+    wikis = [s for s in spaces if s.get("type") == "wiki"]
+    if not wikis:
+        err_console.print("[bold red]Error:[/bold red] No wiki space found.")
+        raise typer.Exit(ExitCode.NOT_FOUND)
+    return wikis[0]["id"]
+
+
+def _resolve_private(ctx: typer.Context) -> str:
+    """Return the user's private space ID."""
+    client = _hub_client(ctx)
+    spaces = _hub_json(client, "GET", "/api/hub/spaces")
+    privates = [s for s in spaces if s.get("type") == "private"]
+    if not privates:
+        err_console.print("[bold red]Error:[/bold red] No private space found.")
+        raise typer.Exit(ExitCode.NOT_FOUND)
+    return privates[0]["id"]
+
+
+def _resolve_page_space(ctx: typer.Context, project: str | None, private: bool) -> str:
+    """Resolve space for page commands: --project > --private > wiki (default)."""
+    if project:
+        return _resolve_project(ctx, project)
+    if private:
+        return _resolve_private(ctx)
+    return _resolve_wiki(ctx)
+
+
 def _resolve_task_ref(ctx: typer.Context, ref: str, space_id: str | None = None) -> str:
     """Resolve a task reference (#number or UUID) to a task ID."""
     if not ref.startswith("#"):
@@ -340,20 +371,17 @@ app.add_typer(page_app)
 @page_app.callback(invoke_without_command=True)
 def list_pages(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Filter by project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    private: bool = typer.Option(False, "--private", help="List pages in private space."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
-    """List pages, optionally filtered by project."""
+    """List pages. Default: wiki. Use --project or --private to scope."""
     if ctx.invoked_subcommand is not None:
         return
 
+    space_id = _resolve_page_space(ctx, project, private)
     client = _hub_client(ctx)
-    params: dict[str, str] = {}
-    if project:
-        space_id = _resolve_project(ctx, project)
-        params["spaceId"] = space_id
-
-    pages = _hub_json(client, "GET", "/api/hub/pages", params=params)
+    pages = _hub_json(client, "GET", "/api/hub/pages", params={"spaceId": space_id})
 
     if _is_json(ctx, json_flag):
         console.print_json(json.dumps(pages))
@@ -392,10 +420,11 @@ def page_create(
     ctx: typer.Context,
     title: Annotated[str, typer.Argument(help="Page title.")],
     project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    private: bool = typer.Option(False, "--private", help="Create in private space."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
-    """Create a new page."""
-    space_id = _resolve_project(ctx, project)
+    """Create a new page. Default: wiki. Use --project or --private to scope."""
+    space_id = _resolve_page_space(ctx, project, private)
     client = _hub_client(ctx)
     page = _hub_json(client, "POST", "/api/hub/page", json={"spaceId": space_id, "title": title})
 
