@@ -613,3 +613,6 @@ After execution completes, log the result:
 _COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown")
 echo "{\"skill\":\"execute\",\"timestamp\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"status\":\"STATUS\",\"tasks_total\":TOTAL,\"tasks_done\":DONE,\"tasks_failed\":FAILED,\"commit_hash\":\"$_COMMIT\"}" >> "$_STATE_DIR/${_BRANCH_SAFE}-reviews.jsonl"
 ```
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

@@ -443,3 +443,6 @@ When displaying the Review Readiness Dashboard (in /ship or /plan-eng), check re
 4. If 0 commits, show: `✓ FRESH — reviewed at current HEAD`
 
 A stale review doesn't block shipping but should be flagged visibly in the dashboard.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

@@ -523,3 +523,6 @@ Output:      {file path or "inline"}
 - **Visualizations are suggested, not forced.** Respect the user's preference from
   Step 0E. Use Mermaid code blocks for output — the viewer or platform renders them.
   A diagram should add information that prose alone can't communicate clearly.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

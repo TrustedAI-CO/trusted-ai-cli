@@ -102,3 +102,6 @@ Plus the instance id and hourly price so they know what's running.
 It also copies `~/.claude/.credentials.json` and `~/.codex/auth.json` (if
 present locally) so the user can run `claude` and `codex` on the box
 without a fresh OAuth dance. Tell the user this happened.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

@@ -258,3 +258,6 @@ If the user's prompt is too vague:
 1. Ask 2-3 clarifying questions (what product, what audience, what decision this informs)
 2. Do NOT produce generic "design trends 2026" output — specificity is the point
 3. If still unclear, narrow scope yourself and state what you're NOT covering
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

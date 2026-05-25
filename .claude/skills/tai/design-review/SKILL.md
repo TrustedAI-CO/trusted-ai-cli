@@ -810,3 +810,6 @@ If the repo has a `docs/plan/todos.md`:
 15. **Self-regulate.** Follow the design-fix risk heuristic. When in doubt, stop and ask.
 16. **CSS-first.** Prefer CSS/styling changes over structural component changes. CSS-only changes are safer and more reversible.
 17. **Design doc export.** You MAY write a `docs/design/visual.md` file if the user accepts the offer from Phase 2.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

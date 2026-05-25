@@ -326,3 +326,6 @@ The `SlideChrome` component renders: brand mark left + page number right. No sec
 | `assets/slides-b.jsx` | Reference for Split, Table, Timeline, Chart, List |
 | `assets/slides-c.jsx` | Reference for Matrix, TitleContent, TwoColumn, Blank, Closing |
 | `assets/icons.jsx` | Available icon names |
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

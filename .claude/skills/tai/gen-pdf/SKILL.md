@@ -136,3 +136,6 @@ from tai.core.style import PALETTE, COLORS
 - **"Template not found"** — Run `tai pdf setup-templates`
 - **Compilation error** — Check the Typst stderr output in the error hint. Use `--debug` to inspect the intermediate `.typ` file.
 - **First run slow** — Typst downloads the `cmarker` package on first use (requires internet).
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

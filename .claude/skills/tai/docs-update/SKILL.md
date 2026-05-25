@@ -504,3 +504,6 @@ Where status is one of:
 - **Discoverability matters.** Every doc file should be reachable from README or CLAUDE.md.
 - **Voice: friendly, user-forward, not obscure.** Write like you're explaining to a smart person
   who hasn't seen the code.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

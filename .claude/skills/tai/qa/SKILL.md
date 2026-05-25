@@ -460,3 +460,6 @@ Report filenames use the domain and date: `qa-report-myapp-com-2026-03-12.md`
 
 11. **Never fix bugs.** Find and document only. Do not read source code, edit files, or suggest fixes in the report. Your job is to report what's broken, not to fix it.
 12. **No test framework detected?** Include in the report summary: "No test framework detected. Consider bootstrapping one to enable regression test generation."
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

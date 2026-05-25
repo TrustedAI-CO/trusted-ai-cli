@@ -464,3 +464,6 @@ If the user's prompt is too vague to produce useful research:
    - What decision does this research inform?
    - What depth level? (quick scan, standard, deep dive)
 2. Do NOT produce generic research — specificity is the whole point
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

@@ -465,3 +465,6 @@ If the user's prompt is too vague to produce useful research:
 2. Do NOT produce generic research — specificity is the whole point
 3. If still unclear after clarification, narrow the scope yourself and state
    what you're NOT covering
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

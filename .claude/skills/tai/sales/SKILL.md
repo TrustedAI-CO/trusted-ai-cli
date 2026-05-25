@@ -350,3 +350,6 @@ Add `--visible` to any command to watch the browser automation:
 tai sales hnavi jobs --visible
 tai sales aimitsu show 12345 --visible
 ```
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

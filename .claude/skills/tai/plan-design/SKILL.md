@@ -454,3 +454,6 @@ Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng,
 * One sentence max per option.
 * After each pass, pause and wait for feedback.
 * Rate before and after each pass for scannability.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

@@ -909,6 +909,28 @@ List every ASCII diagram in files this plan touches. Still accurate?
 ### Unresolved Decisions
 If any AskUserQuestion goes unanswered, note it here. Never silently default.
 
+## Mandatory Intent Doc (ALL modes)
+
+After the review is complete (all sections finished, completion summary produced), you MUST
+write or update `docs/intent.html` with the product intent discovered during the session.
+This applies to ALL modes, not just EXPANSION/SELECTIVE EXPANSION. For HOLD SCOPE and
+SCOPE REDUCTION modes, write a focused intent doc capturing the premise challenge findings,
+dream state mapping, and verdict. This must contain real content from the conversation --
+not a TODO stub or placeholder.
+
+If `docs/intent.html` already exists (written by 0D-POST for EXPANSION/SELECTIVE EXPANSION),
+verify it contains the final reviewed content. If the review changed the intent, update it.
+
+For HOLD SCOPE and SCOPE REDUCTION modes, use the same HTML structure from 0D-POST but
+omit the scope decisions table and deferred items if not applicable. Populate the vision
+section with the premise challenge and dream state mapping content.
+
+After writing, rebuild the sidebar index:
+
+```bash
+python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
+```
+
 ## Review Log
 
 After producing the Completion Summary above, persist the review result:
@@ -1023,6 +1045,12 @@ If creating, write `docs/design/system.html` using this HTML structure:
 
 And update `docs/intent.html` to add a link to `design/system.html` in the header section.
 
+After writing the design doc, rebuild the sidebar index:
+
+```bash
+python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
+```
+
 ## Formatting Rules
 * NUMBER issues (1, 2, 3...) and LETTERS for options (A, B, C...).
 * Label with NUMBER + LETTER (e.g., "3A", "3B").
@@ -1068,3 +1096,6 @@ And update `docs/intent.html` to add a link to `design/system.html` in the heade
   │ (Sec 11)    │  UI review   │  detected    │  detected    │                    │
   └─────────────┴──────────────┴──────────────┴──────────────┴────────────────────┘
 ```
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

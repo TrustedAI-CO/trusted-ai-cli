@@ -191,3 +191,6 @@ Substitute: STATUS = "resolved" or "escalated" or "deferred", N = hypotheses tes
 - **Minimal fix:** Fix the bug, not the neighborhood. No drive-by refactoring.
 - **Regression test:** Every fix gets a test. No exceptions.
 - **Blast radius check:** Always check what else your fix affects before applying it.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

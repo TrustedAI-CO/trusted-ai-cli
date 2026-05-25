@@ -64,3 +64,6 @@ rsync -az vastai-<alias>:/root/<repo>/ /Users/jack/Documents/Dev/<repo>/backup-<
 
 Print the JSON output's `removed` array and tell the user billing has
 stopped for those instance ids.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

@@ -902,3 +902,6 @@ To serve docs locally, run: `tai docs serve`
 - **DONE_WITH_CONCERNS** — setup completed but some existing docs need human cleanup,
   mapping fell back to sequential mode, or some optional context could not be inferred.
 - **BLOCKED** — repository is unreadable/unwritable or required user choice was not answered.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

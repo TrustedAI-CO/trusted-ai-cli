@@ -594,3 +594,6 @@ the skill but listed here for transparency:
 | Engineer stuck (no progress) | Check in via SendMessage, offer help |
 | Wave 1 PR has issues | Fix before spawning Wave 2 |
 | User cancels mid-phase | Gracefully shut down team, note progress |
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.

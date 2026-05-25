@@ -476,3 +476,6 @@ After writing or updating `docs/design/visual.md`, recommend `/plan-design` only
 6. **Conversational tone.** This isn't a rigid workflow. If the user wants to talk through a decision, engage as a thoughtful design partner.
 7. **Accept the user's final choice.** Nudge on coherence issues, but never block or refuse to write docs/design/visual.md because you disagree with a choice.
 8. **No AI slop in your own output.** Your recommendations, your preview page, your design doc — all should demonstrate the taste you're asking the user to adopt.
+
+---
+**Self-Improvement Rule:** If you run into a blocker, find a solution — then update this skill file so future runs don't hit the same issue.
