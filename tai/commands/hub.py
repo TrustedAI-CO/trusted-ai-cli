@@ -223,7 +223,7 @@ def _print_pages_table(pages: list[dict]) -> None:
     table.add_column("Parent", style="dim")
     for p in pages:
         table.add_row(
-            p.get("id", "")[:8],
+            p.get("id", ""),
             p.get("title", ""),
             p.get("parentId", "—") or "—",
         )
@@ -380,7 +380,7 @@ def list_pages(
 @page_app.command("get")
 def page_get(
     ctx: typer.Context,
-    id_or_title: Annotated[str, typer.Argument(help="Page ID or title.")],
+    id_or_title: Annotated[str, typer.Argument(help="Page UUID.")],
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Get a page by ID or title."""
@@ -420,7 +420,7 @@ def page_create(
 @page_app.command("update")
 def page_update(
     ctx: typer.Context,
-    id_or_title: Annotated[str, typer.Argument(help="Page ID or title.")],
+    id_or_title: Annotated[str, typer.Argument(help="Page UUID.")],
     content: Annotated[str, typer.Argument(help="New page content.")],
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
@@ -437,7 +437,7 @@ def page_update(
 @page_app.command("rename")
 def page_rename(
     ctx: typer.Context,
-    id_or_title: Annotated[str, typer.Argument(help="Page ID or title.")],
+    id_or_title: Annotated[str, typer.Argument(help="Page UUID.")],
     new_title: Annotated[str, typer.Argument(help="New title.")],
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
@@ -670,7 +670,7 @@ def _print_files_table(files: list[dict]) -> None:
         name = f"📁 {f.get('name', '')}" if is_folder else f.get("name", "")
         display_type = "folder" if is_folder else mime.split("/")[-1] if "/" in mime else mime
         size = "—" if is_folder else f.get("size", "0")
-        table.add_row(f.get("id", "")[:12], name, display_type, size)
+        table.add_row(f.get("id", ""), name, display_type, size)
     console.print(table)
     console.print("[dim]Use --folder <ID> to browse subfolders.[/dim]")
 
@@ -973,7 +973,7 @@ def email_search(
     for t in threads:
         unread = "[bold cyan]●[/bold cyan]" if t.get("unread") else ""
         table.add_row(
-            t.get("id", "")[:12],
+            t.get("id", ""),
             t.get("subject", ""),
             t.get("from", ""),
             t.get("date", ""),
@@ -1027,12 +1027,12 @@ def email_drafts(
     table.add_column("Subject")
     table.add_column("To", style="dim")
     for d in drafts:
-        table.add_row(d.get("id", "")[:12], d.get("subject", ""), d.get("to", ""))
+        table.add_row(d.get("id", ""), d.get("subject", ""), d.get("to", ""))
     console.print(table)
 
 
-@email_app.command("draft")
-def email_create_draft(
+@email_app.command("compose")
+def email_compose(
     ctx: typer.Context,
     to: Annotated[str, typer.Argument(help="Recipient email.")],
     subject: Annotated[str, typer.Argument(help="Subject line.")],
@@ -1153,7 +1153,7 @@ def cal_list(
         start_str = (start_raw if isinstance(start_raw, str) else start_raw.get("dateTime", start_raw.get("date", "")))[:16]
         end_str = (end_raw if isinstance(end_raw, str) else end_raw.get("dateTime", end_raw.get("date", "")))[:16]
         table.add_row(
-            e.get("id", "")[:12],
+            e.get("id", ""),
             e.get("summary", ""),
             start_str,
             end_str,
