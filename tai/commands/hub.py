@@ -95,10 +95,7 @@ _UUID_RE = __import__("re").compile(
 
 
 def _resolve_project(ctx: typer.Context, project: str | None) -> str:
-    """Resolve a project identifier (UUID or name) to a spaceId.
-
-    Accepts UUID directly, or fuzzy-matches by name. Interactive picker when None and TTY.
-    """
+    """Resolve a project ID or prefix to a spaceId. Interactive picker when None and TTY."""
     if project and _UUID_RE.match(project):
         return project
 
@@ -106,32 +103,18 @@ def _resolve_project(ctx: typer.Context, project: str | None) -> str:
     spaces = _hub_json(client, "GET", "/api/hub/spaces")
     projects = [s for s in spaces if s.get("type") == "project"]
 
-    # Try UUID prefix match (e.g. "a816c" matches "a816cfcd-dd75-...")
-    if project and all(c in "0123456789abcdef-" for c in project.lower()):
-        prefix_matches = [p for p in projects if p["id"].startswith(project.lower())]
-        if len(prefix_matches) == 1:
-            return prefix_matches[0]["id"]
-        if len(prefix_matches) > 1:
-            err_console.print(f"[bold red]Error:[/bold red] Ambiguous prefix '{project}':")
-            for m in prefix_matches:
-                err_console.print(f"  - {m['name']} ({m['id']})")
-            raise typer.Exit(ExitCode.CONFLICT)
-
     if project:
-        lower = project.lower()
-        exact = [p for p in projects if p["name"].lower() == lower]
-        if exact:
-            return exact[0]["id"]
-        matches = [p for p in projects if lower in p["name"].lower()]
+        prefix = project.lower()
+        matches = [p for p in projects if p["id"].startswith(prefix)]
         if len(matches) == 1:
             return matches[0]["id"]
-        if len(matches) == 0:
-            err_console.print(f"[bold red]Error:[/bold red] No project matching '{project}'.")
-            raise typer.Exit(ExitCode.NOT_FOUND)
-        err_console.print(f"[bold red]Error:[/bold red] Ambiguous — {len(matches)} projects match '{project}':")
-        for m in matches:
-            err_console.print(f"  - {m['name']} ({m['id']})")
-        raise typer.Exit(ExitCode.CONFLICT)
+        if len(matches) > 1:
+            err_console.print(f"[bold red]Error:[/bold red] Ambiguous prefix '{project}':")
+            for m in matches:
+                err_console.print(f"  - {m['name']} ({m['id']})")
+            raise typer.Exit(ExitCode.CONFLICT)
+        err_console.print(f"[bold red]Error:[/bold red] No project matching ID prefix '{project}'.")
+        raise typer.Exit(ExitCode.NOT_FOUND)
 
     if not is_interactive():
         err_console.print("[bold red]Error:[/bold red] --project required in non-interactive mode.")
@@ -371,7 +354,7 @@ app.add_typer(page_app)
 @page_app.callback(invoke_without_command=True)
 def list_pages(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     private: bool = typer.Option(False, "--private", help="List pages in private space."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
@@ -419,7 +402,7 @@ def page_get(
 def page_create(
     ctx: typer.Context,
     title: Annotated[str, typer.Argument(help="Page title.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     private: bool = typer.Option(False, "--private", help="Create in private space."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
@@ -477,7 +460,7 @@ app.add_typer(task_app)
 @task_app.callback(invoke_without_command=True)
 def list_tasks(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     status: Optional[str] = typer.Option(None, "--status", "-s", help="Filter by status."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
@@ -508,7 +491,7 @@ def list_tasks(
 def task_create(
     ctx: typer.Context,
     title: Annotated[str, typer.Argument(help="Task title.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     priority: Optional[str] = typer.Option(None, "--priority", help="Task priority."),
     due: Optional[str] = typer.Option(None, "--due", help="Due date (YYYY-MM-DD)."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
@@ -576,7 +559,7 @@ def task_update(
 @app.command()
 def members(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """List project members."""
@@ -598,7 +581,7 @@ def members(
 @app.command()
 def milestones(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """List project milestones."""
@@ -682,28 +665,33 @@ def _print_files_table(files: list[dict]) -> None:
     table.add_column("Type", style="dim")
     table.add_column("Size", style="dim", justify="right")
     for f in files:
-        table.add_row(
-            f.get("id", "")[:12],
-            f.get("name", ""),
-            f.get("mimeType", ""),
-            f.get("size", "0"),
-        )
+        mime = f.get("mimeType", "")
+        is_folder = mime == "application/vnd.google-apps.folder"
+        name = f"📁 {f.get('name', '')}" if is_folder else f.get("name", "")
+        display_type = "folder" if is_folder else mime.split("/")[-1] if "/" in mime else mime
+        size = "—" if is_folder else f.get("size", "0")
+        table.add_row(f.get("id", "")[:12], name, display_type, size)
     console.print(table)
+    console.print("[dim]Use --folder <ID> to browse subfolders.[/dim]")
 
 
 @file_app.callback(invoke_without_command=True)
 def list_files(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
+    folder: Optional[str] = typer.Option(None, "--folder", "-f", help="Folder ID to browse into."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
-    """List files in a project's Drive folder."""
+    """List files in a project's Drive folder. Use --folder to browse subfolders."""
     if ctx.invoked_subcommand is not None:
         return
 
     space_id = _resolve_project(ctx, project)
     client = _hub_client(ctx)
-    data = _hub_json(client, "GET", "/api/drive/list", params={"spaceId": space_id})
+    params: dict[str, str] = {"spaceId": space_id}
+    if folder:
+        params["folderId"] = folder
+    data = _hub_json(client, "GET", "/api/drive/list", params=params)
     files = data.get("files", [])
 
     if _is_json(ctx, json_flag):
@@ -721,7 +709,7 @@ def list_files(
 def file_search(
     ctx: typer.Context,
     query: Annotated[str, typer.Argument(help="Search query.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Search files by name."""
@@ -749,10 +737,11 @@ def file_search(
 def file_upload(
     ctx: typer.Context,
     path: Annotated[Path, typer.Argument(help="Path to the file to upload.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
+    folder: Optional[str] = typer.Option(None, "--folder", "-f", help="Target folder ID."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
-    """Upload a file to project Drive folder."""
+    """Upload a file to project Drive folder. Use --folder for subfolders."""
     if not path.exists():
         err_console.print(f"[bold red]Error:[/bold red] File not found: {path}")
         raise typer.Exit(ExitCode.ERROR)
@@ -760,11 +749,15 @@ def file_upload(
     space_id = _resolve_project(ctx, project)
     client = _hub_client(ctx)
 
+    form_data: dict[str, str] = {"spaceId": space_id}
+    if folder:
+        form_data["folderId"] = folder
+
     with open(path, "rb") as f:
         resp = client.post(
             "/api/drive/upload",
             files={"file": (path.name, f)},
-            data={"spaceId": space_id},
+            data=form_data,
         )
 
     if resp.status_code == 401:
@@ -792,7 +785,7 @@ def file_upload(
 def file_download(
     ctx: typer.Context,
     file_id: Annotated[str, typer.Argument(help="Drive file ID.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output path."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
@@ -834,7 +827,7 @@ def file_download(
 def file_delete(
     ctx: typer.Context,
     file_id: Annotated[str, typer.Argument(help="Drive file ID.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or prefix."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Delete a file from project Drive."""
