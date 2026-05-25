@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 from typing import Annotated, Optional
 
 import httpx
@@ -611,3 +612,186 @@ def comment(
         console.print_json(json.dumps(resp.json() if resp.text.strip() else {}))
     else:
         console.print(f"[green]Comment added[/green] to {target_type} {ref}.")
+
+
+# ── File commands ───────────────────────────────────────────────────────────
+
+file_app = typer.Typer(name="file", help="Manage project files.")
+app.add_typer(file_app)
+
+
+def _print_files_table(files: list[dict]) -> None:
+    table = Table(show_header=True, header_style="bold", box=None, padding=(0, 2))
+    table.add_column("ID", style="dim", no_wrap=True)
+    table.add_column("Name")
+    table.add_column("Type", style="dim")
+    table.add_column("Size", style="dim", justify="right")
+    for f in files:
+        table.add_row(
+            f.get("id", "")[:12],
+            f.get("name", ""),
+            f.get("mimeType", ""),
+            f.get("size", "0"),
+        )
+    console.print(table)
+
+
+@file_app.callback(invoke_without_command=True)
+def list_files(
+    ctx: typer.Context,
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """List files in a project's Drive folder."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    space_id = _resolve_project(ctx, project)
+    client = _hub_client(ctx)
+    resp = _hub_request(client, "GET", "/api/drive/list", params={"spaceId": space_id})
+    data = resp.json()
+    files = data.get("files", [])
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(files))
+        return
+
+    if not files:
+        console.print("[dim]No files found.[/dim]")
+        return
+
+    _print_files_table(files)
+
+
+@file_app.command("search")
+def file_search(
+    ctx: typer.Context,
+    query: Annotated[str, typer.Argument(help="Search query.")],
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Search files by name."""
+    space_id = _resolve_project(ctx, project)
+    client = _hub_client(ctx)
+    resp = _hub_request(
+        client, "GET", "/api/hub/files/search",
+        params={"spaceId": space_id, "q": query},
+    )
+    data = resp.json()
+    files = data.get("files", [])
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(files))
+        return
+
+    if not files:
+        console.print("[dim]No files found.[/dim]")
+        return
+
+    _print_files_table(files)
+
+
+@file_app.command("upload")
+def file_upload(
+    ctx: typer.Context,
+    path: Annotated[Path, typer.Argument(help="Path to the file to upload.")],
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Upload a file to project Drive folder."""
+    if not path.exists():
+        err_console.print(f"[bold red]Error:[/bold red] File not found: {path}")
+        raise typer.Exit(ExitCode.ERROR)
+
+    space_id = _resolve_project(ctx, project)
+    client = _hub_client(ctx)
+
+    with open(path, "rb") as f:
+        resp = client.post(
+            "/api/drive/upload",
+            files={"file": (path.name, f)},
+            data={"spaceId": space_id},
+        )
+
+    if resp.status_code == 401:
+        err_console.print("[bold red]Error:[/bold red] Hub session expired.")
+        err_console.print("[dim]Hint: Run: tai login[/dim]")
+        raise typer.Exit(ExitCode.ERROR)
+    if resp.status_code >= 400:
+        try:
+            body = resp.json().get("error", resp.text)
+        except Exception:
+            body = resp.text
+        err_console.print(f"[bold red]Error:[/bold red] Hub API {resp.status_code}: {body}")
+        raise typer.Exit(ExitCode.ERROR)
+
+    data = resp.json()
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(data))
+    else:
+        uploaded = data.get("file", {})
+        console.print(f"[green]Uploaded[/green] {uploaded.get('name', path.name)} ({uploaded.get('id', '')[:12]})")
+
+
+@file_app.command("download")
+def file_download(
+    ctx: typer.Context,
+    file_id: Annotated[str, typer.Argument(help="Drive file ID.")],
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output path."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Download a file from project Drive."""
+    space_id = _resolve_project(ctx, project)
+    client = _hub_client(ctx)
+
+    with client.stream("GET", "/api/drive/download", params={"fileId": file_id, "spaceId": space_id}) as resp:
+        if resp.status_code == 401:
+            err_console.print("[bold red]Error:[/bold red] Hub session expired.")
+            err_console.print("[dim]Hint: Run: tai login[/dim]")
+            raise typer.Exit(ExitCode.ERROR)
+        if resp.status_code >= 400:
+            resp.read()
+            err_console.print(f"[bold red]Error:[/bold red] Hub API {resp.status_code}")
+            raise typer.Exit(ExitCode.ERROR)
+
+        # Determine output filename from Content-Disposition or fallback
+        disposition = resp.headers.get("content-disposition", "")
+        filename = file_id
+        if "filename=" in disposition:
+            parts = disposition.split("filename=")
+            if len(parts) > 1:
+                filename = parts[1].split(";")[0].strip().strip('"')
+
+        dest = output or Path(filename)
+
+        with open(dest, "wb") as f:
+            for chunk in resp.iter_bytes(chunk_size=8192):
+                f.write(chunk)
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps({"path": str(dest)}))
+    else:
+        console.print(f"[green]Downloaded[/green] {dest}")
+
+
+@file_app.command("delete")
+def file_delete(
+    ctx: typer.Context,
+    file_id: Annotated[str, typer.Argument(help="Drive file ID.")],
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
+) -> None:
+    """Delete a file from project Drive."""
+    space_id = _resolve_project(ctx, project)
+    client = _hub_client(ctx)
+    resp = _hub_request(
+        client, "DELETE", "/api/drive/delete",
+        json={"fileId": file_id, "spaceId": space_id},
+    )
+
+    if _is_json(ctx, json_flag):
+        console.print_json(json.dumps(resp.json() if resp.text.strip() else {}))
+    else:
+        console.print(f"[green]Deleted[/green] file {file_id[:12]}.")
