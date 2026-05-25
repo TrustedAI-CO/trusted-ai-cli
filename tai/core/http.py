@@ -21,14 +21,15 @@ log = logging.getLogger(__name__)
 class _BearerAuth(httpx.Auth):
     """httpx Auth flow that refreshes the token and retries once on 401."""
 
-    def __init__(self, profile: str, client_id: str):
+    def __init__(self, profile: str, client_id: str, client_secret: str = ""):
         self._profile = profile
         self._client_id = client_id
+        self._client_secret = client_secret
 
     def auth_flow(
         self, request: httpx.Request
     ) -> Generator[httpx.Request, httpx.Response, None]:
-        token = auth.get_access_token(self._profile, self._client_id)
+        token = auth.get_access_token(self._profile, self._client_id, self._client_secret)
         request.headers["Authorization"] = f"Bearer {token}"
 
         response = yield request
@@ -36,7 +37,7 @@ class _BearerAuth(httpx.Auth):
         if response.status_code == 401:
             log.debug("Received 401 — refreshing token and retrying")
             try:
-                token = auth._refresh(self._profile, self._client_id)
+                token = auth._refresh(self._profile, self._client_id, self._client_secret)
             except (AuthError, AuthExpiredError):
                 raise AuthExpiredError()
             request.headers["Authorization"] = f"Bearer {token}"
@@ -51,7 +52,7 @@ def build_client(ctx: AppContext) -> httpx.Client:
 
     return httpx.Client(
         base_url=profile_cfg.api_base_url,
-        auth=_BearerAuth(ctx.profile, profile_cfg.oauth_client_id),
+        auth=_BearerAuth(ctx.profile, profile_cfg.oauth_client_id, profile_cfg.oauth_client_secret),
         headers={
             "Accept": "application/json",
             "Content-Type": "application/json",

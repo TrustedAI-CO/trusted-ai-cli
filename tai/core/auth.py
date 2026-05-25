@@ -201,7 +201,7 @@ def current_email(profile: str) -> str | None:
         return None
 
 
-def get_id_token(profile: str, client_id: str) -> str:
+def get_id_token(profile: str, client_id: str, client_secret: str = "") -> str:
     """Return a valid ID token, refreshing if needed."""
     try:
         expiry = float(keystore.retrieve(profile, _KEY_EXPIRY))
@@ -209,12 +209,12 @@ def get_id_token(profile: str, client_id: str) -> str:
         raise AuthError()
 
     if time.time() >= expiry - 300:
-        _refresh(profile, client_id)
+        _refresh(profile, client_id, client_secret)
 
     return keystore.retrieve(profile, _KEY_ID)
 
 
-def get_access_token(profile: str, client_id: str) -> str:
+def get_access_token(profile: str, client_id: str, client_secret: str = "") -> str:
     """Return a valid access token, refreshing if needed."""
     try:
         expiry = float(keystore.retrieve(profile, _KEY_EXPIRY))
@@ -224,24 +224,27 @@ def get_access_token(profile: str, client_id: str) -> str:
     if time.time() < expiry - 300:
         return keystore.retrieve(profile, _KEY_ACCESS)
 
-    return _refresh(profile, client_id)
+    return _refresh(profile, client_id, client_secret)
 
 
-def _refresh(profile: str, client_id: str) -> str:
+def _refresh(profile: str, client_id: str, client_secret: str = "") -> str:
     try:
         refresh_token = keystore.retrieve(profile, _KEY_REFRESH)
     except Exception:
         raise AuthExpiredError()
 
     log.debug("Refreshing access token…")
+    payload: dict[str, str] = {
+        "grant_type": "refresh_token",
+        "refresh_token": refresh_token,
+        "client_id": client_id,
+    }
+    if client_secret:
+        payload["client_secret"] = client_secret
     try:
         resp = httpx.post(
             _GOOGLE_TOKEN_URL,
-            data={
-                "grant_type": "refresh_token",
-                "refresh_token": refresh_token,
-                "client_id": client_id,
-            },
+            data=payload,
             timeout=15,
         )
     except (httpx.TimeoutException, httpx.ConnectError) as exc:

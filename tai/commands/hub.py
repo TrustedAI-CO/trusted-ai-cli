@@ -36,7 +36,7 @@ def _hub_client(ctx: typer.Context) -> httpx.Client:
 
     try:
         from tai.core.auth import get_id_token
-        id_token = get_id_token(app_ctx.profile, profile_cfg.oauth_client_id)
+        id_token = get_id_token(app_ctx.profile, profile_cfg.oauth_client_id, profile_cfg.oauth_client_secret)
     except Exception:
         err_console.print("[bold red]Error:[/bold red] Not authenticated.")
         err_console.print("[dim]Hint: Run: tai login[/dim]")
