@@ -89,33 +89,55 @@ def _hub_json(client: httpx.Client, method: str, url: str, **kwargs):
 # ── Project resolution ───────────────────────────────────────────────────────
 
 
-def _resolve_project(ctx: typer.Context, name: str | None) -> str:
-    """Resolve a project name to a spaceId. Interactive picker when name is None and TTY."""
+_UUID_RE = __import__("re").compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", __import__("re").IGNORECASE,
+)
+
+
+def _resolve_project(ctx: typer.Context, project: str | None) -> str:
+    """Resolve a project identifier (UUID or name) to a spaceId.
+
+    Accepts UUID directly, or fuzzy-matches by name. Interactive picker when None and TTY.
+    """
+    if project and _UUID_RE.match(project):
+        return project
+
     client = _hub_client(ctx)
     spaces = _hub_json(client, "GET", "/api/hub/spaces")
     projects = [s for s in spaces if s.get("type") == "project"]
 
-    if name:
-        lower_name = name.lower()
-        exact = [p for p in projects if p["name"].lower() == lower_name]
+    # Try UUID prefix match (e.g. "a816c" matches "a816cfcd-dd75-...")
+    if project and all(c in "0123456789abcdef-" for c in project.lower()):
+        prefix_matches = [p for p in projects if p["id"].startswith(project.lower())]
+        if len(prefix_matches) == 1:
+            return prefix_matches[0]["id"]
+        if len(prefix_matches) > 1:
+            err_console.print(f"[bold red]Error:[/bold red] Ambiguous prefix '{project}':")
+            for m in prefix_matches:
+                err_console.print(f"  - {m['name']} ({m['id']})")
+            raise typer.Exit(ExitCode.CONFLICT)
+
+    if project:
+        lower = project.lower()
+        exact = [p for p in projects if p["name"].lower() == lower]
         if exact:
             return exact[0]["id"]
-        matches = [p for p in projects if lower_name in p["name"].lower()]
+        matches = [p for p in projects if lower in p["name"].lower()]
         if len(matches) == 1:
             return matches[0]["id"]
         if len(matches) == 0:
-            err_console.print(f"[bold red]Error:[/bold red] No project matching '{name}'.")
+            err_console.print(f"[bold red]Error:[/bold red] No project matching '{project}'.")
             raise typer.Exit(ExitCode.NOT_FOUND)
-        err_console.print(f"[bold red]Error:[/bold red] Ambiguous — {len(matches)} projects match '{name}':")
+        err_console.print(f"[bold red]Error:[/bold red] Ambiguous — {len(matches)} projects match '{project}':")
         for m in matches:
-            err_console.print(f"  - {m['name']}")
+            err_console.print(f"  - {m['name']} ({m['id']})")
         raise typer.Exit(ExitCode.CONFLICT)
 
     if not is_interactive():
         err_console.print("[bold red]Error:[/bold red] --project required in non-interactive mode.")
         raise typer.Exit(ExitCode.USAGE)
 
-    chosen = search_select("Project:", projects, label_fn=lambda p: p["name"])
+    chosen = search_select("Project:", projects, label_fn=lambda p: f"{p['name']} ({p['id'][:8]})")
     if chosen is None:
         raise typer.Exit(0)
     return chosen["id"]
@@ -364,7 +386,7 @@ def page_get(
 def page_create(
     ctx: typer.Context,
     title: Annotated[str, typer.Argument(help="Page title.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Create a new page."""
@@ -421,7 +443,7 @@ app.add_typer(task_app)
 @task_app.callback(invoke_without_command=True)
 def list_tasks(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     status: Optional[str] = typer.Option(None, "--status", "-s", help="Filter by status."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
@@ -452,7 +474,7 @@ def list_tasks(
 def task_create(
     ctx: typer.Context,
     title: Annotated[str, typer.Argument(help="Task title.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     priority: Optional[str] = typer.Option(None, "--priority", help="Task priority."),
     due: Optional[str] = typer.Option(None, "--due", help="Due date (YYYY-MM-DD)."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
@@ -518,7 +540,7 @@ def task_update(
 @app.command()
 def members(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """List project members."""
@@ -540,7 +562,7 @@ def members(
 @app.command()
 def milestones(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """List project milestones."""
@@ -634,7 +656,7 @@ def _print_files_table(files: list[dict]) -> None:
 @file_app.callback(invoke_without_command=True)
 def list_files(
     ctx: typer.Context,
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """List files in a project's Drive folder."""
@@ -661,7 +683,7 @@ def list_files(
 def file_search(
     ctx: typer.Context,
     query: Annotated[str, typer.Argument(help="Search query.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Search files by name."""
@@ -689,7 +711,7 @@ def file_search(
 def file_upload(
     ctx: typer.Context,
     path: Annotated[Path, typer.Argument(help="Path to the file to upload.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Upload a file to project Drive folder."""
@@ -732,7 +754,7 @@ def file_upload(
 def file_download(
     ctx: typer.Context,
     file_id: Annotated[str, typer.Argument(help="Drive file ID.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Output path."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
@@ -774,7 +796,7 @@ def file_download(
 def file_delete(
     ctx: typer.Context,
     file_id: Annotated[str, typer.Argument(help="Drive file ID.")],
-    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project name."),
+    project: Optional[str] = typer.Option(None, "--project", "-p", help="Project ID or name."),
     json_flag: bool = typer.Option(False, "--json", help="Output as JSON."),
 ) -> None:
     """Delete a file from project Drive."""
