@@ -1066,16 +1066,16 @@ def cal_list(
     table.add_column("End", style="dim")
     table.add_column("Status", style="dim")
     for e in events:
-        start = e.get("start", {})
-        end = e.get("end", {})
-        start_str = start.get("dateTime", start.get("date", ""))[:16]
-        end_str = end.get("dateTime", end.get("date", ""))[:16]
+        start_raw = e.get("start", "")
+        end_raw = e.get("end", "")
+        start_str = (start_raw if isinstance(start_raw, str) else start_raw.get("dateTime", start_raw.get("date", "")))[:16]
+        end_str = (end_raw if isinstance(end_raw, str) else end_raw.get("dateTime", end_raw.get("date", "")))[:16]
         table.add_row(
             e.get("id", "")[:12],
             e.get("summary", ""),
             start_str,
             end_str,
-            e.get("status", ""),
+            e.get("responseStatus", e.get("status", "")),
         )
     console.print(table)
 
