@@ -111,19 +111,6 @@ deck-stage section {
   position: relative;
 }
 
-/* Grid texture background */
-.slide-grid-bg {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(to right, rgba(10,22,64,0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(10,22,64,0.035) 1px, transparent 1px);
-  background-size: 56px 56px;
-  pointer-events: none;
-  mask-image: radial-gradient(ellipse at 50% 40%, black 30%, transparent 85%);
-  -webkit-mask-image: radial-gradient(ellipse at 50% 40%, black 30%, transparent 85%);
-}
-
 .slide-pad {
   position: absolute;
   inset: 0;

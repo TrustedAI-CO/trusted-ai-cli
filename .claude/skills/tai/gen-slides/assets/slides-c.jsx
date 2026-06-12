@@ -76,7 +76,6 @@ function SlideClosing({ brand = "TrustedAI", title, subtitle, contact, num, tota
   const c = contact || { name: "Team Name", email: "hello@example.com", phone: "+1 000-000-0000", web: "example.com" };
   return (
     <>
-      <div className="slide-grid-bg" />
       <div className="slide-pad" style={{ justifyContent: "space-between" }}>
         <div className="row between items-start">
           <div className="brand-mark" style={{ fontSize: 24 }}>

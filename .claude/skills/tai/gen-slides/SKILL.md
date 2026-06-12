@@ -271,7 +271,6 @@ Key classes to use in slide JSX:
 | Class | Purpose |
 |-------|---------|
 | `.slide-pad` | Full-slide padding container |
-| `.slide-grid-bg` | Subtle grid texture background |
 | `.eyebrow` | Section label with coral bar |
 | `.title` | Main heading (supports `.underline` spans) |
 | `.card` / `.card-dark` | Content cards |

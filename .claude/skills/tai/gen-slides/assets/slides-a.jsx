@@ -9,7 +9,6 @@ const TOTAL_SLIDES = 16;
 function SlideHero({ brand = "TrustedAI", tag, title, subtitle, meta = {}, num, total }) {
   return (
     <>
-      <div className="slide-grid-bg" />
       <div className="slide-pad" style={{ justifyContent: "space-between" }}>
         <div className="row between items-start">
           <div className="brand-mark" style={{ fontSize: 30 }}>
@@ -59,7 +58,6 @@ function SlideHero({ brand = "TrustedAI", tag, title, subtitle, meta = {}, num, 
 function SlideDivider({ numLabel = "01", titleJp, titleEn, lead, num, total }) {
   return (
     <>
-      <div className="slide-grid-bg" />
       <div className="slide-pad">
         <div className="row" style={{ flex: 1 }}>
           <div className="col" style={{ flex: 1, justifyContent: "center", gap: 40 }}>
@@ -86,7 +84,6 @@ function SlideDivider({ numLabel = "01", titleJp, titleEn, lead, num, total }) {
 function SlideBigNumber({ eyebrow, number = "73", unit = "%", titleJp, lead, source, num, total }) {
   return (
     <>
-      <div className="slide-grid-bg" />
       <div className="slide-pad" style={{ justifyContent: "center" }}>
         <div className="row" style={{ gap: 80, alignItems: "center" }}>
           <div className="col" style={{ flex: 1, gap: 40 }}>
@@ -120,7 +117,6 @@ function SlideQuote({ quote, authorName, authorTitle, num, total }) {
   const initials = (authorName || "YT").split(/\s+/).map(w => w[0]).join("").slice(0, 2);
   return (
     <>
-      <div className="slide-grid-bg" />
       <div className="slide-pad" style={{ justifyContent: "center", alignItems: "center" }}>
         <div className="col center" style={{ maxWidth: 1500, gap: 48, textAlign: "center" }}>
           <div style={{ fontSize: 180, color: "var(--accent)", lineHeight: 0.6, fontFamily: "serif", fontWeight: 700 }}>"</div>

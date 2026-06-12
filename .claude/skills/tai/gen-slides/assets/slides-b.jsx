@@ -402,7 +402,6 @@ function SlideList({ eyebrow, titleJp, items, num, total }) {
   ];
   return (
     <>
-      <div className="slide-grid-bg" />
       <div className="slide-pad">
         <div className="eyebrow jp" style={{ marginBottom: 24 }}>{eyebrow || "AGENDA"}</div>
         <h1 className="title jp" style={{ fontSize: 72, marginBottom: 64 }}>
