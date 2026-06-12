@@ -51,13 +51,6 @@ tai = "tai.main:cli"
 packages = ["tai"]
 
 [tool.hatch.build.targets.wheel.force-include]
-"tai/hooks/hooks.json" = "tai/hooks/hooks.json"
-"tai/hooks/scripts" = "tai/hooks/scripts"
-"tai/hooks/lib" = "tai/hooks/lib"
-"tai/data/templates" = "tai/data/templates"
-"tai/data/brand" = "tai/data/brand"
-"tai/data/codex" = "tai/data/codex"
-"tai/templates/typst" = "tai/templates/typst"
 ".claude/skills/tai" = "tai/data/skills"
 
 [tool.pytest.ini_options]
