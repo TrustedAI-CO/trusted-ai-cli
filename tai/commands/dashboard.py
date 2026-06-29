@@ -290,7 +290,11 @@ _PAGE = """<!doctype html><html><head><meta charset=utf-8>
  input{font:inherit;background:#fff;color:#1f2328;border:1px solid #d0d7de;border-radius:6px;padding:6px 10px;width:280px}
  button.act{font:inherit;background:#1a7f37;color:#fff;border:0;border-radius:5px;padding:3px 10px;cursor:pointer}
  pre{white-space:pre-wrap;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow:auto}
- .pill{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid #d0d7de}
+ .pill{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid #d0d7de;white-space:nowrap}
+ .dlist{border-collapse:collapse;width:100%}
+ .dlist th{text-align:left;font-weight:normal;color:#656d76;font-size:12px;padding:4px 10px;border-bottom:1px solid #d0d7de}
+ .dlist td{padding:5px 10px;border-bottom:1px solid #eaeef2;vertical-align:top}
+ .dlist td:first-child{white-space:nowrap}.dlist td:nth-child(2){white-space:nowrap}
  .md h1,.md h2,.md h3{border:0;text-transform:none;letter-spacing:0;color:#1f2328;margin:14px 0 6px}
  .md h1{font-size:20px}.md h2{font-size:16px}.md h3{font-size:14px}
  .md table{border-collapse:collapse;margin:8px 0;width:100%}
@@ -360,7 +364,7 @@ async function docList(type,placeholder){
  const q=document.getElementById('q'),list=document.getElementById('list');
  async function load(){
   const rows=(q.value?await j('/api/search?q='+encodeURIComponent(q.value)):await j('/api/docs?type='+type)).filter(r=>r.type===type);
-  list.innerHTML=rows.map(r=>`<div class=row><a class=doclink data-id="${esc(r.id)}">${esc(r.id)}</a><span class="pill">${esc(r.status)}</span><span class=muted>${esc(r.title)}</span></div>`).join('')||'<span class=muted>none</span>';
+  list.innerHTML=rows.length?`<table class=dlist><thead><tr><th>id</th><th>status</th><th>title</th></tr></thead><tbody>`+rows.map(r=>`<tr><td><a class=doclink data-id="${esc(r.id)}">${esc(r.id)}</a></td><td><span class="pill">${esc(r.status)}</span></td><td class=muted>${esc(r.title)}</td></tr>`).join('')+`</tbody></table>`:'<span class=muted>none</span>';
   list.querySelectorAll('.doclink').forEach(a=>a.onclick=()=>showDoc(a.dataset.id));}
  q.oninput=load;await load();
 }
