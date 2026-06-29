@@ -92,10 +92,24 @@ def test_R6_show_not_found(docs_repo):
 
 # covers: SPEC-docs-query R7
 def test_R7_json(docs_repo):
-    result = runner.invoke(app, ["dashboard", "list", "--json"])
-    assert result.exit_code == 0
-    data = json.loads(result.output)
+    # list --json
+    data = json.loads(runner.invoke(app, ["dashboard", "list", "--json"]).output)
     assert {d["id"] for d in data} == {"SPEC-auth-login", "SPEC-notes-add", "0001-stack"}
+    # search --json (same row shape)
+    sdata = json.loads(runner.invoke(app, ["dashboard", "search", "auth", "--json"]).output)
+    assert any(d["id"] == "SPEC-auth-login" for d in sdata)
+    # show --json (distinct shape: frontmatter + body, incl. list-valued fields)
+    shown = json.loads(runner.invoke(app, ["dashboard", "show", "SPEC-auth-login", "--json"]).output)
+    assert set(shown) == {"frontmatter", "body"}
+    assert shown["frontmatter"]["id"] == "SPEC-auth-login"
+    assert isinstance(shown["frontmatter"]["children"], list)
+
+
+# covers: SPEC-docs-query R4 — search is scoped to specs+ADRs (not prd/architecture)
+def test_R4_search_scope_excludes_non_spec(docs_repo):
+    hits = dash.collect_search(docs_repo / "docs", "product")  # prd body says "Product"
+    assert all(r.type in ("spec", "decision") for r in hits)
+    assert not any(r.id == "prd" for r in hits)
 
 
 # covers: SPEC-docs-query R8

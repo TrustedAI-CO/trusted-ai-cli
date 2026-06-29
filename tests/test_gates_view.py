@@ -99,6 +99,11 @@ def test_R7_json(docs_repo):
     assert result.exit_code == 0
     g = json.loads(result.output)
     assert set(g) == {"gate_a", "gate_b", "gate_c", "review"}
+    # item shape {id,title,action} with action in the agreed verb set
+    verbs = {"sign", "accept", "approve", "resolve"}
+    for items in g.values():
+        for it in items:
+            assert set(it) >= {"id", "title", "action"} and it["action"] in verbs
 
 
 # covers: SPEC-gates-view R8

@@ -126,10 +126,10 @@ def collect_pipeline(docs: Path) -> dict:
 def collect_coverage(docs: Path) -> dict:
     """COVERED / total from matrix.md Coverage Summary (R4)."""
     text = _read(docs / "matrix.md")
-    total = _find_int(text, r"Total Behavior rows:\s*(\d+)")
-    covered = _find_int(text, r"COVERED:\s*(\d+)")
+    total = _find_int(text, r"Total Behavior rows:\s*(\d+)") or 0
+    covered = _find_int(text, r"COVERED:\s*(\d+)") or 0
     percent = round(100.0 * covered / total, 1) if total else None
-    return {"covered": covered or 0, "total": total or 0, "percent": percent}
+    return {"covered": covered, "total": total, "percent": percent}
 
 
 def _find_int(text: str, pattern: str) -> Optional[int]:
@@ -439,7 +439,7 @@ def collect_search(docs: Path, query: str) -> list:
     hits = []
     for p in _md_docs(docs):
         row = _doc_row(p, docs)
-        if not row:
+        if not row or row.type not in ("spec", "decision"):  # specs + ADRs only, matches `list`
             continue
         in_id, in_title = q in row.id.lower(), q in row.title.lower()
         in_body = q in _doc_body(_read(p)).lower()  # body only — not frontmatter
