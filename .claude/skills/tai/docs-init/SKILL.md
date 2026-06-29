@@ -482,7 +482,6 @@ id: SPEC-<area>-<name>      # e.g. SPEC-auth-login
 type: spec
 status: draft              # draft → approved (human gate) → implemented
 approved_at:               # ISO timestamp, set when a human flips to approved
-baseline_sha:              # repo HEAD at approval — the staleness anchor
 implements: [prd]          # intent ids this realizes, e.g. [prd, 0003-some-adr]
 parent: architecture
 children: []

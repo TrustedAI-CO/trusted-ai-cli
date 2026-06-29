@@ -51,14 +51,11 @@ That is a change to an existing spec, **not** a new spec (one spec = one surface
 life of the surface).
 
 > **Editing the Interface or any Behavior row of an `implemented` spec RESETS it to
-> `status: draft` and CLEARS `approved_at` + `baseline_sha` + `autonomous_ok`.**
-
-Clearing `autonomous_ok` is non-negotiable: a human authorized unattended build of the
-*old* behavior, not the new one. The new behavior must earn its own authorization.
+> `status: draft` and CLEARS `approved_at`.**
 
 Then it re-enters the normal gate: append the new Behavior rows (new R-ids — never renumber
 or reuse existing ones; old rows keep their history), a human re-approves (which re-stamps
-`approved_at`/`baseline_sha` at the new HEAD), and only then may code under the spec merge.
+`approved_at`), and only then may code under the spec merge.
 This guarantees a behavior change to a shipped surface gets the **same human gate** as a
 new one — without it, `implemented` would be a hole through which unreviewed contract
 changes ship. Editing prose-only sections (Overview, Open questions) does not require a
@@ -74,8 +71,7 @@ Three rules make every change reviewable and traceable:
    hard "one spec per PR" law — coupled specs (a new interface and its caller) ship
    together rather than forcing merge ordering. But aim for one spec per PR (smallest
    reviewable contract change), and the PR body MUST list the full declared set. A
-   touched-but-undeclared spec is a trace gap → ship FAILs. An autonomous `/tai-loop`
-   run builds serially and naturally emits ~1 spec per PR.
+   touched-but-undeclared spec is a trace gap → ship FAILs.
 3. **`changelog.md` is the trace index.** Each bullet that ships code under a spec names
    the governing spec id(s) and the PR number: `- {change} — SPEC-{id} (#NNN)`. This one
    anchor chains to the spec's git history (`git log docs/specs/{id}.md`), the matrix
@@ -206,7 +202,6 @@ the gate humans flip.
 | `/plan-design` | prd, design/visual | `docs/design/visual.md`, `docs/decisions/` (ADRs) | L1 — design ADRs |
 | `/design-consultation` | — | `docs/design/visual.md` | design system |
 | `/tai-execute` (auto solo/team) | plan/tasks, **approved** specs | code+tests, `docs/matrix.md`, `docs/REVIEW.md` | L3 — implement against approved L2 |
-| `/tai-loop` | backlog, **approved** specs | drives the pipeline autonomously over the backlog | trigger/loop layer over `/tai-flow` |
 | `/review` | specs, matrix | — (conformance check) | L2 gate check |
 | `/ship` | REVIEW, matrix | — (pre-merge gates) | enforces doc-first gate |
 | `/docs-update` | all derived docs | derived docs only | post-ship — never touches source |

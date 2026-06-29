@@ -902,7 +902,7 @@ Otherwise, run the same checklist as the review skill (framework-reviewer, contr
    - **`status: implemented` does NOT satisfy this for a behavior change.** Per the
      "Spec Evolution" rule, changing the Interface/Behavior of an already-`implemented`
      spec must reset it to `draft` and re-approve it to `approved` (re-stamping
-     `approved_at`/`baseline_sha`). An Interface/Behavior change shipping against a spec
+     `approved_at`). An Interface/Behavior change shipping against a spec
      still marked `implemented` (never re-approved) → **FAIL** — this is the hole that
      lets unreviewed contract changes ship on a shipped surface.
 
@@ -922,8 +922,7 @@ PRs. The enforceable rule:
    - The PR body must list that set (Step 8 `## Specs`). A touched spec missing from the
      list → **FAIL** (trace gap).
    - Aim for one spec per PR (smallest reviewable contract change); >1 is allowed but
-     each must be declared + approved. An autonomous `/tai-loop` run builds serially and
-     naturally emits ~1 spec per PR.
+     each must be declared + approved.
 
 **6. spec-exempt escape hatch.** A `spec-exempt:` marker may waive a finding ONLY when ALL hold:
    - It was **reviewer-applied**, not author-applied (the ship operator/reviewer adds it during this gate — never carried in by the diff author).

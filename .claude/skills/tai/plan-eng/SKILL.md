@@ -352,8 +352,8 @@ Each spec MUST use the template's shape:
 
 **Spec-evolution reset (updating an `implemented` spec).** When UPDATING a spec whose
 `status: implemented`, if your edit touches the Interface, any Behavior row, or an
-Invariant, you MUST in the same edit set `status: draft` and clear `approved_at:` and
-`baseline_sha:` (blank them). This forces re-approval through GATE C — never leave a
+Invariant, you MUST in the same edit set `status: draft` and clear `approved_at:`
+(blank it). This forces re-approval through GATE C — never leave a
 behavior-changed spec at `implemented`. Editing only prose sections (Overview, Open
 questions) does not require the reset. This is the docs-philosophy "Spec Evolution" rule:
 a behavior change to a shipped surface gets the **same human gate** as a new one.
@@ -371,7 +371,6 @@ id: SPEC-{area}-{name}
 type: spec
 status: draft            # draft → approved (human gate) → implemented
 approved_at:             # ISO timestamp, set when human flips to approved
-baseline_sha:            # repo HEAD at approval — the staleness anchor
 implements: [prd, 0003-some-adr]
 parent: architecture
 children: []

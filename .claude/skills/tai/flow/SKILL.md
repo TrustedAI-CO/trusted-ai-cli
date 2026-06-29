@@ -93,8 +93,7 @@ Read state, do not guess from conversation:
      Behavior rows cover (a new option, a new rule, a changed interface) → this is a
      **spec evolution**: route to **S1 plan** to revise the spec. Per the philosophy
      "Spec Evolution" rule, editing its Interface/Behavior resets it to `draft` and
-     clears `approved_at`/`baseline_sha`/`autonomous_ok` → it then flows through
-     **GATE C** for re-approval. Do NOT let code for the new behavior proceed against an
+     clears `approved_at` → it then flows through **GATE C** for re-approval. Do NOT let code for the new behavior proceed against an
      `implemented` spec that doesn't cover it.
      **Verify the reset before routing onward:** after plan-eng revises an evolved spec,
      confirm its `status` is now `draft` (plan-eng owns this write). If a spec whose
@@ -150,12 +149,10 @@ Present the doc for decision, then offer interactive approval:
 
 Then `AskUserQuestion`:
 - **Approve** → flow writes the `status:` field (`draft`→`approved`, `proposed`→
-  `accepted`, PRD→signed). **For a spec, in the SAME write also stamp the staleness
-  anchor:** `approved_at: <current ISO timestamp>` and `baseline_sha: $(git rev-parse
-  HEAD)`. These are non-negotiable — `/tai-loop`'s staleness check diffs against
-  `baseline_sha`; leaving it empty silently breaks autonomous re-validation. Commit the
-  frontmatter change, then CONTINUE the pipeline. The click is the authorization; flow
-  only types the keystroke the human ordered.
+  `accepted`, PRD→signed). For a spec, in the SAME write stamp `approved_at: <current ISO
+  timestamp>` (approval provenance). Commit the frontmatter change, then CONTINUE the
+  pipeline. The click is the authorization; flow only types the keystroke the human
+  ordered.
 - **Request changes** → flow records the feedback, routes back to the matching plan
   skill to revise the draft, then re-presents the gate.
 

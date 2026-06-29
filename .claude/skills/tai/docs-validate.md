@@ -11,10 +11,8 @@ Every doc in `docs/` must be referenced by at least one other doc (as child or r
 Exception: `REVIEW.md` (type: review) is allowed to be standalone.
 
 ### 2. All Links Resolve
-Every `parent`, `children`, `related`, and `depends_on` ID in frontmatter must point to an
-existing doc. Broken links are errors. A spec whose `depends_on` names a deleted/renamed
-spec is an **error** — otherwise `/tai-loop` blocks that spec forever as `⛓ blocked` with
-no diagnosis that the dependency no longer exists.
+Every `parent`, `children`, and `related` ID in frontmatter must point to an existing doc.
+Broken links are errors.
 
 ### 3. Bidirectional Links
 If doc A lists doc B as a child, doc B must list A as its parent. Related links don't
