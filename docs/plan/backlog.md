@@ -12,6 +12,9 @@ related: []
 - [ ] (scheduled deferred work)
 
 ## Backlog
+- Dashboard nits (#78 review LOW, deferred): subcommands honor only local `--json`, not the
+  global `tai --json` app-context flag (bare dashboard does) — fold global json into subcommands;
+  minor double-read in collect_search / re-walk in find_doc_by_id (fine at current tree size).
 - Review nits (round-5 LOW, deferred — non-blocking): docs-update guardrails block says
   "part of the Document-Driven pipeline" (→ "framework"); docs-test-prompt stale skill name
   `document-release` (→ docs-update) + Check 3 execute-writes row understates §4/prose;
