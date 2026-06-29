@@ -2,10 +2,12 @@
 name: docs-update
 version: 1.0.0
 description: |
-  [TAI] Post-ship documentation update. Reads all project docs, cross-references the
-  diff, updates README/docs/architecture.md/docs/contributing.md/CLAUDE.md to match what shipped,
-  polishes changelog voice, cleans up the backlog, and optionally bumps VERSION. Use when
-  asked to "update the docs", "sync documentation", or "post-ship docs".
+  [TAI] On-demand derived-docs refresh. NOT a pipeline step — derived docs are maintained
+  live by /tai-execute and verified by /ship's gate. Use this only to deliberately refresh
+  or regenerate derived docs (README/architecture/contributing/CLAUDE/changelog voice,
+  backlog cleanup, optional VERSION bump) — e.g. onboarding an existing repo, regenerating
+  a disposable map, or a periodic consistency pass. Use when asked to "refresh the docs",
+  "regenerate the docs map", or "do a docs consistency pass".
 allowed-tools:
   - Bash
   - Read
@@ -15,6 +17,16 @@ allowed-tools:
   - Glob
   - AskUserQuestion
 ---
+
+## Not a pipeline step (read first)
+
+**Derived docs are maintained LIVE, not synced at the end.** `/tai-execute` keeps matrix +
+architecture §4 + touched derived prose current as it implements; `/ship` writes the
+changelog and its gate VERIFIES derived docs are in sync (failing the ship if not). So
+this skill is **not** auto-chained by `/tai-flow` and is **not** run by `/ship`. It exists
+only as an **on-demand** tool: onboarding an existing/legacy repo, regenerating a
+deliberately-disposable map, or a periodic consistency pass a human chooses to run. If
+you reached here as part of a normal ship, you don't need it — the docs are already current.
 
 ## Framework Guardrails (read first)
 

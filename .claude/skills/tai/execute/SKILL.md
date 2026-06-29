@@ -575,19 +575,30 @@ After committing, verify each claim:
    - New enum values not handled in all switch/case/if-else chains → FAIL
    If any check fails, fix it (counts as a Tier 1 deviation).
 
-## Traceability Update
+## Derived-Doc Maintenance — Live, part of Definition-of-Done
 
-After committing and verifying, update the traceability matrix if `docs/matrix.md`
-exists or if the task's acceptance criteria reference REQ IDs.
+**Doc-driven means docs are maintained AS you implement, never caught up afterward.**
+There is no post-ship docs-update sweep to rely on — keeping the derived docs current is
+part of a task's definition-of-done, and `/ship`'s conformance gate (check 7) will FAIL a
+ship whose derived docs are stale. After committing + verifying a task, update — in the
+same change — every derived doc the work touched:
 
-1. Read `docs/matrix.md` (create it if missing — use the template from docs-preamble.md)
-2. For each REQ ID in the task's `REQs covered` field (from the plan):
-   - Add or update a row: `| REQ-ID | specs/{module}.md | {code files} | {test files} | COVERED |`
-   - If no test was written, set status to `PARTIAL`
-3. Update the Coverage Summary section
-4. Commit: `docs: update traceability for {task_name}`
+1. **`docs/matrix.md`** — for each REQ/R-id in the task's `REQs covered`:
+   - Add/update a row `| SPEC-id | R-id | {code} | {test} | COVERED |` (PARTIAL if no test).
+   - Mark COVERED only if the referencing test actually exists and passes — never assert
+     coverage you didn't verify. Update the Coverage Summary. (Create matrix from the
+     docs-preamble template if missing.)
+2. **`docs/architecture.md` §4** — if the task introduced a new top-level code directory /
+   container, add it to the §4 container→directory map (so it stays the gate's truth, not
+   a lagging mirror). A genuinely new architectural container also warrants flagging for an
+   ADR — note it in `docs/REVIEW.md`.
+3. **Touched derived prose** — if the change alters something `README.md`, `CLAUDE.md`, or
+   `docs/contributing.md` describes (a new command, a changed setup/test step, a convention),
+   update that doc in the same PR. Don't touch source layers (`specs/`, `prd.md`,
+   `decisions/`) here — those lead, they don't follow code.
 
-If the task doesn't reference any REQ IDs, skip this step.
+Commit derived-doc updates with the task (or `docs: maintain derived docs for {task}`).
+Skip a sub-item only when the task genuinely didn't touch what it covers.
 
 ## REVIEW.md Append
 
