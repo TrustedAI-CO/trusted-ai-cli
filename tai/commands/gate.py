@@ -74,7 +74,9 @@ def _git_commit(repo: Path, rel: str, message: str) -> None:
 
 def _write_commit_or_rollback(path: Path, docs: Path, original: str, updated: str, message: str) -> None:
     """Write `updated`, commit just this file; on any commit failure restore `original`
-    AND unstage, so a failed action leaves the repo exactly as it was (INV4)."""
+    (working tree) AND unstage the file, so a failed action leaves no uncommitted source
+    mutation (INV4). Note: a version of this same file the user had pre-staged before the
+    action is not preserved — the gate file is expected to be clean before invoking."""
     root = _repo_root(docs)
     rel = str(path.relative_to(root))
     path.write_text(updated, encoding="utf-8")
@@ -96,8 +98,9 @@ def _flip_status(text: str, current: str, new: str, stamp_at: Optional[str]) -> 
     if not text.startswith("---"):
         return None
     head, sep, body = text.partition("\n---")  # frontmatter is text up to the closing ---
-    # [ \t] (not \s) so a CRLF line ending is preserved, not eaten
-    status_re = rf"(?m)^status:[ \t]*{re.escape(current)}[ \t]*$"
+    # `\r?$` so a CRLF-authored status line still matches (the rewritten status line is
+    # normalized to LF — acceptable; the rest of the file's endings are untouched).
+    status_re = rf"(?m)^status:[ \t]*{re.escape(current)}[ \t]*\r?$"
     if not re.search(status_re, head):
         return None
     head = re.sub(status_re, f"status: {new}", head, count=1)

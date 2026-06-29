@@ -178,6 +178,31 @@ def test_INV2_accept_body_unchanged(repo):
     assert adr.read_text().split("---", 2)[2] == "\n# 0003-x: choice\n"
 
 
+# covers: SPEC-gates-action R1 — approve a spec with NO approved_at line (insert branch)
+def test_R1_approve_inserts_approved_at(repo):
+    spec = repo / "docs" / "specs" / "noat.md"
+    spec.write_text(
+        "---\nid: SPEC-noat\ntype: spec\nstatus: draft\nparent: architecture\nchildren: []\nrelated: []\n---\n# NoAt\n"
+    )
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "add"], check=True, capture_output=True)
+    r = runner.invoke(app, ["gate", "approve", "SPEC-noat", "--yes"])
+    assert r.exit_code == 0
+    fm = parse_frontmatter(spec.read_text())
+    assert fm["status"] == "approved" and fm["approved_at"]
+    assert spec.read_text().split("---", 2)[2] == "\n# NoAt\n"  # body intact
+
+
+# covers: SPEC-gates-action R9/INV2 — resolve leaves the rest of REVIEW.md identical
+def test_R9_resolve_body_intact(repo):
+    review = repo / "docs" / "REVIEW.md"
+    before = review.read_text()
+    runner.invoke(app, ["gate", "resolve", "REVIEW-001", "--yes"])
+    after = review.read_text()
+    # only the one PENDING→RESOLVED token differs; everything else identical
+    assert after == before.replace("**Status:** PENDING", "**Status:** RESOLVED", 1)
+
+
 # covers: SPEC-gates-action — REVIEW-001 must not match REVIEW-0011 (regex collision)
 def test_resolve_id_no_prefix_collision(repo):
     review = repo / "docs" / "REVIEW.md"
