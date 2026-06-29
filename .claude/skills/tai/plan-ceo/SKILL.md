@@ -56,6 +56,36 @@ Assume the user hasn't looked at this window in 20 minutes and doesn't have the 
 
 Per-skill instructions may add additional formatting rules on top of this baseline.
 
+## Talk-then-write — present the plan VISUALLY before writing any docs/ file (ADR 0004)
+
+**Never draft the CEO plan (`docs/prd.md` product intent, `docs/decisions/` ADRs) silently
+and ask for approval after.** Present the bet in the conversation FIRST; write the files
+only once the human confirms the direction:
+
+1. **Lead with an ASCII diagram** — the scope/bets map: what's IN scope now, what's
+   DEFERRED, and what's explicitly OUT, plotted against the current → 12-month-ideal arc.
+   Plus a compact scope-decision table. Visual-first: the human should grok the bet and
+   its boundaries at a glance in a TUI, not read paragraphs. Prose is supporting.
+   ```
+   CURRENT STATE ──▶ THIS BET ──▶ 12-MONTH IDEAL
+                       │
+        ┌──────────────┼──────────────┐
+       IN scope     DEFERRED          OUT
+     (ship now)   (backlog)       (not this)
+   ```
+   | # | Proposal | Effort (human / CC) | Decision | Why |
+   |---|----------|---------------------|----------|-----|
+   | 1 | ... | M / S | ACCEPTED / DEFERRED / SKIPPED | ... |
+2. **Confirm/steer via AskUserQuestion** (proceed as-is / adjust scope / rethink the bet) —
+   per the Batching Rule. This is in addition to the per-proposal opt-in/cherry-pick
+   ceremony; here you confirm the *overall* shape before persisting.
+3. **Write the files ONLY after** the human confirms. `docs/prd.md` stays HUMAN-owned —
+   draft for approval, propose additive edits, never finalize over their intent. ADRs land
+   `status: proposed` for human acceptance.
+
+`quick`/abbreviated mode: present a single one-shot scope/bets map + confirm, instead of a
+per-section walk.
+
 ## Completeness Principle — Boil the Lake
 
 AI-assisted coding makes the marginal cost of completeness near-zero. When you present options:
@@ -347,7 +377,7 @@ Rules:
 
 ### 0D-POST. Persist CEO Plan (EXPANSION and SELECTIVE EXPANSION only)
 
-After the opt-in/cherry-pick ceremony, write the plan to disk so the vision and decisions survive beyond this conversation. Only run this step for EXPANSION and SELECTIVE EXPANSION modes.
+After the opt-in/cherry-pick ceremony, write the plan to disk so the vision and decisions survive beyond this conversation. Only run this step for EXPANSION and SELECTIVE EXPANSION modes. (present + confirm per Talk-then-write above before writing)
 
 ```bash
 _REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)

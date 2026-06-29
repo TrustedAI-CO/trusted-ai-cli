@@ -54,6 +54,24 @@ Assume the user hasn't looked at this window in 20 minutes and doesn't have the 
 
 Per-skill instructions may add additional formatting rules on top of this baseline.
 
+## Talk-then-write — present the plan VISUALLY before writing any docs/ file (ADR 0004)
+
+**Never draft a `docs/` artifact (spec, ADR, architecture) silently and ask for approval
+after.** Present the plan in the conversation FIRST; write the file only once the human
+confirms the direction:
+
+1. **Lead with an ASCII diagram** of the structure/flow, plus compact tables — e.g. the
+   spec's Behavior rows as a `| ID | Given | When | Then |` table and the
+   `code:`/`tests:` → architecture-container mapping. Visual-first: the human should grok
+   the plan's shape at a glance in a TUI, not read paragraphs. Prose is supporting.
+2. **Confirm/steer via AskUserQuestion** (proceed as-is / adjust / cancel) — per the
+   Batching Rule below.
+3. **Write the file ONLY after** the human confirms. Then continue to the doc-first gate
+   (specs land `status: draft` → GATE C approve as before).
+
+`quick`/abbreviated mode: present a single one-shot outline diagram + confirm, instead of
+a per-section walk. This is the upstream conversational checkpoint; GATE C is unchanged.
+
 ## Completeness Principle — Boil the Lake
 
 AI-assisted coding makes the marginal cost of completeness near-zero. When you present options:
