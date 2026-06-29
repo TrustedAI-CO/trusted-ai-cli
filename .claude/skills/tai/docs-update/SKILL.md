@@ -54,11 +54,10 @@ echo "BRANCH: $_BRANCH"
 
 ## Conventions
 
-Interaction + completeness conventions — **AskUserQuestion Format** and **Boil-the-Lake
-Completeness** — live in `docs-conventions.md` (single source of truth, ADR 0005). In
-flow-mode they're already loaded; otherwise read that file once. Per-skill AskUserQuestion
-additions, if any, are noted below.
-
+Shared conventions live in `docs-conventions.md` (single source of truth, ADR 0005):
+**AskUserQuestion Format**, **Boil-the-Lake Completeness**, and the **tai Field Report**
+template. `/tai-flow` loads that file once per run; in a standalone run, read it once.
+Per-skill AskUserQuestion additions, if any, are noted below.
 
 ## Language
 
