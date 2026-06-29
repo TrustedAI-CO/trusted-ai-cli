@@ -26,7 +26,8 @@ app = typer.Typer(name="dashboard", help="One-screen project overview from docs/
 console = Console()
 err_console = Console(stderr=True)
 
-_TEMPLATE = "template"
+def _is_template(name: str) -> bool:
+    return name.endswith(".template.md") or name.lower().startswith("_template")
 _LINK_FIELDS = ("parent", "children", "related")
 
 
@@ -104,7 +105,7 @@ class Dashboard:
 # ── collectors (pure, read-only) ──────────────────────────────────────────────
 
 def _md_docs(docs: Path) -> list:
-    return [p for p in docs.rglob("*.md") if _TEMPLATE not in p.name.lower()]
+    return [p for p in docs.rglob("*.md") if not _is_template(p.name)]
 
 
 def collect_pipeline(docs: Path) -> dict:
@@ -113,7 +114,7 @@ def collect_pipeline(docs: Path) -> dict:
     specs_dir = docs / "specs"
     if specs_dir.is_dir():
         for p in specs_dir.glob("*.md"):
-            if _TEMPLATE in p.name.lower():
+            if _is_template(p.name):
                 continue
             status = parse_frontmatter(_read(p)).get("status")
             if status in counts:
@@ -144,7 +145,10 @@ def collect_needs_you(docs: Path) -> list:
     # blocks start at "### [REVIEW-NNN] title"
     blocks = re.split(r"(?m)^### ", open_section)
     for block in blocks[1:]:
-        header = block.splitlines()[0].strip()
+        block_lines = block.splitlines()
+        if not block_lines:
+            continue
+        header = block_lines[0].strip()
         m = re.match(r"\[?(REVIEW-[\w-]+|[\w-]+)\]?\s*(.*)", header)
         rid = m.group(1) if m else "?"
         title = (m.group(2).strip() if m else header) or header
@@ -160,6 +164,8 @@ def collect_recent(docs: Path) -> list:
     blocks = re.split(r"(?m)^## ", text)
     for block in blocks[1:]:
         lines = block.splitlines()
+        if not lines:
+            continue
         version = lines[0].strip()
         entries = [l.strip()[2:].strip() for l in lines[1:] if l.strip().startswith("- ")]
         if entries:
@@ -434,7 +440,7 @@ def collect_search(docs: Path, query: str) -> list:
         if not row:
             continue
         in_id, in_title = q in row.id.lower(), q in row.title.lower()
-        in_body = q in _read(p).lower()
+        in_body = q in _doc_body(_read(p)).lower()  # body only — not frontmatter
         if in_id or in_title or in_body:
             rank = 0 if in_id else (1 if in_title else 2)
             hits.append((rank, row))
@@ -459,7 +465,7 @@ def collect_gates(docs: Path) -> dict:
     dec = docs / "decisions"
     if dec.is_dir():
         for p in sorted(dec.glob("*.md")):
-            if _TEMPLATE in p.name.lower():
+            if _is_template(p.name):
                 continue
             r = _doc_row(p, docs)
             if r and r.status == "proposed":
@@ -467,7 +473,7 @@ def collect_gates(docs: Path) -> dict:
     specs = docs / "specs"
     if specs.is_dir():
         for p in sorted(specs.glob("*.md")):
-            if _TEMPLATE in p.name.lower():
+            if _is_template(p.name):
                 continue
             r = _doc_row(p, docs)
             if r and r.status == "draft":

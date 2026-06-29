@@ -121,3 +121,13 @@ def test_INV1_read_only(docs_repo):
 def test_INV2_malformed(docs_repo):
     (docs_repo / "docs" / "specs" / "junk.md").write_text("---\n:: broken\n")
     assert runner.invoke(app, ["dashboard", "gates"]).exit_code == 0
+
+
+# covers: SPEC-gates-view INV2 — truncated REVIEW.md must not crash
+def test_INV2_truncated_review(docs_repo):
+    # REVIEW.md ending with a bare "### " (no following line) must not IndexError
+    (docs_repo / "docs" / "REVIEW.md").write_text(
+        "---\nid: review\ntype: review\nparent: null\nchildren: []\nrelated: []\n---\n## Open Items\n### "
+    )
+    assert runner.invoke(app, ["dashboard", "gates"]).exit_code == 0
+    assert dash.collect_needs_you(docs_repo / "docs") is not None

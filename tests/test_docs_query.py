@@ -80,6 +80,10 @@ def test_R5_show(docs_repo):
 def test_R6_show_not_found(docs_repo):
     result = runner.invoke(app, ["dashboard", "show", "NOPE"])
     assert result.exit_code == 1
+    # partial id surfaces the nearest-id hint
+    hinted = runner.invoke(app, ["dashboard", "show", "auth"])
+    assert hinted.exit_code == 1
+    assert "SPEC-auth-login" in hinted.output  # "Did you mean" hint
 
 
 # covers: SPEC-docs-query R7
