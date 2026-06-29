@@ -332,6 +332,7 @@ function mdRender(src){
    h+=`<table>${th}${tb}</table>`;continue;}
   if(s.trim()===''){i++;continue;}
   const p=[];while(i<L.length&&L[i].trim()!==''&&!/^(#|>|\\s*[-*]\\s|\\s*\\d+\\.\\s|\\||@@B)/.test(L[i])){p.push(inl(L[i]));i++;}
+  if(!p.length){p.push(inl(s));i++;}  // line fell through all branches → consume as text (guarantee progress)
   h+=`<p>${p.join(' ')}</p>`;
  }
  return h;
