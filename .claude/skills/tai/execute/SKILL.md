@@ -502,7 +502,7 @@ Do NOT include the entire plan file — only the relevant task section.)
 4. **Fix** any test failures (see Deviation Rules below)
 5. **Commit** with message: "feat({scope}): {task_name}"
 6. **Self-verify** (see Verification Checklist below)
-7. **Update traceability** (see Traceability Update below)
+7. **Maintain derived docs live** (see Derived-Doc Maintenance below)
 8. **Write summary** to {summary_file_path}
 
 ## Deviation Rules

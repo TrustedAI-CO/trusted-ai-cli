@@ -136,11 +136,13 @@ branch name wherever the instructions say "the base branch."
 
 ---
 
-# Document Release: Post-Ship Documentation Update
+# Document Refresh: On-Demand Derived-Docs Pass
 
-You are running the `/docs-update` workflow. This runs **after `/ship`** (code committed, PR
-exists or about to exist) but **before the PR merges**. Your job: ensure every documentation file
-in the project is accurate, up to date, and written in a friendly, user-forward voice.
+You are running the `/docs-update` workflow. This is an **on-demand** refresh — NOT a
+pipeline step, NOT run by `/ship`. A human invokes it deliberately (onboarding an existing
+repo, regenerating a disposable map, or a periodic consistency pass). Normal feature work
+keeps derived docs current live via `/tai-execute`. Your job here: ensure every derived
+documentation file is accurate, up to date, and written in a friendly, user-forward voice.
 
 You are mostly automated. Make obvious factual updates directly. Stop and ask only for risky or
 subjective decisions.

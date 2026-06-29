@@ -630,7 +630,7 @@ derived: true
 - Draft: 0
 
 ## Untraced Code
-Files with significant logic not governed by any spec — populated by `/docs-update`.
+Files with significant logic not governed by any spec — maintained live by `/tai-execute`, or refreshed by an on-demand `/docs-update`.
 ```
 
 Replace `YYYY-MM-DD` with the actual date (`$_DATE`).

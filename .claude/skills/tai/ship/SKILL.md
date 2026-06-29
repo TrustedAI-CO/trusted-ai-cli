@@ -939,8 +939,9 @@ step to lean on — if any of these is stale, **FAIL** (fix before shipping):
    - **architecture §4:** every new top-level code directory in the diff sits under a
      container declared in `docs/architecture.md` §4 (this overlaps check 1's per-spec
      trace; here it's the directory-map view). A new container absent from §4 → FAIL.
-   - **changelog:** `docs/changelog.md` has an entry for this version with the
-     spec-id/PR cross-ref (Step 5). Missing → FAIL.
+   - **changelog:** `docs/changelog.md` has an entry for this version with the **spec-id**
+     cross-ref (Step 5). Missing → FAIL. (The PR number `(#NNN)` is backfilled in Step 8
+     after the PR exists — do NOT require it at this gate.)
    Derived prose (README/CLAUDE/contributing) is execute's responsibility but is **not**
    blocked here (best-effort, unverified) — only matrix, §4, and changelog are gate-enforced.
    Fixing derived docs is allowed at this gate (they're derived, not source) — but it is
@@ -948,7 +949,7 @@ step to lean on — if any of these is stale, **FAIL** (fix before shipping):
 
 **On any FAIL (not waived by a valid spec-exempt):**
 
-**HARD-STOP the ship.** Do NOT run Step 6 (commit), Step 7 (push), or Step 8 (PR). Report each violation with: the check that failed (Trace / Doc-first / Row coverage / Unspec'd module / Declared specs), the spec ID and/or file:line, and what is missing. Then use AskUserQuestion (following the AskUserQuestion Format above — re-ground, simplify, recommend, options):
+**HARD-STOP the ship.** Do NOT run Step 6 (commit), Step 7 (push), or Step 8 (PR). Report each violation with: the check that failed (Trace / Doc-first / Row coverage / Unspec'd module / Declared specs / Derived-doc sync), the spec ID and/or file:line, and what is missing. Then use AskUserQuestion (following the AskUserQuestion Format above — re-ground, simplify, recommend, options):
 - Explain in plain English which framework rule was broken and why it blocks the ship.
 - `RECOMMENDATION: Choose A because the spec is the ground truth code is verified against — fixing it now keeps doc and code in sync.`
 - Options:
