@@ -811,6 +811,22 @@ For each classified comment:
    - Insert after the file header (line 5), dated today
    - Format: `## [X.Y.Z.W] - YYYY-MM-DD`
 
+**Spec + PR cross-reference (REQUIRED when `docs/specs/` exists).** Every bullet that
+ships code under a spec's `code:` path must name the governing spec id(s) and the PR
+number. This makes `changelog.md` the durable trace index — one anchor that chains to
+the spec's git history and the PR diff. Format:
+
+```
+### Added
+- Workspace project creation — SPEC-hub-create, SPEC-auth (#142)
+### Fixed
+- Token refresh race — SPEC-auth-token (#143)
+```
+
+If the PR number isn't known yet at this step (PR created in Step 8), write the spec
+ids now and backfill `(#NNN)` after Step 8. Bullets touching no spec (pure refactor,
+docs) need no spec id.
+
 **Do NOT ask the user to describe changes.** Infer from the diff and commit history.
 
 ---
@@ -889,7 +905,21 @@ Otherwise, run the same checklist as the review skill (framework-reviewer, contr
 
 **4. Unspec'd module.** Any code under the project's `spec-required` paths (the globs that require a governing spec) that has no spec naming it via `code:` → **FAIL**.
 
-**5. spec-exempt escape hatch.** A `spec-exempt:` marker may waive a finding ONLY when ALL hold:
+**5. Declared specs (one PR, declared + approved).** A PR may touch more than one spec
+when the work is genuinely coupled, but it must DECLARE every spec it touches and all of
+them must be approved. There is NO hard "one spec per PR" rule — coupled specs (a new
+interface its caller depends on) ship together rather than forcing merge-ordering across
+PRs. The enforceable rule:
+   - Compute the set of specs whose `code:` paths the diff touches.
+   - **Every** such spec must be `status: approved` (or `implemented`) — already covered
+     by check 2 per-spec; here verify the *whole set*.
+   - The PR body must list that set (Step 8 `## Specs`). A touched spec missing from the
+     list → **FAIL** (trace gap).
+   - Aim for one spec per PR (smallest reviewable contract change); >1 is allowed but
+     each must be declared + approved. An autonomous `/tai-loop` run builds serially and
+     naturally emits ~1 spec per PR.
+
+**6. spec-exempt escape hatch.** A `spec-exempt:` marker may waive a finding ONLY when ALL hold:
    - It was **reviewer-applied**, not author-applied (the ship operator/reviewer adds it during this gate — never carried in by the diff author).
    - Its category is one of the fixed set: `refactor`, `docs`, `revert`. Any other category is invalid.
    - It is **counted** and reported (how many findings it waived, and which).
@@ -897,7 +927,7 @@ Otherwise, run the same checklist as the review skill (framework-reviewer, contr
 
 **On any FAIL (not waived by a valid spec-exempt):**
 
-**HARD-STOP the ship.** Do NOT run Step 6 (commit), Step 7 (push), or Step 8 (PR). Report each violation with: the check that failed (Trace / Doc-first / Row coverage / Unspec'd module), the spec ID and/or file:line, and what is missing. Then use AskUserQuestion (following the AskUserQuestion Format above — re-ground, simplify, recommend, options):
+**HARD-STOP the ship.** Do NOT run Step 6 (commit), Step 7 (push), or Step 8 (PR). Report each violation with: the check that failed (Trace / Doc-first / Row coverage / Unspec'd module / Declared specs), the spec ID and/or file:line, and what is missing. Then use AskUserQuestion (following the AskUserQuestion Format above — re-ground, simplify, recommend, options):
 - Explain in plain English which framework rule was broken and why it blocks the ship.
 - `RECOMMENDATION: Choose A because the spec is the ground truth code is verified against — fixing it now keeps doc and code in sync.`
 - Options:
@@ -969,6 +999,12 @@ gh pr create --base <base> --title "<type>: <summary>" --body "$(cat <<'EOF'
 ## Summary
 <bullet points from CHANGELOG>
 
+## Specs
+<If docs/specs/ exists: list every spec this PR touches, each with status — e.g.
+"- SPEC-hub-create (approved)\n- SPEC-auth (approved)". This is the declared set from
+Step 5.75 check 5; all must be approved. If the PR touches no spec: "No spec touched
+(refactor/docs).">
+
 ## Test Coverage
 <coverage diagram from Step 3.4, or "All new code paths have test coverage.">
 <If Step 3.4 ran: "Tests: {before} → {after} (+{delta} new)">
@@ -1004,6 +1040,11 @@ EOF
 ```
 
 **Output the PR URL.**
+
+**Backfill changelog PR refs.** If the changelog bullets (Step 5) were written with spec
+ids but no `(#NNN)` because the PR didn't exist yet, edit `docs/changelog.md` now to add
+the PR number to each new bullet, then amend the final commit (or include in the Step 8.5
+docs commit). The changelog is the trace index — it must carry the PR number.
 
 ---
 

@@ -43,6 +43,23 @@ If a spec / PRD / ADR is out of date versus shipped code: **DO NOT fix it.** Fla
 `[CRITICAL]` doc-first violation and let a human reconcile through the proper spec-first
 flow.
 
+## PR Discipline — Change Unit & Trace
+
+Three rules make every change reviewable and traceable:
+
+1. **Every change ships via a PR.** No direct pushes to the base branch. The PR is the
+   review gate and the trace anchor. (Enforced by `/ship`.)
+2. **A PR declares every spec it touches; all must be `status: approved`.** There is NO
+   hard "one spec per PR" law — coupled specs (a new interface and its caller) ship
+   together rather than forcing merge ordering. But aim for one spec per PR (smallest
+   reviewable contract change), and the PR body MUST list the full declared set. A
+   touched-but-undeclared spec is a trace gap → ship FAILs. An autonomous `/tai-loop`
+   run builds serially and naturally emits ~1 spec per PR.
+3. **`changelog.md` is the trace index.** Each bullet that ships code under a spec names
+   the governing spec id(s) and the PR number: `- {change} — SPEC-{id} (#NNN)`. This one
+   anchor chains to the spec's git history (`git log docs/specs/{id}.md`), the matrix
+   (R-id → code → test), and the PR diff. Full bidirectional trace, no extra files.
+
 ## Source vs Derived Layers
 
 | | Layers | Who edits | When |
