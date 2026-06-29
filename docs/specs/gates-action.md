@@ -1,7 +1,7 @@
 ---
 id: SPEC-gates-action
 type: spec
-status: approved
+status: implemented
 approved_at: 2026-06-29T16:37:18Z
 implements: [prd]
 parent: architecture
