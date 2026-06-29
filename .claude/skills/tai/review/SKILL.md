@@ -38,14 +38,15 @@ single source of truth) before acting. Non-negotiable:
 current conversation. If you wrote the code being reviewed, you cannot objectively
 review it — a subagent with no conversation history can.
 
-When this skill is invoked, immediately spawn an Agent with:
+When this skill is invoked, spawn **2 fresh reviewers in parallel** (one message, two
+Agent calls — see "Review Loop" below), each given:
 - The full review instructions (everything below)
 - The branch name and base branch (from preamble)
 - The repo path
+- Optionally a complementary angle (e.g. one security/XSS, one correctness/regressions)
 
-Do NOT run the review steps yourself. The subagent does all the work and reports
-back findings. You then present findings to the user and handle AskUserQuestion
-interactions for fix decisions.
+Do NOT run the review steps yourself. The subagents do the work and report back findings;
+you union them, present to the user, and handle AskUserQuestion fix decisions.
 
 ```
 Agent prompt template:
@@ -61,46 +62,45 @@ Report findings as: [SEVERITY] file:line — description.
 "
 ```
 
-## Review Loop — Iterate Until Clean (blind rounds, K=2)
+## Review Loop — Iterate Until Clean (2 parallel blind reviewers per round)
 
 Review is **not single-pass**. The skill is a loop controller: review → fix → review
-again → fix → … until the diff is clean. The controller (you) owns the loop; each
+again → fix → … until a round comes back clean. The controller (you) owns the loop; each
 reviewer is a **fresh, stateless subagent**.
 
-**The blind-reviewer rule (non-negotiable).** Every round spawns a NEW reviewer that is
-given ONLY the current diff (`base...HEAD`) + the specs/architecture. It is NEVER told:
-- what the previous round found,
-- that anything was "already fixed,"
-- to "re-check" or "focus on" anything.
+**Two reviewers per round, in parallel.** Every round spawns **2 fresh blind reviewers at
+once** (one message, two Agent calls), given complementary angles where it helps — e.g.
+security/XSS vs correctness/regressions, or two different dimensions of the diff. Running
+two independent eyes *in parallel* is what replaces sequential re-rounds: a round is
+**clean only when BOTH reviewers find nothing CRITICAL/HIGH**. One round of two parallel
+reviewers finishes the loop — no second confirming round needed.
 
-Fixes are carried between rounds **only as commits** — they're already in the next
-round's diff, so a fresh reviewer re-derives whatever is still wrong on its own. A
-reviewer told "we fixed the SQL injection" rubber-stamps that area; a blind reviewer
-re-checks it. The *code* carries state across rounds; the *findings list never does*.
-Do not paste prior findings, a changelog of fixes, or "round N" context into the reviewer
-prompt. Each round is a cold read.
+**The blind-reviewer rule (non-negotiable).** Each reviewer is given ONLY the current diff
+(`base...HEAD`) + the specs/architecture. NEVER told what a prior round/reviewer found,
+that anything was "already fixed," or to "re-check"/"focus on" anything. Fixes carry
+between rounds **only as commits** — already in the next round's diff, so a fresh reviewer
+re-derives whatever is still wrong. A reviewer told "we fixed the SQL injection"
+rubber-stamps that area; a blind reviewer re-checks it. The *code* carries state across
+rounds; the *findings list never does*. Each reviewer is a cold read.
 
 **The loop:**
 ```
-clean_streak = 0
-for round in 1..MAX (MAX = 5):
-    findings = spawn FRESH blind reviewer (current diff + specs only)
-    worth_fixing = findings with severity CRITICAL or HIGH
+for round in 1..MAX (MAX = 4):
+    [a, b] = spawn 2 FRESH blind reviewers IN PARALLEL (current diff + specs only;
+             complementary angles)
+    worth_fixing = (a ∪ b) findings with severity CRITICAL or HIGH
     if worth_fixing is empty:
-        clean_streak += 1
-        if clean_streak >= 2:  →  DONE (clean — two consecutive blind rounds found nothing worth fixing)
-        else: continue          # one more blind round to confirm
+        → DONE — both parallel reviewers found nothing worth fixing (one clean round)
     else:
-        clean_streak = 0        # any worth-fixing finding resets the streak
         fix worth_fixing (Step 5 flow / investigate→execute), commit
-        # nits (LOW/INFO) → docs/plan/backlog.md, never block, never fixed in-loop
+        # nits (LOW/INFO from either) → docs/plan/backlog.md, never block, never fixed in-loop
 if round == MAX and still not clean:  →  HALT to human with the outstanding findings
 ```
 
-**Why K=2.** A single clean round can be a fix that *introduced* a new bug the same
-round didn't look for. Requiring **two consecutive clean blind rounds** catches the tail:
-round N's fix is itself reviewed cold in round N+1. Stop only when two back-to-back fresh
-reviewers find nothing CRITICAL/HIGH.
+**Why two parallel reviewers, one clean round.** Two independent cold reads of the *same
+final state* catch both each other's blind spots and a regression a single fix introduced
+— the coverage a sequential second round gave, but in parallel and without the extra
+wait. Stop as soon as one round's two reviewers both come back with nothing CRITICAL/HIGH.
 
 **Termination bar = "worth fixing," not "zero nits."** CRITICAL/HIGH gate the loop;
 LOW/INFO/style nits are logged to `backlog.md` and do not keep the loop running. Don't
@@ -466,12 +466,12 @@ If no ASK items exist (everything was AUTO-FIX), skip the question entirely.
 
 ### Step 5e: Loop back (blind next round)
 
-After fixes are committed, **return to the Review Loop**: spawn the NEXT round's fresh
-blind reviewer on the now-current diff. Do NOT carry this round's findings or "I fixed
-X" into the next reviewer — it reads cold (see "Review Loop — Iterate Until Clean").
-Continue until **two consecutive blind rounds** find nothing CRITICAL/HIGH (K=2), or the
-round cap (5) is hit → HALT to human with the outstanding findings. LOW/INFO nits go to
-`backlog.md` and never keep the loop running.
+After fixes are committed, **return to the Review Loop**: spawn the NEXT round's **2
+parallel fresh blind reviewers** on the now-current diff. Do NOT carry this round's
+findings or "I fixed X" into them — they read cold (see "Review Loop — Iterate Until
+Clean"). Continue until **one round's two parallel reviewers both** find nothing
+CRITICAL/HIGH, or the round cap (4) is hit → HALT to human with the outstanding findings.
+LOW/INFO nits go to `backlog.md` and never keep the loop running.
 
 ### Greptile comment resolution
 
