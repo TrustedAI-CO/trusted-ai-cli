@@ -56,6 +56,15 @@ def _confirm(action: str, target: str, transition: str, yes: bool) -> None:
         raise typer.Exit(1)
 
 
+def _repo_root(docs: Path) -> Path:
+    try:
+        out = subprocess.run(["git", "-C", str(docs), "rev-parse", "--show-toplevel"],
+                             check=True, capture_output=True, text=True).stdout.strip()
+        return Path(out) if out else docs.parent
+    except Exception:
+        return docs.parent
+
+
 def _git_commit(repo: Path, rel: str, message: str) -> None:
     """Stage + commit ONLY `rel` (pathspec commit ignores anything else staged)."""
     subprocess.run(["git", "-C", str(repo), "add", "--", rel], check=True, capture_output=True)
@@ -65,13 +74,15 @@ def _git_commit(repo: Path, rel: str, message: str) -> None:
 
 def _write_commit_or_rollback(path: Path, docs: Path, original: str, updated: str, message: str) -> None:
     """Write `updated`, commit just this file; on any commit failure restore `original`
-    so a failed action never leaves an uncommitted source mutation (INV4)."""
+    AND unstage, so a failed action leaves the repo exactly as it was (INV4)."""
+    root = _repo_root(docs)
+    rel = str(path.relative_to(root))
     path.write_text(updated, encoding="utf-8")
-    rel = str(path.relative_to(docs.parent))
     try:
-        _git_commit(docs.parent, rel, message)
+        _git_commit(root, rel, message)
     except subprocess.CalledProcessError as exc:
-        path.write_text(original, encoding="utf-8")  # rollback the mutation
+        path.write_text(original, encoding="utf-8")                       # restore working tree
+        subprocess.run(["git", "-C", str(root), "reset", "-q", "--", rel], capture_output=True)  # unstage
         err_console.print("[bold red]Commit failed — reverted, no change.[/bold red]")
         detail = (exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")).strip()
         if detail:
@@ -85,9 +96,11 @@ def _flip_status(text: str, current: str, new: str, stamp_at: Optional[str]) -> 
     if not text.startswith("---"):
         return None
     head, sep, body = text.partition("\n---")  # frontmatter is text up to the closing ---
-    if not re.search(rf"(?m)^status:\s*{re.escape(current)}\s*$", head):
+    # [ \t] (not \s) so a CRLF line ending is preserved, not eaten
+    status_re = rf"(?m)^status:[ \t]*{re.escape(current)}[ \t]*$"
+    if not re.search(status_re, head):
         return None
-    head = re.sub(rf"(?m)^status:\s*{re.escape(current)}\s*$", f"status: {new}", head, count=1)
+    head = re.sub(status_re, f"status: {new}", head, count=1)
     if stamp_at is not None:
         if re.search(r"(?m)^approved_at:", head):
             head = re.sub(r"(?m)^approved_at:.*$", f"approved_at: {stamp_at}", head, count=1)
@@ -143,10 +156,14 @@ def resolve(review_id: str = typer.Argument(...), yes: bool = typer.Option(False
     """REVIEW — mark an open PENDING attention-log item resolved."""
     docs = _require_docs()
     review = docs / "REVIEW.md"
+    if not review.exists():
+        err_console.print("[bold red]No docs/REVIEW.md.[/bold red]")
+        raise typer.Exit(1)
     text = _read(review)
-    # locate the [REVIEW-id] block and confirm it's PENDING in the open section
+    # locate the [REVIEW-id] block and confirm it's PENDING in the open section.
+    # Require the closing bracket so REVIEW-001 can't match REVIEW-0011.
     open_section = text.split("## Resolved", 1)[0]
-    block_re = re.compile(rf"(?ms)^### \[?{re.escape(review_id)}\]?.*?(?=^### |\Z)")
+    block_re = re.compile(rf"(?ms)^### \[{re.escape(review_id)}\].*?(?=^### |\Z)")
     m = block_re.search(open_section)
     if not m or not re.search(r"(?i)status:\**\s*pending", m.group(0)):
         err_console.print(f"[bold red]{review_id} not found as an open PENDING item.[/bold red]")

@@ -155,3 +155,37 @@ def test_INV4_pathspec_isolated_commit(repo):
     runner.invoke(app, ["gate", "approve", "SPEC-x-y", "--yes"])
     files = _git(repo, "show", "--name-only", "--format=", "HEAD").split()
     assert files == ["docs/specs/x-y.md"]  # only the gate file, not unrelated.txt
+
+
+# covers: SPEC-gates-action INV4 — commit failure rolls back fully (working tree + index)
+def test_INV4_rollback_on_commit_failure(repo):
+    hooks = repo / ".git" / "hooks"
+    hook = hooks / "pre-commit"
+    hook.write_text("#!/bin/sh\nexit 1\n")
+    hook.chmod(0o755)
+    spec = repo / "docs" / "specs" / "x-y.md"
+    before = spec.read_text()
+    r = runner.invoke(app, ["gate", "approve", "SPEC-x-y", "--yes"])
+    assert r.exit_code == 1
+    assert spec.read_text() == before  # working tree restored
+    assert _git(repo, "diff", "--cached", "--name-only") == ""  # index clean (unstaged)
+
+
+# covers: SPEC-gates-action INV2 — accept leaves ADR body byte-identical
+def test_INV2_accept_body_unchanged(repo):
+    adr = repo / "docs" / "decisions" / "0003-x.md"
+    runner.invoke(app, ["gate", "accept", "0003-x", "--yes"])
+    assert adr.read_text().split("---", 2)[2] == "\n# 0003-x: choice\n"
+
+
+# covers: SPEC-gates-action — REVIEW-001 must not match REVIEW-0011 (regex collision)
+def test_resolve_id_no_prefix_collision(repo):
+    review = repo / "docs" / "REVIEW.md"
+    review.write_text(
+        "---\nid: review\ntype: review\nparent: null\nchildren: []\nrelated: []\n---\n## Open Items\n"
+        "### [REVIEW-0011] Other item\n- **Status:** PENDING\n\n## Resolved Items\n"
+    )
+    subprocess.run(["git", "-C", str(repo), "commit", "-aqm", "review"], check=True, capture_output=True)
+    r = runner.invoke(app, ["gate", "resolve", "REVIEW-001", "--yes"])  # 001 absent; 0011 present
+    assert r.exit_code == 1
+    assert "PENDING" in review.read_text()  # 0011 untouched
