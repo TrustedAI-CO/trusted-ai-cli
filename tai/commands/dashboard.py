@@ -316,17 +316,17 @@ const j=async(u,o)=>(await fetch(u,o)).json();
 function mdRender(src){
  const blk=[];
  src=(src||'').replace(/```(\\w*)\\n?([\\s\\S]*?)```/g,(m,lang,code)=>{blk.push([lang,code.replace(/\\n+$/,'')]);return '@@B'+(blk.length-1)+'@@';});
- const inl=t=>esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1</b>').replace(/\\*([^*]+)\\*/g,'<i>$1</i>').replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,'<a href="$2">$1</a>');
+ const inl=t=>esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1</b>').replace(/\\*([^*]+)\\*/g,'<i>$1</i>').replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,(m,txt,url)=>/^(https?:|mailto:|#|\\/)/i.test(url)?`<a href="${url}">${txt}</a>`:m);
  const L=src.split('\\n');let h='',i=0;
  while(i<L.length){const s=L[i];let m;
-  if(m=s.match(/^@@B(\\d+)@@$/)){const[lang,code]=blk[+m[1]];h+=(lang==='mermaid'&&window.mermaid)?`<div class=mermaid>${code}</div>`:`<pre>${esc(code)}</pre>`;i++;continue;}
+  if(m=s.match(/^@@B(\\d+)@@$/)){const b=blk[+m[1]];if(b){const[lang,code]=b;h+=(lang==='mermaid'&&window.mermaid)?`<div class=mermaid>${esc(code)}</div>`:`<pre>${esc(code)}</pre>`;}i++;continue;}
   if(m=s.match(/^(#{1,6})\\s+(.*)/)){const n=m[1].length;h+=`<h${n}>${inl(m[2])}</h${n}>`;i++;continue;}
   if(/^(---|\\*\\*\\*)\\s*$/.test(s)){h+='<hr>';i++;continue;}
   if(/^>\\s?/.test(s)){const q=[];while(i<L.length&&/^>\\s?/.test(L[i])){q.push(inl(L[i].replace(/^>\\s?/,'')));i++;}h+=`<blockquote>${q.join('<br>')}</blockquote>`;continue;}
   if(/^\\s*[-*]\\s/.test(s)){const it=[];while(i<L.length&&/^\\s*[-*]\\s/.test(L[i])){it.push(`<li>${inl(L[i].replace(/^\\s*[-*]\\s/,''))}</li>`);i++;}h+=`<ul>${it.join('')}</ul>`;continue;}
   if(/^\\s*\\d+\\.\\s/.test(s)){const it=[];while(i<L.length&&/^\\s*\\d+\\.\\s/.test(L[i])){it.push(`<li>${inl(L[i].replace(/^\\s*\\d+\\.\\s/,''))}</li>`);i++;}h+=`<ol>${it.join('')}</ol>`;continue;}
   if(/^\\|.*\\|/.test(s)){const rs=[];while(i<L.length&&/^\\|/.test(L[i])){rs.push(L[i]);i++;}
-   const cells=r=>r.split('|').slice(1,-1).map(c=>c.trim());let th='',tb='';
+   const cells=r=>r.replace(/^\\||\\|$/g,'').split('|').map(c=>c.trim());let th='',tb='';
    rs.forEach((r,ri)=>{if(/^\\|[\\s:|-]+\\|?$/.test(r))return;const c=cells(r);
     if(ri===0)th=`<tr>${c.map(x=>`<th>${inl(x)}</th>`).join('')}</tr>`;else tb+=`<tr>${c.map(x=>`<td>${inl(x)}</td>`).join('')}</tr>`;});
    h+=`<table>${th}${tb}</table>`;continue;}

@@ -12,6 +12,10 @@ related: []
 - [ ] (scheduled deferred work)
 
 ## Backlog
+- dashboard mdRender XSS coverage gap (#81 review): `mdRender`/`inl` are client JS, not
+  reachable by pytest — R13/INV4 (escape-first, no javascript: hrefs, escaped mermaid blocks)
+  verified live/by-review only. Add a headless (playwright) render test, or extract mdRender
+  to a unit-testable JS module.
 - dashboard-ui nits (#80 review LOW, deferred): mermaid CDN script has no SRI integrity
   hash (supply-chain + network dep on a "localhost" tool) — pin/vendor; CLI gate type-check
   runs after the confirm prompt (cosmetic UX — could pre-check in the wrapper); _GATE_LOCK
