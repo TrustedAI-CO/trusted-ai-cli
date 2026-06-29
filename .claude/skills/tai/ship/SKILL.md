@@ -899,6 +899,12 @@ Otherwise, run the same checklist as the review skill (framework-reviewer, contr
 **2. Doc-first.** For each spec, detect whether the diff changes that spec's **Interface** section or any **Behavior** row (the contract surface — not just any file touch under `code:`).
    - If an Interface/Behavior change is detected in the code, there must be a matching change to the governing spec in the **same diff**, AND that spec must be `status: approved` in its frontmatter.
    - Interface/Behavior changed in code but spec unchanged, or spec changed but still `status: draft` → **FAIL**.
+   - **`status: implemented` does NOT satisfy this for a behavior change.** Per the
+     "Spec Evolution" rule, changing the Interface/Behavior of an already-`implemented`
+     spec must reset it to `draft` and re-approve it to `approved` (re-stamping
+     `approved_at`/`baseline_sha`). An Interface/Behavior change shipping against a spec
+     still marked `implemented` (never re-approved) → **FAIL** — this is the hole that
+     lets unreviewed contract changes ship on a shipped surface.
 
 **3. Row coverage.** For every Behavior row ID (`R1`…`RN`) in each spec, there must be a passing test under that spec's `tests:` path that references the ID — named `test_R3_*` or tagged `// covers: <SPEC-id> R3`.
    - Any Behavior row with no referencing passing test → **FAIL**.

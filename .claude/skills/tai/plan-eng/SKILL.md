@@ -303,8 +303,11 @@ under one of these).
 
 ```markdown
 ---
-doc: Architecture
-doc-date: {YYYY-MM-DD}
+id: architecture
+type: architecture
+parent: null
+children: []
+related: []
 ---
 
 # Architecture — {project}
@@ -347,16 +350,33 @@ Each spec MUST use the template's shape:
   **Invariants > Interface > Behavior**.
 - **Data / Acceptance / Open questions** as in the template.
 
+**Spec-evolution reset (updating an `implemented` spec).** When UPDATING a spec whose
+`status: implemented`, if your edit touches the Interface, any Behavior row, or an
+Invariant, you MUST in the same edit set `status: draft` and clear `approved_at:` and
+`baseline_sha:` (blank them). This forces re-approval through GATE C — never leave a
+behavior-changed spec at `implemented`. Editing only prose sections (Overview, Open
+questions) does not require the reset. This is the docs-philosophy "Spec Evolution" rule:
+a behavior change to a shipped surface gets the **same human gate** as a new one.
+
+**Bidirectional architecture link (creating a new spec).** When CREATING a new spec
+(`parent: architecture`), append the spec's `id` to `docs/architecture.md`'s `children:`
+list in the same plan-eng run. Every spec must be reachable from architecture
+(docs-validate A1 orphan check + A3 bidirectional). If A lists B as child, B must list A
+as parent — the spec's `parent: architecture` and architecture's `children: [..., SPEC-id]`
+are two halves of the same link.
+
 ```markdown
 ---
-doc: Component Spec
 id: SPEC-{area}-{name}
-title: {short behavioral title}
-status: draft
-owner: {name}
-date: {YYYY-MM-DD}
-implements: {PRD/ADR ids}
-code: {dir or file under an architecture §4 container}
+type: spec
+status: draft            # draft → approved (human gate) → implemented
+approved_at:             # ISO timestamp, set when human flips to approved
+baseline_sha:            # repo HEAD at approval — the staleness anchor
+implements: [prd, 0003-some-adr]
+parent: architecture
+children: []
+related: []
+code: {dir or file under an architecture.md §4 container}
 tests: {dir or file}
 ---
 
@@ -414,14 +434,16 @@ human accepts). Number sequentially from the highest existing ADR in `docs/decis
 
 ```markdown
 ---
-doc: ADR
-id: ADR-{NNNN}
-title: {Decision Title}
+id: {NNNN}-{slug}
+type: decision
 status: proposed
-date: {YYYY-MM-DD}
+parent: architecture
+children: []
+related: []
+# supersedes: {NNNN}-{slug}   # keep only when this ADR replaces an earlier one
 ---
 
-# ADR-{NNNN}: {Decision Title}
+# {NNNN}-{slug}: {Decision Title}
 
 ## Context
 {Why this decision was needed}

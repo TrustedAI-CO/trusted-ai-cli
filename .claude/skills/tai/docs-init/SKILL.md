@@ -231,10 +231,12 @@ missing**. Never rewrite an existing `prd.md`. Recommend `/plan-product` or
 
 ```markdown
 ---
-title: <product / repo name>
+id: prd
+type: prd
+parent: null
+children: []
+related: []
 status: draft      # draft | approved | shipped
-owner: <name>
-date: YYYY-MM-DD
 ---
 
 # <Product / repo name> — One-Pager
@@ -273,11 +275,11 @@ gate checks `code:` paths against.
 
 ```markdown
 ---
-doc: Architecture Overview (C4)
-project: <project name>
-status: draft        # draft | current
-owner: <name>
-date: YYYY-MM-DD
+id: architecture
+type: architecture
+parent: null
+children: []
+related: []
 ---
 
 # Architecture — <Project>
@@ -352,9 +354,11 @@ Replace `YYYY-MM-DD` with the actual date (`$_DATE`).
 
 ```markdown
 ---
-doc: Execution Tasks
-status: draft
-date: YYYY-MM-DD
+id: plan-tasks
+type: plan
+parent: null
+children: []
+related: []
 ---
 
 # Execution Tasks
@@ -375,9 +379,9 @@ ideas + tech debt). The capture reflex appends here.
 ---
 id: plan-backlog
 type: plan
-doc: Backlog
-status: draft
-date: YYYY-MM-DD
+parent: null
+children: []
+related: []
 ---
 
 # Backlog
@@ -397,8 +401,11 @@ Replace `YYYY-MM-DD` with the actual date (`$_DATE`).
 
 ```markdown
 ---
-doc: Human Attention Log
-date: YYYY-MM-DD
+id: review
+type: review
+parent: null
+children: []
+related: []
 ---
 
 # Human Attention Log
@@ -418,8 +425,11 @@ Replace `YYYY-MM-DD` with the actual date (`$_DATE`).
 
 ```markdown
 ---
-doc: Changelog
-date: YYYY-MM-DD
+id: changelog
+type: changelog
+parent: null
+children: []
+related: []
 ---
 
 # Changelog
@@ -434,8 +444,11 @@ Replace `YYYY-MM-DD` with the actual date (`$_DATE`).
 
 ```markdown
 ---
-doc: Contributing
-date: YYYY-MM-DD
+id: contributing
+type: contributing
+parent: null
+children: []
+related: []
 ---
 
 # Contributing
@@ -465,13 +478,15 @@ before code under `code:` merges. Precedence when sections disagree:
 ```markdown
 ---
 # Required frontmatter — CI/AI checks these fields exist
-doc: Component Spec
 id: SPEC-<area>-<name>      # e.g. SPEC-auth-login
-title: <short behavioral title>
-status: draft              # draft | approved | implemented
-owner: <name>
-date: YYYY-MM-DD
-implements: <PRD/ADR ids>  # what intent this realizes, e.g. prd/checkout, ADR-0003
+type: spec
+status: draft              # draft → approved (human gate) → implemented
+approved_at:               # ISO timestamp, set when a human flips to approved
+baseline_sha:              # repo HEAD at approval — the staleness anchor
+implements: [prd]          # intent ids this realizes, e.g. [prd, 0003-some-adr]
+parent: architecture
+children: []
+related: []
 code: <dir or file>        # where the implementation lives, e.g. api/src/auth/
 tests: <dir or file>       # where the spec-derived tests live
 ---
@@ -546,12 +561,13 @@ flips `status: accepted`. ADRs are immutable point-in-time records.
 ```markdown
 ---
 # Required frontmatter — CI/AI checks these fields exist
-id: ADR-NNNN
-title: <short decision title>
+id: NNNN-<slug>    # e.g. 0001-token-storage
+type: decision
 status: proposed   # proposed | accepted | superseded | deprecated
-date: YYYY-MM-DD
-owner: <name>
-supersedes: none   # ADR-NNNN or none
+parent: architecture
+children: []
+related: []
+supersedes: none   # decision id (NNNN-slug) or none
 ---
 
 # ADR-NNNN: <short decision title>
@@ -585,8 +601,9 @@ hand-authored.** Regenerate it; don't trust it as source.
 ---
 id: matrix
 type: matrix
-doc: Requirements Traceability Matrix
-date: YYYY-MM-DD
+parent: null
+children: []
+related: []
 ---
 
 # Requirements Traceability Matrix

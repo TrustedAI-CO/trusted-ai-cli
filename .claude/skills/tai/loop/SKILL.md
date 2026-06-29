@@ -80,24 +80,51 @@ When unsure which tier → treat as **High**. Never auto-approve on a guess.
 
 ```
 for each candidate spec, in backlog order:
-  1. BUILDABLE?  status == approved  AND  not stale (see below)
-        approved + fresh  → buildable, go to step 4
-        draft / unapproved → step 2 (gate it)
-        approved + STALE   → re-park (treat as unapproved), step 2
-  2. RISK TIER?
+  1. APPROVED + FRESH?   status in {approved, implemented}  AND  not stale (see below)
+        no (approved + STALE) → PARK for human re-approval (step 2-STALE) — its ground
+                                moved; NEVER auto-approve a stale spec, any tier.
+        no (draft/unapproved) → step 2-NEW (gate it)
+        yes                   → step 1b
+  1b. AUTONOMY GATE (always runs, even for already-approved specs — THIS is the fix):
+        compute the spec's risk tier (see Risk Policy).
+        Low risk                         → buildable, step 4
+        High risk AND autonomous_ok: true → buildable, step 4   (human pre-authorized)
+        High risk AND NOT autonomous_ok   → PARK (reason: high-risk), SKIP.
+                                            (status: approved is NOT enough to
+                                            auto-build a high-risk spec.)
+  2-STALE. Stale spec (was approved, code path moved): PARK (reason: stale) — append
+        REVIEW.md, push phone, SKIP. Human re-approves (which re-stamps baseline_sha).
+        Do NOT auto-approve, regardless of risk tier — the preamble is explicit:
+        "treat it exactly like an unapproved spec: re-park for human re-approval."
+  2-NEW. Never-approved spec — RISK TIER?
         Low  → auto-approve: set status: approved, approved_at, baseline_sha=HEAD;
-               commit; log to REVIEW.md; it's now buildable → step 4
-        High → PARK: append to REVIEW.md "needs approval", push to phone, SKIP item
-  3. (parked items are skipped this pass; human approves async)
-  4. BUILD: invoke /tai-flow for this item  → execute → review → qa → ship → docs-update
+               commit; log to REVIEW.md; → step 4
+        High → PARK (reason: needs-approval), push phone, SKIP item
+  3. (parked items are skipped this pass; human approves/authorizes async)
+  4. DEPENDENCIES MET?  every id in the spec's depends_on: is status implemented?
+        no  → SKIP (not buildable yet — NOT a failure); do not park, do not retry-spin
+        yes → BUILD
+  4b. BUILD: invoke /tai-flow for this item → execute → review → qa → ship → docs-update
         flow halts on its own gates/failures; loop respects that halt
-  5. RECORD outcome to REVIEW.md / changelog; mark backlog item done
+  5. OUTCOME:
+        success → record to REVIEW.md / changelog; mark backlog item done
+        failed (flow HALT / retry exhausted) → write last_attempt_failed_sha to the
+               spec; mark ⚠ failed; SKIP re-build until code or spec changes (no
+               re-attempt every pass — that just burns budget)
   6. next item
 
 end of pass:
   any items built?   → start another pass (newly-unblocked work may exist)
-  none buildable?    → SLEEP. notify human: "N items parked, need approval"
+  none built, parked/failed/blocked set unchanged from last pass → no-progress → SLEEP
+  SLEEP report: separate ⏸ parked (awaiting human) from ⚠ failed (needs debug) from
+                ⛓ blocked (waiting on a dependency)
 ```
+
+> **Why 1b is critical.** `status: approved` is approval of the *contract*, not blanket
+> authorization to build a dangerous surface unattended. A high-risk spec (auth, schema,
+> money) ALWAYS needs a human to either run the build interactively or set
+> `autonomous_ok: true` in its frontmatter. Without 1b, an approved auth spec would ship
+> overnight with no human in the loop — the exact failure the risk policy exists to stop.
 
 ### Staleness check (the only gate machinery — one diff)
 
@@ -113,13 +140,30 @@ what changed. (See `docs-preamble.md` → Approval anchor.)
 
 When parking a High-risk or stale spec:
 
-1. Append to `docs/REVIEW.md` Open Items (the committed, durable queue):
+**Upsert, don't duplicate.** Before appending, check `docs/REVIEW.md` for an existing
+open PENDING entry for this spec id. If one exists, leave it (don't append a second).
+Only append when there's no open entry for that spec — otherwise a re-parked item
+accretes a new entry every pass.
+
+Frontmatter fields this references (set by a human, never the loop):
+- `autonomous_ok: true` — human authorizes unattended build of a high-risk spec.
+- `depends_on: [SPEC-ids]` — specs that must be `implemented` before this one builds.
+
+1. Append to `docs/REVIEW.md` Open Items (the committed, durable queue). **The
+   remediation line MUST match the park reason** — a wrong instruction strands the
+   item forever (e.g. telling a human to "flip status: approved" on an already-approved
+   high-risk spec is a no-op):
    ```
-   ### [REVIEW-NNN] Approve SPEC-{id} for autonomous build
+   ### [REVIEW-NNN] Unblock SPEC-{id} for autonomous build
    - Skill: /tai-loop
-   - Why parked: {high-risk: schema change | stale: code path moved since approval}
+   - Why parked: {reason}
    - Summary: {2-3 lines plain English}
-   - To approve: flip status: approved in docs/specs/{file}, set baseline_sha=HEAD
+   - To unblock:
+       reason = needs-approval → flip status: approved (flow re-stamps approved_at/baseline_sha)
+       reason = high-risk      → set autonomous_ok: true in docs/specs/{file}
+                                 (or run /tai-flow on it interactively)
+       reason = stale          → re-approve: re-confirm the spec vs moved code, then
+                                 flow re-stamps baseline_sha=HEAD
    - Status: PENDING
    ```
 2. Push a notification (Discord / PushNotification if available) with the same summary +

@@ -48,7 +48,7 @@ Every document in `docs/` must have YAML frontmatter:
 ```yaml
 ---
 id: unique-id
-type: prd | decision | architecture | spec | matrix | plan | design | review
+type: prd | decision | architecture | spec | matrix | plan | design | review | changelog | contributing
 parent: parent-doc-id | null
 children: [child-id-1, child-id-2]
 related: [related-id-1]
@@ -185,6 +185,23 @@ If another change has touched the spec's `code:` path since `baseline_sha`, the 
 **stale** — treat it exactly like an unapproved spec: re-park for human re-approval. No
 content hashes, no dependency graph — git already tracks what changed. A serial loop
 needs nothing more.
+
+### Status lifecycle (not terminal)
+
+`draft → approved → implemented`, and back: **editing the Interface/Behavior/Invariants
+of an `implemented` spec resets it to `draft` and clears `approved_at`/`baseline_sha`/
+`autonomous_ok`** (see docs-philosophy "Spec Evolution"). Re-approval re-stamps the
+anchor; `autonomous_ok` must be re-set by a human if the new behavior is to build
+unattended. R-ids are append-only
+— never renumber or reuse; new behavior = new rows (R4, R5…), old rows keep their history.
+
+### Optional spec fields (autonomous build)
+
+| Field | Set by | Meaning |
+|-------|--------|---------|
+| `autonomous_ok: true` | human | authorizes `/tai-loop` to build this **high-risk** spec unattended. Absent/false → high-risk specs are parked for a human even when approved. |
+| `depends_on: [SPEC-ids]` | author | specs that must be `implemented` before this one is buildable. `/tai-loop` skips (does not fail) an item whose deps aren't met. |
+| `last_attempt_failed_sha` | `/tai-loop` | set when an autonomous build failed; loop skips re-building until code/spec changes past this sha. The one loop-written field — disposable, may be cleared by a human. |
 
 # {Surface Name}
 

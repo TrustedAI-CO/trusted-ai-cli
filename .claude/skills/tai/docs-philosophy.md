@@ -43,6 +43,27 @@ If a spec / PRD / ADR is out of date versus shipped code: **DO NOT fix it.** Fla
 `[CRITICAL]` doc-first violation and let a human reconcile through the proper spec-first
 flow.
 
+## Spec Evolution — Changing a Shipped Surface
+
+The status lifecycle is `draft → approved → implemented`, but it is **not terminal**. A
+shipped surface evolves — `notes add` gains a `--tag` option, an endpoint adds a field.
+That is a change to an existing spec, **not** a new spec (one spec = one surface, for the
+life of the surface).
+
+> **Editing the Interface or any Behavior row of an `implemented` spec RESETS it to
+> `status: draft` and CLEARS `approved_at` + `baseline_sha` + `autonomous_ok`.**
+
+Clearing `autonomous_ok` is non-negotiable: a human authorized unattended build of the
+*old* behavior, not the new one. The new behavior must earn its own authorization.
+
+Then it re-enters the normal gate: append the new Behavior rows (new R-ids — never renumber
+or reuse existing ones; old rows keep their history), a human re-approves (which re-stamps
+`approved_at`/`baseline_sha` at the new HEAD), and only then may code under the spec merge.
+This guarantees a behavior change to a shipped surface gets the **same human gate** as a
+new one — without it, `implemented` would be a hole through which unreviewed contract
+changes ship. Editing prose-only sections (Overview, Open questions) does not require a
+reset; only Interface/Behavior/Invariants do.
+
 ## PR Discipline — Change Unit & Trace
 
 Three rules make every change reviewable and traceable:

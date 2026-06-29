@@ -89,6 +89,18 @@ Read state, do not guess from conversation:
 3. Glob `docs/specs/*.md`. Read frontmatter `status:` of each.
    - No spec covering the current task → **S1 plan**.
    - Spec exists, `status: draft` → **GATE C** (halt for human approval).
+   - Spec exists and `status: implemented` BUT the requested change exceeds what its
+     Behavior rows cover (a new option, a new rule, a changed interface) → this is a
+     **spec evolution**: route to **S1 plan** to revise the spec. Per the philosophy
+     "Spec Evolution" rule, editing its Interface/Behavior resets it to `draft` and
+     clears `approved_at`/`baseline_sha`/`autonomous_ok` → it then flows through
+     **GATE C** for re-approval. Do NOT let code for the new behavior proceed against an
+     `implemented` spec that doesn't cover it.
+     **Verify the reset before routing onward:** after plan-eng revises an evolved spec,
+     confirm its `status` is now `draft` (plan-eng owns this write). If a spec whose
+     Interface/Behavior just changed is still `implemented`, the reset was missed — do
+     NOT advance to build; force it back to `draft` and GATE C. This is the backstop
+     against silently skipping the human gate on a shipped-surface change.
 4. Any `docs/decisions/*.md` with `status:` not `accepted` that the task depends on
    → **GATE B**.
 5. All relevant specs `approved`, code not yet matching → **S2 build**.
@@ -138,8 +150,12 @@ Present the doc for decision, then offer interactive approval:
 
 Then `AskUserQuestion`:
 - **Approve** → flow writes the `status:` field (`draft`→`approved`, `proposed`→
-  `accepted`, PRD→signed), commits the frontmatter change, and CONTINUES the pipeline.
-  The click is the authorization; flow only types the keystroke the human ordered.
+  `accepted`, PRD→signed). **For a spec, in the SAME write also stamp the staleness
+  anchor:** `approved_at: <current ISO timestamp>` and `baseline_sha: $(git rev-parse
+  HEAD)`. These are non-negotiable — `/tai-loop`'s staleness check diffs against
+  `baseline_sha`; leaving it empty silently breaks autonomous re-validation. Commit the
+  frontmatter change, then CONTINUE the pipeline. The click is the authorization; flow
+  only types the keystroke the human ordered.
 - **Request changes** → flow records the feedback, routes back to the matching plan
   skill to revise the draft, then re-presents the gate.
 
