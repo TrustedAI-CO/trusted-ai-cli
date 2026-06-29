@@ -46,7 +46,7 @@ This scaffold implements a layered, doc-first workflow. The layers, in order:
 Core invariant — **doc-first order:** change the spec *before* the code, in the
 same PR. Code under a spec's `code:` path may not merge until that spec is
 `status: approved`. `docs/specs/` is the L2 layer; never edit a spec to match
-code already written (that inverts the order). `docs-update` is post-ship and
+code already written (that inverts the order). `docs-update` is an on-demand tool that
 touches derived/living docs only — it never edits `docs/specs/`.
 
 ## Outputs

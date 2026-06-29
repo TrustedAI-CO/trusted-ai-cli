@@ -149,7 +149,7 @@ subjective decisions.
 
 ## ⛔ HARD RULE — DERIVED DOCS ONLY (READ FIRST, NON-NEGOTIABLE)
 
-This is a **post-ship** skill. It may update **derived / living docs ONLY**:
+This is an **on-demand** skill (not a pipeline step). It may update **derived / living docs ONLY**:
 
 - `README.md`
 - `docs/architecture.md` (derived sections only — e.g. §4 code map)
