@@ -18,6 +18,22 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already loaded
+> `docs-philosophy.md` and established the shared interaction conventions (AskUserQuestion
+> format, Boil-the-Lake completeness) — SKIP re-reading the philosophy file and skip
+> restating those blocks; assume them in effect. The numbered rules below still apply.
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Preamble (run first)
 
 ```bash
@@ -85,12 +101,12 @@ If the user provided a path argument, use that file.
 Otherwise, auto-discover:
 
 ```bash
-if [ -f "$_DOCS_DIR/plan/tasks.html" ]; then
-  echo "PLAN_SOURCE: $_DOCS_DIR/plan/tasks.html"
+if [ -f "$_DOCS_DIR/plan/tasks.md" ]; then
+  echo "PLAN_SOURCE: $_DOCS_DIR/plan/tasks.md"
 fi
 ```
 
-If `docs/plan/tasks.html` is not found, stop: **"No plan found for branch {branch}. Run /tai-plan-eng first, or provide a path: /execute-solo path/to/plan.md"**
+If `docs/plan/tasks.md` is not found, stop: **"No plan found for branch {branch}. Run /tai-plan-eng first, or provide a path: /execute-solo path/to/plan.md"**
 
 ### 0B. Parse ## Implementation Tasks
 
@@ -392,11 +408,42 @@ When dispatching each subagent via the Agent tool, construct this prompt:
 ```
 You are implementing a single task from an engineering plan. Work autonomously.
 
+## Capture Reflex
+When the user declines or defers a suggestion, append one line to `docs/plan/backlog.md`
+before continuing — don't lose it, don't act on it.
+
 ## Your Task
 Name: {task_name}
 Files to modify/create: {file_list}
 Acceptance criteria: {acceptance_criteria}
 Test command: {test_command or "uv run pytest"}
+Governing spec: {spec_path — the APPROVED docs/specs/*.md this task implements}
+
+## Doc-First Execution (READ THIS FIRST)
+
+This task implements an APPROVED behavioral spec. The spec is the ground truth;
+your code is verified against it — never the other way around.
+
+1. **Read the governing spec** at `{spec_path}` in full before writing any code.
+   Confirm its frontmatter `status: approved`. If it is `draft` or missing, STOP —
+   write a checkpoint file (Tier 4) flagging that the spec is not approved. Do not
+   implement against an unapproved spec.
+2. **Write code under the spec's `code:` path** (from its frontmatter) and tests
+   under its `tests:` path. Stay within the spec's declared surface.
+3. **Tests MUST reference the Behavior row IDs they cover.** Each row ID (R1…RN) in
+   the spec's Behavior table must appear in the test that covers it — either as a
+   `test_R3_*` function name or a `// covers: <SPEC-id> R3` tag (use the comment
+   syntax for your language). Add a property/assertion test for each Invariant.
+4. **NEVER edit the spec to match the code you wrote.** That inverts doc-first order.
+   If the spec is wrong, insufficient, or contradicts a real constraint you hit
+   during implementation, STOP and write a Tier 4 checkpoint flagging a spec update
+   is needed. The spec must be revised and re-approved by a human before you continue.
+   `docs/specs/` is off-limits to your edits, always.
+5. The spec governs *behavior* (what, observable) — it is silent on security,
+   performance, and maintainability. You still write safe, clean code: validate
+   inputs at boundaries, no SQL string interpolation, no untrusted LLM output in
+   SQL/HTML/shell, handle errors, keep functions small and immutable. Behavioral
+   conformance is necessary, not sufficient.
 
 ## Context
 Read these files first to understand the codebase:
@@ -411,8 +458,9 @@ Do NOT include the entire plan file — only the relevant task section.)
 
 ## Implementation Protocol
 
-1. **Read** the target files and understand the current code
-2. **Write** the implementation (code + tests)
+1. **Read** the governing spec (see Doc-First Execution above), then the target files
+2. **Write** the implementation under the spec's `code:` path, plus tests under its
+   `tests:` path that reference the Behavior row IDs (`test_R3_*` or `// covers: <SPEC-id> R3`)
 3. **Run tests** using: {test_command}
 4. **Fix** any test failures (see Deviation Rules below)
 5. **Commit** with message: "feat({scope}): {task_name}"
@@ -430,6 +478,7 @@ When you encounter issues during implementation:
 | 2: Missing | Linter flags missing validation | Add it | 3 attempts per issue |
 | 3: Blocking | Import error, type mismatch within local code | Fix it | 3 attempts per issue |
 | 4: Architectural | Need new package, new DB table, schema change | STOP — write checkpoint file | N/A |
+| 4: Spec conflict | Spec is wrong, insufficient, unapproved, or contradicts a real constraint | STOP — write checkpoint file; NEVER edit the spec to match code | N/A |
 
 **Tier 3 vs Tier 4 boundary:** If fixing the issue requires modifying a file OUTSIDE
 your task's declared `files` list, or requires adding a new dependency to a lockfile
@@ -479,7 +528,10 @@ After committing, verify each claim:
 1. **Files exist:** For each file you created, run `ls {file}` to confirm
 2. **Tests pass:** Run `{test_command}` and confirm exit code 0
 3. **Commit exists:** Run `git log --oneline -1` and confirm your commit message
-4. **Review checks:** Scan your changes for:
+4. **Spec conformance:** Every Behavior row ID in the governing spec is referenced by
+   a passing test (`test_R3_*` or `// covers: <SPEC-id> R3`); each Invariant has a test.
+   You did NOT edit any file under `docs/specs/`. Code lives under the spec's `code:` path.
+5. **Review checks:** Scan your changes for:
    - Raw SQL with string interpolation → FAIL
    - Read-then-write without locks → FAIL
    - LLM output used directly in SQL/HTML/shell → FAIL
@@ -488,10 +540,10 @@ After committing, verify each claim:
 
 ## Traceability Update
 
-After committing and verifying, update the traceability matrix if `docs/trace/matrix.md`
+After committing and verifying, update the traceability matrix if `docs/matrix.md`
 exists or if the task's acceptance criteria reference REQ IDs.
 
-1. Read `docs/trace/matrix.md` (create it if missing — use the template from docs-preamble.md)
+1. Read `docs/matrix.md` (create it if missing — use the template from docs-preamble.md)
 2. For each REQ ID in the task's `REQs covered` field (from the plan):
    - Add or update a row: `| REQ-ID | specs/{module}.md | {code files} | {test files} | COVERED |`
    - If no test was written, set status to `PARTIAL`

@@ -1,4 +1,8 @@
-# Document-Driven Development
+# Document-Driven Framework
+
+**This file is the single source of truth for the framework.** Every pipeline skill
+links here instead of restating the layer model. If a skill's behavior contradicts
+this file, this file wins.
 
 ## The Problem
 
@@ -8,130 +12,129 @@ can see what happened, why, and whether it's correct — without reading code.
 
 ## The Solution
 
-A structured `docs/` tree committed to git. Every project artifact lives in `docs/`.
-The agent writes code AND maintains documentation that proves the code matches intent.
-The human reviews documentation, not code.
+A structured `docs/` tree committed to git, organized as ordered layers. The agent
+writes code AND maintains the documentation that proves the code matches an approved
+contract. The human reviews documentation, not code — and owns the gates.
 
-```
-Human controls                    Agent controls
-──────────────                    ──────────────
-Intent (WHY)                      Code
-Scope decisions                   Tests
-Trade-off calls                   Traceability (REQ → test → code)
-Approve/override REVIEW.md        Spec drafts
-                                  Design docs
-                                  Execution plans
-```
+All docs are **Markdown only** — YAML frontmatter for metadata. No HTML, no `_assets/`.
 
-The agent can write at any level — intent, specs, code. But humans intervene at
-two triggers: **trade-offs** (no clear winner) and **decisions with consequences**
-(scope, architecture, risk acceptance). Everything else: agent proposes, agent
-executes, agent validates. Human reviews async via `docs/`.
+## The Layers (L0 → L3)
+
+| Layer | File(s) | Answers | Owner | Gate |
+|-------|---------|---------|-------|------|
+| **L0** | `docs/prd.md` | WHY — product intent / PRD | **Human** | Agents draft/quote, never finalize. Human signs off wording. |
+| **L1** | `docs/decisions/` + `docs/architecture.md` | WHY this shape — ADRs + C4 | Human-accepted | Agent may *draft* an ADR; a **human** flips `status: accepted`. |
+| **L2** | `docs/specs/{area}-{name}.md` | WHAT each surface does — behavioral contract | Agent-drafted | A **human** sets `status: approved` before any code under the spec's `code:` path merges. |
+| **L3** | code + tests | HOW — implementation | Agent | Tests reference the spec's Behavior row IDs. |
+
+**Layer model:** L0 `prd.md` (human) → L1 `decisions/` + `architecture.md` → **L2 `specs/`** → L3 code.
+
+## Core Invariant — Doc-First Order
+
+> **Change the spec before the code, in the same PR.**
+> **No code under a spec's `code:` path may merge until that spec is `status: approved`.**
+
+`docs/specs/` is the L2 layer and the contract code is verified against — never the
+reverse. **Never edit a spec, PRD, or ADR to match code that has already been written.**
+That inverts doc-first order: it rewrites the contract to fit the implementation instead
+of the implementation fitting the contract, silently destroying the source of truth.
+
+If a spec / PRD / ADR is out of date versus shipped code: **DO NOT fix it.** Flag it as a
+`[CRITICAL]` doc-first violation and let a human reconcile through the proper spec-first
+flow.
+
+## Source vs Derived Layers
+
+| | Layers | Who edits | When |
+|--|--------|-----------|------|
+| **Source** (authored, gated) | `docs/prd.md`, `docs/decisions/`, `docs/specs/` | Human-gated | Before code, via plan skills + human approval |
+| **Derived** (living, agent-maintained) | `README.md`, `docs/architecture.md`, `docs/matrix.md`, `docs/changelog.md`, `docs/contributing.md`, `CLAUDE.md` | Agent | Any time, incl. post-ship via `docs-update` |
+
+`docs-update` is **post-ship** and touches **derived docs only**. It must NEVER edit a
+source layer (`specs/`, `prd.md`, `decisions/`).
 
 ## Directory Structure
 
 ```
 project-root/
-├── README.md                      ← only root-level docs allowed
-├── CLAUDE.md                      ← only root-level docs allowed
+├── README.md                  ← repo entry point (derived)
+├── CLAUDE.md                  ← AI agent rules (derived)
 ├── docs/
-│   ├── REVIEW.md                  ← human attention log
-│   ├── intent.md                  ← WHY we're building this
-│   ├── decisions/                 ← trade-off records
-│   │   └── NNN-slug.md
+│   ├── prd.md                 ← L0 PRD / product intent — HUMAN-owned (source)
+│   ├── architecture.md        ← L1 C4 Context+Container + §4 container→dir map (derived)
+│   ├── matrix.md              ← derived conformance: spec R-id → code → test → status
+│   ├── REVIEW.md              ← human attention log (decisions needing review)
+│   ├── decisions/
+│   │   └── NNNN-slug.md        ← L1 one ADR per decision (agent drafts, human accepts)
+│   ├── specs/
+│   │   └── {area}-{name}.md    ← L2 behavioral contract — one spec per public surface
 │   ├── design/
-│   │   ├── system.md              ← architecture, boundaries, data flow
-│   │   └── visual.md              ← UI/UX design system
-│   ├── specs/                     ← module behavior contracts
-│   │   └── {module}.md            ← with REQ IDs
-│   ├── trace/                     ← traceability (agent-maintained)
-│   │   ├── matrix.md              ← REQ → test → code
-│   │   ├── code-map.md            ← codebase architecture
-│   │   ├── conventions.md         ← coding standards
-│   │   ├── concerns.md            ← tech debt, risks
-│   │   ├── testing.md             ← test framework, patterns
-│   │   └── stack.md               ← technology stack
+│   │   └── visual.md           ← UI/UX design system (owned by /design-consultation)
 │   ├── plan/
-│   │   ├── tasks.md               ← implementation tasks + waves
-│   │   ├── milestones.md          ← exit criteria
-│   │   └── todos.md               ← deferred work
-│   ├── contributing.md            ← contributor guide
-│   └── changelog.md               ← version history
-└── .tai/                          ← gitignored, ephemeral
-    ├── state/                     ← execute-state.json, review JSONL
-    ├── cache/
-    └── logs/
+│   │   ├── tasks.md  backlog.md
+│   ├── contributing.md
+│   └── changelog.md
+└── .tai/                       ← gitignored, ephemeral agent workspace
+    ├── state/  cache/  logs/
 ```
 
-## Three Laws
+> **Trimmed by design.** Keep docs few or they rot. Code-derivable prose is NOT
+> maintained as docs: the codebase shape lives in `architecture.md` (§4 dir map),
+> conventions + testing live in `CLAUDE.md`, the stack lives in `README.md`, deferred
+> work + tech debt live in `plan/backlog.md`. Per-concept walkthroughs are **generated
+> on demand** (e.g. a tutorial run), never kept current as files. The only derived
+> "map" docs are `architecture.md` (authored, coarse, stable) and `matrix.md`
+> (generated, disposable) — regenerate, don't trust as source.
 
-### 1. No Orphans
+## Spec Layer Detail (L2)
 
-Every document links to at least one other document. Every link resolves.
-Parent-child links are bidirectional. The doc tree is a connected graph,
-not a pile of files.
+One spec = one public surface (an exported API / CLI command / module boundary). Never
+one per internal function; never one giant spec for many surfaces.
 
-### 2. Every Layer Stays at Its Abstraction
+Each spec MUST carry:
+- **Frontmatter:** `id: SPEC-{area}-{name}`, `status:` (`draft` → `approved` →
+  `implemented`), `implements:` (the PRD/ADR ids), and **`code:` / `tests:`** paths telling
+  `/execute-solo` and `/execute-team` exactly where the implementation and its tests live.
+  `code:` must sit under a container in `architecture.md` §4.
+- **Behavior:** a table of observable rules, each with a **stable R-id** (`R1`, `R2`, …),
+  Given / When / Then columns.
+- **Invariants:** always-true properties. Priority order when reviewing: **Invariants >
+  Interface > Behavior**.
 
-| Layer | Answers | Contains | Does NOT contain |
-|-------|---------|----------|-----------------|
-| intent | WHY | User-facing promises, product goals | Architecture, modules, code |
-| decisions | WHY this choice | Context, options, rationale | Implementation detail |
-| design | HOW components interact | Boundaries, data flow, diagrams | File paths, line numbers |
-| specs | WHAT each module does | Behavior contracts, REQ IDs | Code snippets, test details |
-| trace | WHERE it lives | REQ → test → code mapping | Business logic, requirements |
-| plan | WHEN and in what order | Tasks, waves, exit criteria | Architecture decisions |
+**Traceability:** every Behavior row ID (`R1…RN`) must be referenced by a passing test —
+either a `test_R3_*` function name or a `// covers: <SPEC-id> R3` tag (use the comment
+syntax for the language). Each Invariant gets a property/assertion test.
 
-If a sentence belongs at a different layer, move it there.
+## Where Notes Go — Capture Reflex
 
-### 3. Traceability Closes the Loop
+Mid-flow, ideas and deferrals surface (agent proposes feature B while you build A; you
+decline or postpone). Each kind has exactly one home — don't lose it, don't act on it:
 
-Every requirement (REQ-ID) in a spec must trace to:
-- A test that proves the behavior
-- Code that implements it
+| Note kind | Home |
+|-----------|------|
+| Deferred / declined / someday idea | **`docs/plan/backlog.md`** |
+| Explicit non-goal (product scope) | `docs/prd.md` → Out of scope |
+| Surface-local open question | the spec's `## Open questions` |
+| Decision the agent made needing human review | `docs/REVIEW.md` (→ ADR if load-bearing) |
 
+**Capture reflex (all agents):** when the user declines or defers a suggestion, append
+**one line** to `docs/plan/backlog.md` before continuing — then move on. `backlog.md` has
+two sections:
+
+```markdown
+## Active            # scheduled deferred — will do, just not this PR
+- [ ] {task} — from {feature/spec}, deferred YYYY-MM-DD
+
+## Backlog           # unscheduled — someday / maybe / declined ideas + tech debt
+- {idea} — noted YYYY-MM-DD, from {feature}, why deferred: {reason}
 ```
-specs/auth.md           ← "REQ-AUTH-001: Users register with email"
-  ↕ linked via
-trace/matrix.md         ← "REQ-AUTH-001 | specs/auth.md | app/auth/register.py | tests/test_register.py | COVERED"
-```
-
-If a REQ has no test, it's PARTIAL. If it has no code, it's NOT_STARTED.
-The human checks coverage percentage, never reads code.
-
-## Root File Policy
-
-Only two files at project root: `README.md` and `CLAUDE.md`.
-
-Everything else lives in `docs/`:
-- ~~DESIGN.md~~ → `docs/design/visual.md`
-- ~~ARCHITECTURE.md~~ → `docs/trace/code-map.md`
-- ~~PLAN.md~~ → `docs/plan/tasks.md`
-- ~~TODOS.md~~ → `docs/plan/todos.md`
-- ~~TESTING.md~~ → `docs/trace/testing.md`
-- ~~CONTRIBUTING.md~~ → `docs/contributing.md`
-- ~~CHANGELOG.md~~ → `docs/changelog.md`
-
-No fallbacks. No "check root first." The `docs/` path is the only path.
 
 ## REVIEW.md — The Human Attention Log
 
-When an agent makes a decision not covered by existing docs, it appends to
-`docs/REVIEW.md`. This is the one place humans must look.
-
-Agent appends when:
-- Choosing between options with real trade-offs
-- Deviating from the plan (Tier 4 decisions)
-- Making architecture choices not in design docs
-- Picking a library, format, or strategy not specified in specs
-
-Agent does NOT append for:
-- Trivial implementation choices (variable names, loop structure)
-- Decisions already covered by existing specs
-- Bug fixes within scope
-
-Human resolves by marking items APPROVED or OVERRIDDEN. Agent propagates
-the decision into the relevant spec or design doc.
+When an agent makes a decision not covered by existing docs, or hits a doc-first conflict,
+it appends to `docs/REVIEW.md`. This is the one place humans must look. Human resolves by
+marking items APPROVED or OVERRIDDEN; the agent then propagates the decision into the
+relevant source doc through the proper flow.
 
 ## Frontmatter Contract
 
@@ -140,47 +143,35 @@ Every `docs/*.md` file has YAML frontmatter:
 ```yaml
 ---
 id: unique-id
-type: intent | decision | design | spec | trace | plan | review
+type: prd | decision | architecture | spec | matrix | plan | design | review
 parent: parent-doc-id | null
 children: [child-id-1, child-id-2]
 related: [related-id-1]
+status: draft | approved | accepted | implemented   # source layers only
 ---
 ```
 
-This is not optional decoration. It's the structure that makes validation,
-navigation, and orphan detection work. A doc without frontmatter is broken.
+A doc without frontmatter is broken. Specs and ADRs additionally carry `status:`; it is
+the gate humans flip.
 
 ## Committed vs Gitignored
 
-**`docs/`** — committed. Shows in PRs, blame, diffs. Human-reviewable.
+- **`docs/`** — committed. Shows in PRs, blame, diffs. Human-reviewable.
+- **`.tai/`** — gitignored. Agent workspace: execute state, review JSONL, cache, logs.
 
-**`.tai/`** — gitignored. Agent workspace. Execute state, review JSONL,
-cache, logs. Survives across sessions but not part of the project record.
+## How Skills Map to Layers
 
-Rule: if a human should see it → `docs/`. If agent-only ephemeral → `.tai/`.
+| Skill | Reads | Writes | Layer role |
+|-------|-------|--------|-----------|
+| `/plan-product`, `/plan-ceo` | — | `docs/prd.md` (draft for human), `docs/decisions/` | L0 — assist human, never finalize |
+| `/plan-eng` | prd, architecture | `docs/architecture.md`, `docs/specs/` (draft), `docs/plan/tasks.md` | L1+L2 — author spec contracts |
+| `/plan-design` | prd, design/visual | `docs/design/visual.md`, `docs/decisions/` (ADRs) | L1 — design ADRs |
+| `/design-consultation` | — | `docs/design/visual.md` | design system |
+| `/execute-solo`, `/execute-team` | plan/tasks, **approved** specs | code+tests, `docs/matrix.md`, `docs/REVIEW.md` | L3 — implement against approved L2 |
+| `/review` | specs, matrix | — (conformance check) | L2 gate check |
+| `/ship` | REVIEW, matrix | — (pre-merge gates) | enforces doc-first gate |
+| `/docs-update` | all derived docs | derived docs only | post-ship — never touches source |
+| `/docs-init` | — | scaffolds the whole tree | bootstrap |
 
-## How Skills Map to Docs
-
-| Skill | Reads | Writes |
-|-------|-------|--------|
-| /plan-ceo | — | `docs/intent.md`, `docs/decisions/` |
-| /plan-eng | intent, design | `docs/design/system.md`, `docs/specs/`, `docs/plan/tasks.md` |
-| /plan-design | design/visual | `docs/design/visual.md` |
-| /design-consultation | — | `docs/design/visual.md` |
-| /execute | plan/tasks, specs | `docs/trace/matrix.md`, `docs/REVIEW.md` |
-| /map | — | `docs/trace/` (code-map, conventions, concerns, stack) |
-| /next | plan, specs, trace, REVIEW | — (read-only dashboard) |
-| /review | specs, trace/matrix | — (check coverage, flag scope creep) |
-| /ship | REVIEW, trace/matrix | — (pre-merge gates) |
-| /document-release | all docs/ | updates stale docs |
-
-## Validation
-
-Run after every doc change:
-1. Every doc has frontmatter with all required fields
-2. Every `id` is unique
-3. Every `parent`/`children`/`related` ID resolves to an existing doc
-4. Parent-child links are bidirectional
-5. No orphan docs (except REVIEW.md)
-6. Every REQ in specs has a trace entry (warning, not error)
-7. Each doc stays at its abstraction layer (advisory)
+See `docs-preamble.md` for init constants, frontmatter rules, and the spec/matrix file
+formats. See `docs-validate.md` for the validation + doc-first conformance gate.

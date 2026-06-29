@@ -3,8 +3,8 @@ name: docs-update
 version: 1.0.0
 description: |
   [TAI] Post-ship documentation update. Reads all project docs, cross-references the
-  diff, updates README/docs/trace/code-map.html/docs/contributing.html/CLAUDE.md to match what shipped,
-  polishes changelog voice, cleans up todos, and optionally bumps VERSION. Use when
+  diff, updates README/docs/architecture.md/docs/contributing.md/CLAUDE.md to match what shipped,
+  polishes changelog voice, cleans up the backlog, and optionally bumps VERSION. Use when
   asked to "update the docs", "sync documentation", or "post-ship docs".
 allowed-tools:
   - Bash
@@ -16,6 +16,22 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already loaded
+> `docs-philosophy.md` and established the shared interaction conventions (AskUserQuestion
+> format, Boil-the-Lake completeness) — SKIP re-reading the philosophy file and skip
+> restating those blocks; assume them in effect. The numbered rules below still apply.
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Preamble (run first)
 
 ```bash
@@ -117,10 +133,45 @@ in the project is accurate, up to date, and written in a friendly, user-forward 
 You are mostly automated. Make obvious factual updates directly. Stop and ask only for risky or
 subjective decisions.
 
+---
+
+## ⛔ HARD RULE — DERIVED DOCS ONLY (READ FIRST, NON-NEGOTIABLE)
+
+This is a **post-ship** skill. It may update **derived / living docs ONLY**:
+
+- `README.md`
+- `docs/architecture.md` (derived sections only — e.g. §4 code map)
+- `docs/matrix.md`
+- `docs/plan/backlog.md`
+- `docs/changelog.md`
+- `docs/contributing.md`
+- `CLAUDE.md`
+
+Content that used to live under `docs/trace/` now lives in these derived targets:
+code map → `docs/architecture.md` §4; stack → `README.md`; conventions & testing →
+`CLAUDE.md`; tech-debt & deferred work → `docs/plan/backlog.md`. The `docs/trace/`
+folder no longer exists.
+
+**It MUST NEVER edit any of the following — these are authored, doc-first source layers:**
+
+- `docs/specs/` (any spec file)
+- `docs/prd.md`
+- `docs/decisions/` (any ADR)
+
+**Why:** The framework requires doc-first order (L0 intent → L1 decisions/architecture →
+L2 specs → L3 code). Editing a spec, intent, or decision to match code that has **already
+shipped** inverts that order — it rewrites the contract to fit the implementation instead of
+the implementation fitting the contract. That silently destroys the source of truth.
+
+**If a spec / intent / decision is out of date versus the shipped code:** DO NOT fix it.
+**FLAG it as a doc-first violation for the human** (in your output, as a `[CRITICAL]` finding)
+and let a human reconcile it through the proper spec-first flow. Never silently edit these
+files, even if the fix looks trivial and obviously correct.
+
 **Only stop for:**
 - Risky/questionable doc changes (narrative, philosophy, security, removals, large rewrites)
 - VERSION bump decision (if not already bumped)
-- New TODOS items to add
+- New backlog items to add
 - Cross-doc contradictions that are narrative (not factual)
 
 **Never stop for:**
@@ -129,13 +180,14 @@ subjective decisions.
 - Updating paths, counts, version numbers
 - Fixing stale cross-references
 - CHANGELOG voice polish (minor wording adjustments)
-- Marking TODOS complete
+- Marking backlog items complete
 - Cross-doc factual inconsistencies (e.g., version number mismatch)
 
 **NEVER do:**
 - Overwrite, replace, or regenerate CHANGELOG entries — polish wording only, preserve all content
 - Bump VERSION without asking — always use AskUserQuestion for version changes
-- Use `Write` tool on docs/changelog.html — always use `Edit` with exact `old_string` matches
+- Use `Write` tool on docs/changelog.md — always use `Edit` with exact `old_string` matches
+- Edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` — these are doc-first source layers; flag staleness, never fix it
 
 ---
 
@@ -157,12 +209,12 @@ git log <base>..HEAD --oneline
 git diff <base>...HEAD --name-only
 ```
 
-3. Discover all documentation files in the repo. Root-level files (README.md, CLAUDE.md) stay as
-   Markdown; files under `docs/` are now HTML:
+3. Discover all documentation files in the repo. All docs are Markdown — root-level files
+   (README.md, CLAUDE.md) and everything under `docs/`:
 
 ```bash
 find . -maxdepth 1 -name "*.md" -not -path "./.git/*" | sort
-find ./docs -maxdepth 3 -name "*.html" -not -path "./_assets/*" 2>/dev/null | sort
+find ./docs -maxdepth 3 -name "*.md" 2>/dev/null | sort
 ```
 
 4. Classify the changes into categories relevant to documentation:
@@ -185,17 +237,16 @@ Read each documentation file and cross-reference it against the diff. Use these 
 - Are install/setup instructions consistent with the changes?
 - Are examples, demos, and usage descriptions still valid?
 - Are troubleshooting steps still accurate?
+- Is the stack/tech-list section (formerly in trace) still accurate?
 
-**docs/trace/code-map.html:**
+**docs/architecture.md (§4 code map):**
 - Do ASCII diagrams and component descriptions match the current code?
 - Are design decisions and "why" explanations still accurate?
 - Be conservative — only update things clearly contradicted by the diff. Architecture docs
   describe things unlikely to change frequently.
-- HTML structure uses `<meta name="doc-type">`, `<meta name="doc-date">`, and
-  `<section data-section="...">` for semantic markup. Shared assets live at
-  `docs/_assets/style.css` and `docs/_assets/docs.js`.
+- Markdown structure uses standard headings and frontmatter for metadata.
 
-**docs/contributing.html — New contributor smoke test:**
+**docs/contributing.md — New contributor smoke test:**
 - Walk through the setup instructions as if you are a brand new contributor.
 - Are the listed commands accurate? Would each step succeed?
 - Do test tier descriptions match the current test infrastructure?
@@ -206,13 +257,13 @@ Read each documentation file and cross-reference it against the diff. Use these 
 - Does the project structure section match the actual file tree?
 - Are listed commands and scripts accurate?
 - Do build/test instructions match what's in package.json (or equivalent)?
+- Are the conventions and testing sections (formerly in trace) still accurate?
 
 **docs/ tree (if exists):**
-- Check `docs/trace/code-map.html` — is the architecture description still accurate after this release?
-- Check `docs/trace/concerns.html` — are any concerns resolved by this release?
-- Check `docs/trace/matrix.html` — are all REQs from `docs/specs/*.html` still valid?
-- HTML docs use `<meta name="doc-type">` and `<meta name="doc-date">` for metadata,
-  and `<section data-section="...">` for structural sections. There is no `doc-status` meta.
+- Check `docs/architecture.md` — is the architecture description (incl. §4 code map) still accurate after this release?
+- Check `docs/matrix.md` — are all REQs from `docs/specs/*.md` still valid? (Read-only — if a
+  spec is stale vs. shipped code, FLAG it per the HARD RULE; never edit `docs/specs/`.)
+- Markdown docs use frontmatter and standard headings for metadata.
 - Run doc validation using the Python validator:
 
 ```bash
@@ -228,9 +279,10 @@ else:
 "
 ```
 
-- Flag stale docs for update or removal.
+- Flag stale docs for update or removal (subject to the HARD RULE — source-layer docs are
+  flag-only, never edited here).
 
-**Any other .html files under docs/:**
+**Any other .md files under docs/ (excluding the forbidden source layers):**
 - Read the file, determine its purpose and audience.
 - Cross-reference against the diff to check if it contradicts anything the file says.
 
@@ -246,34 +298,30 @@ For each file, classify needed updates as:
 
 ---
 
-## Step 2.5: Requirement Status Update (if specs exist)
+## Step 2.5: Requirement Status Reconciliation (specs are READ-ONLY here)
 
-If `docs/specs/` has `.html` files (skip `_template.html`):
+**⛔ Per the HARD RULE, this skill MUST NOT edit `docs/specs/`.** Spec status is part of the
+doc-first source layer and a human owns it. This step is **flag-only**.
 
-1. **Read each spec.** Parse the requirements table — each row has ID, description,
-   priority, and status (`open`, `in-progress`, `done`, `cut`).
+If `docs/specs/` has `.md` files (skip `spec.template.md`):
+
+1. **Read each spec (do not write).** Parse the Behavior rows / requirements — each has an
+   R-id (R1…RN) or REQ-id, description, and status (`open`, `in-progress`, `done`, `cut`).
 
 2. **Cross-reference the diff.** For each requirement with status `open` or `in-progress`:
-   - Check if the diff implements it (new files, new functions, schema changes that match)
-   - If clearly implemented: change status from `open` → `done` (or `in-progress` → `done`)
-   - If partially implemented: change `open` → `in-progress`
-   - Be conservative — only mark `done` when the acceptance criteria are clearly met
+   - Check whether the diff implements it (new files, new functions, schema changes that match).
+   - If it appears clearly implemented but the spec still says `open`/`in-progress`, the spec
+     is **stale versus shipped code** — that is a doc-first violation.
 
-3. **Update the HTML.** Use Edit tool to change the `<td>` status cell:
-   ```
-   old: <td>open</td>
-   new: <td>done</td>
-   ```
+3. **FLAG, never fix.** Emit a `[CRITICAL]` finding for the human, e.g.:
+   `[CRITICAL] docs/specs/space-meetings.md: REQ-MTG-001 appears shipped but status is 'open'.
+   Spec is out of date vs code — reconcile via the spec-first flow. (Not auto-fixed.)`
 
-4. **Update spec doc-status meta.** If ALL `must` requirements are `done`, change
-   `<meta name="doc-status" content="draft">` to `content="implemented"`.
+4. Do NOT change spec status cells, frontmatter, or any `docs/specs/` content under any
+   circumstance — even if the correct value is obvious. Editing a spec to match already-shipped
+   code inverts doc-first order.
 
-5. **Log changes.** For each status change, note it for the commit summary:
-   `specs/space-meetings.html: REQ-MTG-001 open→done, REQ-MTG-002 open→done`
-
-**Never auto-update:**
-- Requirements where implementation is ambiguous
-- Status from `done` back to `open` (that's a regression — flag it as a finding)
+A `done` → `open` regression spotted in a spec is likewise flag-only.
 
 ---
 
@@ -287,7 +335,7 @@ from 9 to 10."
 
 **Never auto-update:**
 - README introduction or project positioning
-- `docs/trace/code-map.html` philosophy or design rationale
+- `docs/architecture.md` philosophy or design rationale
 - Security model descriptions
 - Do not remove entire sections from any document
 
@@ -315,7 +363,7 @@ A real incident occurred where an agent replaced existing CHANGELOG entries when
 preserved them. This skill must NEVER do that.
 
 **Rules:**
-1. Read the entire `docs/changelog.html` first. Understand what is already there.
+1. Read the entire `docs/changelog.md` first. Understand what is already there.
 2. Only modify wording within existing entries. Never delete, reorder, or replace entries.
 3. Never regenerate a CHANGELOG entry from scratch. The entry was written by `/ship` from the
    actual diff and commit history. It is the source of truth. You are polishing prose, not
@@ -323,7 +371,7 @@ preserved them. This skill must NEVER do that.
 4. If an entry looks wrong or incomplete, use AskUserQuestion — do NOT silently fix it.
 5. Use Edit tool with exact `old_string` matches — never use Write to overwrite the changelog file.
 
-**If CHANGELOG (docs/changelog.html) was not modified in this branch:** skip this step.
+**If CHANGELOG (docs/changelog.md) was not modified in this branch:** skip this step.
 
 **If CHANGELOG was modified in this branch**, review the entry for voice:
 
@@ -342,35 +390,35 @@ preserved them. This skill must NEVER do that.
 After auditing each file individually, do a cross-doc consistency pass:
 
 1. Does the README's feature/capability list match what CLAUDE.md (or project instructions) describes?
-2. Does `docs/trace/code-map.html`'s component list match `docs/contributing.html`'s project structure description?
+2. Does `docs/architecture.md`'s component list match `docs/contributing.md`'s project structure description?
 3. Does CHANGELOG's latest version match the VERSION file?
 4. **Discoverability:** Is every documentation file reachable from README.md or CLAUDE.md? If
-   `docs/trace/code-map.html` exists but neither README nor CLAUDE.md links to it, flag it. Every doc
+   `docs/architecture.md` exists but neither README nor CLAUDE.md links to it, flag it. Every doc
    should be discoverable from one of the two entry-point files.
 5. Flag any contradictions between documents. Auto-fix clear factual inconsistencies (e.g., a
    version mismatch). Use AskUserQuestion for narrative contradictions.
 
 ---
 
-## Step 7: docs/plan/todos.html Cleanup
+## Step 7: docs/plan/backlog.md Cleanup
 
-This is a second pass that complements `/ship`'s Step 5.5. Read `review/TODOS-format.md` (if
-available) for the canonical TODO item format.
+This is a second pass that complements `/ship`'s Step 5.5. The backlog uses two sections:
+`## Active` and `## Backlog`.
 
-If `docs/plan/todos.html` doesn't exist, skip this step.
+If `docs/plan/backlog.md` doesn't exist, skip this step.
 
-1. **Completed items not yet marked:** Cross-reference the diff against open TODO items. If a
-   TODO is clearly completed by the changes in this branch, move it to the Completed section
+1. **Completed items not yet marked:** Cross-reference the diff against open backlog items. If an
+   item is clearly completed by the changes in this branch, mark it complete
    with `**Completed:** vX.Y.Z.W (YYYY-MM-DD)`. Be conservative — only mark items with clear
    evidence in the diff.
 
-2. **Items needing description updates:** If a TODO references files or components that were
+2. **Items needing description updates:** If a backlog item references files or components that were
    significantly changed, its description may be stale. Use AskUserQuestion to confirm whether
-   the TODO should be updated, completed, or left as-is.
+   the item should be updated, completed, or left as-is.
 
 3. **New deferred work:** Check the diff for `TODO`, `FIXME`, `HACK`, and `XXX` comments. For
    each one that represents meaningful deferred work (not a trivial inline note), use
-   AskUserQuestion to ask whether it should be captured in docs/plan/todos.html.
+   AskUserQuestion to ask whether it should be captured in docs/plan/backlog.md.
 
 ---
 
@@ -477,10 +525,10 @@ Output a scannable summary showing every documentation file's status:
 ```
 Documentation health:
   README.md                [status] ([details])
-  docs/trace/code-map.html [status] ([details])
-  docs/contributing.html   [status] ([details])
-  docs/changelog.html      [status] ([details])
-  docs/plan/todos.html     [status] ([details])
+  docs/architecture.md     [status] ([details])
+  docs/contributing.md     [status] ([details])
+  docs/changelog.md        [status] ([details])
+  docs/plan/backlog.md     [status] ([details])
   VERSION                  [status] ([details])
 ```
 

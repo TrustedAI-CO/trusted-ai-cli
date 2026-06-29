@@ -18,6 +18,22 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already loaded
+> `docs-philosophy.md` and established the shared interaction conventions (AskUserQuestion
+> format, Boil-the-Lake completeness) — SKIP re-reading the philosophy file and skip
+> restating those blocks; assume them in effect. The numbered rules below still apply.
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Preamble (run first)
 
 ```bash
@@ -189,12 +205,12 @@ git diff <base> --stat
 Then read:
 - The plan file (current plan or branch diff)
 - CLAUDE.md — project conventions
-- `docs/design/visual.html` — if it exists, ALL design decisions calibrate against it
-- `docs/plan/todos.html` — any design-related TODOs this plan touches
+- `docs/design/visual.md` — if it exists, ALL design decisions calibrate against it
+- `docs/plan/backlog.md` (sections `## Active` / `## Backlog`) — any design-related items this plan touches
 
 Map:
 * What is the UI scope of this plan? (pages, components, interactions)
-* Does `docs/design/visual.html` exist? If not, flag as a gap.
+* Does `docs/design/visual.md` exist? If not, flag as a gap.
 * Are there existing design patterns in the codebase to align with?
 * What prior design reviews exist? (check reviews.jsonl)
 
@@ -218,8 +234,8 @@ Rate the plan's overall design completeness 0-10.
 Explain what a 10 looks like for THIS plan.
 
 ### 0B. Design System Status
-- If `docs/design/visual.html` exists: "All design decisions will be calibrated against your stated design system."
-- If no design system exists: "No design system found. Recommend running /design-consultation to create docs/design/visual.html before finalizing visual direction. Proceeding with universal design principles for this plan review only."
+- If `docs/design/visual.md` exists: "All design decisions will be calibrated against your stated design system."
+- If no design system exists: "No design system found. Recommend running /design-consultation to create docs/design/visual.md before finalizing visual direction. Proceeding with universal design principles for this plan review only."
 
 ### 0C. Existing Design Leverage
 What existing UI patterns, components, or design decisions in the codebase should this plan reuse? Don't reinvent what already works.
@@ -284,7 +300,7 @@ FIX TO 10: Rewrite vague UI descriptions with specific alternatives.
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY.
 
 ### Pass 5: Design System Alignment
-Rate 0-10: Does the plan align with `docs/design/visual.html`?
+Rate 0-10: Does the plan align with `docs/design/visual.md`?
 FIX TO 10: If design doc exists, annotate with specific tokens/components. If no design doc exists, flag the gap, avoid inventing a full visual system here, and recommend `/design-consultation`.
 Flag any new component — does it fit the existing vocabulary?
 **STOP.** AskUserQuestion once per issue. Do NOT batch. Recommend + WHY.
@@ -320,12 +336,14 @@ Follow the AskUserQuestion format from the Preamble above. Additional rules for 
 Design decisions considered and explicitly deferred, with one-line rationale each.
 
 ### "What already exists" section
-Existing `docs/design/visual.html`, UI patterns, and components that the plan should reuse.
+Existing `docs/design/visual.md`, UI patterns, and components that the plan should reuse.
 
-### docs/plan/todos.html updates
-After all review passes are complete, present each potential TODO as its own individual AskUserQuestion. Never batch TODOs — one per question. Never silently skip this step.
+### docs/plan/backlog.md updates
+After all review passes are complete, present each potential item as its own individual AskUserQuestion. Never batch items — one per question. Never silently skip this step. Add items to `docs/plan/backlog.md` (sections `## Active` / `## Backlog`).
 
-For design debt: missing a11y, unresolved responsive behavior, deferred empty states. Each TODO gets:
+When the user declines or defers a suggestion, append one line to `docs/plan/backlog.md` before continuing.
+
+For design debt: missing a11y, unresolved responsive behavior, deferred empty states. Each item gets:
 * **What:** One-line description of the work.
 * **Why:** The concrete problem it solves or value it unlocks.
 * **Pros:** What you gain by doing this work.
@@ -333,7 +351,7 @@ For design debt: missing a11y, unresolved responsive behavior, deferred empty st
 * **Context:** Enough detail that someone picking this up in 3 months understands the motivation.
 * **Depends on / blocked by:** Any prerequisites.
 
-Then present options: **A)** Add to docs/plan/todos.html **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
+Then present options: **A)** Add to docs/plan/backlog.md **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
 
 ### Completion Summary
 ```
@@ -352,7 +370,7 @@ Then present options: **A)** Add to docs/plan/todos.html **B)** Skip — not val
   +--------------------------------------------------------------------+
   | NOT in scope         | written (___ items)                         |
   | What already exists  | written                                     |
-  | docs/plan/todos.html   | ___ items proposed                          |
+  | docs/plan/backlog.md   | ___ items proposed                          |
   | Decisions made       | ___ added to plan                           |
   | Decisions deferred   | ___ (listed below)                          |
   | Overall design score | ___/10 → ___/10                             |
@@ -370,26 +388,19 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default to 
 After the design review is complete, you MUST persist any design decisions or findings to docs.
 
 ### Visual Design Decisions
-If visual design decisions were made (typography, color, spacing, layout, component choices, responsive breakpoints), update `docs/design/visual.html`.
+If visual design decisions were made (typography, color, spacing, layout, component choices, responsive breakpoints), update `docs/design/visual.md`.
 
 ### Interaction/UX Decisions
-If interaction or UX decisions were made (user flows, state handling, empty states, error patterns, accessibility patterns), write them as Architecture Decision Records (ADRs) in `docs/decisions/`. Name each ADR file descriptively, e.g. `docs/decisions/adr-003-empty-state-patterns.html`.
+If interaction or UX decisions were made (user flows, state handling, empty states, error patterns, accessibility patterns), write them as Architecture Decision Records (ADRs) in `docs/decisions/`. Name each ADR file descriptively, e.g. `docs/decisions/adr-003-empty-state-patterns.md`.
 
-### HTML File Structure
+### Markdown File Structure
 
-Every HTML doc file MUST include:
-- `<meta name="doc-type" content="TYPE">` where TYPE is `design`, `decision`, `plan`, etc.
-- `<meta name="doc-date" content="YYYY-MM-DD">` with the current date
-- `<section data-section="SECTION_NAME">` wrapping each logical section
-- Links to shared assets: `<link rel="stylesheet" href="../_assets/style.css">` and `<script src="../_assets/docs.js"></script>` (adjust relative path depth for subdirectory nesting)
+Every Markdown doc file MUST include a YAML frontmatter block:
+- `type:` where the value is `design`, `decision`, `plan`, etc.
+- `id:` a stable slug for the doc
+- `parent:` / `children:` / `related:` links to related docs (slugs or paths) where applicable
 
-### Rebuild Sidebar
-
-After writing any docs HTML file, run write_index to rebuild the sidebar navigation:
-
-```bash
-python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
-```
+Use Markdown headings (`##`) to delimit each logical section.
 
 ## Review Log
 

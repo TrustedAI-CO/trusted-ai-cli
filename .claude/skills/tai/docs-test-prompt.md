@@ -25,14 +25,18 @@ Grep all `SKILL.md` files in `.claude/skills/tai/` for references to root-level
 files that should now be in `docs/`. These are violations:
 
 ```
-ARCHITECTURE.md → should be docs/trace/code-map.md
-TODOS.md → should be docs/plan/todos.md
+ARCHITECTURE.md → should be docs/architecture.md (§4 holds the container→dir map)
+TODOS.md → should be docs/plan/backlog.md
 DESIGN.md → should be docs/design/visual.md
-TESTING.md → should be docs/trace/testing.md
+TESTING.md → should be CLAUDE.md (testing conventions live here)
 CONTRIBUTING.md → should be docs/contributing.md
 CHANGELOG.md → should be docs/changelog.md
 PLAN.md → should be docs/plan/tasks.md
 ```
+
+Note: the old `docs/trace/` folder is gone. Code map → `docs/architecture.md` §4;
+testing → `CLAUDE.md`; conventions → `CLAUDE.md`; stack → `README.md`;
+conformance matrix → `docs/matrix.md`. Any reference to `docs/trace/*` is a violation.
 
 **Allowed exceptions:**
 - References inside `docs-preamble.md` (it defines the framework)
@@ -58,13 +62,13 @@ For each skill that WRITES files, verify it writes to the correct `docs/` path:
 
 | Skill | Should write to |
 |-------|----------------|
-| map | `docs/trace/` (code-map.md, conventions.md, concerns.md, stack.md) |
-| plan-ceo | `docs/intent.md`, `docs/decisions/` |
-| plan-eng | `docs/design/system.md`, `docs/specs/*.md`, `docs/plan/tasks.md`, `docs/plan/milestones.md` |
+| map | `docs/architecture.md` (§4 container→dir map); conventions/testing → `CLAUDE.md`, stack → `README.md` |
+| plan-ceo / plan-product | `docs/prd.md` (draft for human), `docs/decisions/` |
+| plan-eng | `docs/architecture.md`, `docs/specs/*.md`, `docs/plan/tasks.md` |
 | plan-design | reads/modifies `docs/design/visual.md` |
 | design-consultation | `docs/design/visual.md` |
-| execute | `docs/trace/matrix.md`, `docs/REVIEW.md` |
-| ship | `docs/plan/todos.md`, `docs/trace/testing.md`, `docs/changelog.md` |
+| execute | `docs/matrix.md`, `docs/REVIEW.md` |
+| ship | `docs/plan/backlog.md`, `docs/changelog.md` |
 | document-release | updates files in `docs/` |
 
 #### 4. Frontmatter in Agent Prompts (MEDIUM)
@@ -73,9 +77,21 @@ Check that skills which generate docs include frontmatter instructions.
 These skills should tell their agents/subagents to add YAML frontmatter:
 
 - map (4 agent prompts should include frontmatter blocks)
-- plan-ceo (intent.md and decision docs)
-- plan-eng (system.md, specs, tasks.md, milestones.md)
+- plan-ceo / plan-product (prd.md draft and decision docs)
+- plan-eng (architecture.md, specs, tasks.md)
 - design-consultation (visual.md)
+
+#### 4b. Framework Guardrails + Doc-First Gate (CRITICAL)
+
+- Every pipeline skill (`plan-*`, `execute-*`, `review`, `ship`, `design-consultation`,
+  `docs-update`) has a "Framework Guardrails (read first)" block referencing
+  `docs-philosophy.md`. `docs-init` defines the framework, so it is exempt.
+- `docs-update` must NEVER write to `docs/specs/`, `docs/prd.md`, or `docs/decisions/`
+  (gate G2). Grep its body for edits to those paths — any is a violation.
+- `ship` and `review` run the doc-first gate G1: code under a spec's `code:` path may not
+  merge while that spec is not `status: approved`. Confirm both reference the gate.
+- `docs/prd.md` is HUMAN-owned: `plan-ceo`/`plan-product` must draft-and-present, never
+  finalize or overwrite human content.
 
 #### 5. REVIEW.md Integration (MEDIUM)
 
@@ -88,7 +104,7 @@ Check that these skills reference `docs/REVIEW.md`:
 
 #### 6. Traceability Matrix Integration (MEDIUM)
 
-Check that these skills reference `docs/trace/matrix.md`:
+Check that these skills reference `docs/matrix.md`:
 - execute — subagent template should update matrix after each task
 - next — should show spec coverage from matrix
 - review — should check matrix for scope creep
@@ -99,7 +115,7 @@ Check that these skills reference `docs/trace/matrix.md`:
 Verify that skills reading from docs/ match what other skills write:
 - plan-eng writes `docs/plan/tasks.md` → execute reads `docs/plan/tasks.md`
 - plan-eng writes `docs/specs/*.md` → review reads `docs/specs/*.md`
-- map writes `docs/trace/code-map.md` → document-release reads `docs/trace/code-map.md`
+- map writes `docs/architecture.md` (§4 dir map) → document-release reads `docs/architecture.md`
 - design-consultation writes `docs/design/visual.md` → plan-design reads `docs/design/visual.md`
 
 ### Output Format

@@ -29,6 +29,22 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already loaded
+> `docs-philosophy.md` and established the shared interaction conventions (AskUserQuestion
+> format, Boil-the-Lake completeness) — SKIP re-reading the philosophy file and skip
+> restating those blocks; assume them in effect. The numbered rules below still apply.
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 # /execute-team: Parallel Team Orchestrator
 
 You are the **team lead**. Your ONLY job is to coordinate — read the plan, create a
@@ -353,6 +369,9 @@ for all engineers in the same wave to finish. This unblocks downstream work fast
 
 If an engineer reports a blocker via SendMessage:
 - **Tier 4 deviation** (architectural): Present to user via AskUserQuestion
+- **Spec conflict** (spec wrong/insufficient/unapproved): Engineer must NOT edit the
+  spec. Escalate to user via AskUserQuestion for a spec update + human re-approval
+  before that engineer continues
 - **Merge conflict**: `SendMessage(to: "eng-{slug}", ...)` with rebase instructions
 - **CI failure**: Prioritize — CI-green is non-negotiable before merge
 - **Cross-dependency**: If eng-A needs eng-B's work, coordinate merge order
@@ -413,6 +432,10 @@ Each engineer gets this prompt, customized for their sub-phase:
 You are an engineer on a parallel implementation team. You own one sub-phase
 and drive it through the full tai pipeline autonomously.
 
+## Capture Reflex
+When the user declines or defers a suggestion, append one line to `docs/plan/backlog.md`
+before continuing — don't lose it, don't act on it.
+
 ## Your Assignment
 Sub-phase: {N.M} — {title}
 Module: {module path}
@@ -426,6 +449,32 @@ Wave: {wave number}
 
 ## API Contract (if applicable)
 {contract extracted from design docs}
+
+## Governing Specs
+{list of APPROVED docs/specs/*.md files your sub-phase implements}
+
+## Doc-First Execution (READ THIS FIRST)
+
+Your sub-phase implements APPROVED behavioral specs in `docs/specs/`. The spec is
+the ground truth; code is verified against it — never the reverse.
+
+1. **Read each governing spec in full** before planning or coding. Confirm its
+   frontmatter `status: approved`. If a spec is `draft`, missing, or insufficient,
+   STOP and tell the team lead via SendMessage — the spec must be revised and
+   re-approved by a human before you implement against it.
+2. **Write code under each spec's `code:` path** and tests under its `tests:` path,
+   staying within the spec's declared surface.
+3. **Tests MUST reference the Behavior row IDs they cover** — each row ID (R1…RN)
+   appears in its test as a `test_R3_*` name or a `// covers: <SPEC-id> R3` tag.
+   Each Invariant gets a property/assertion test.
+4. **NEVER edit a spec to match code you wrote** — that inverts doc-first order.
+   `docs/specs/` is off-limits to your edits. If the code reveals the spec is wrong,
+   STOP and flag the team lead for a spec update + human re-approval before continuing.
+5. The spec governs *behavior* only — it is silent on security, performance, and
+   maintainability. You still write safe, clean code: validate inputs at boundaries,
+   no SQL string interpolation, no untrusted LLM output in SQL/HTML/shell, handle
+   errors, keep functions small and immutable. Behavioral conformance is necessary,
+   not sufficient.
 
 ## Setup — Create Your Worktree
 
@@ -460,7 +509,7 @@ If a backend fails, /execute-solo retries with the other backend automatically.
 Do NOT write implementation code manually — let /execute-solo handle it.
 
 ### 3. Update Traceability
-After /execute-solo completes, verify that `docs/trace/matrix.md` was updated
+After /execute-solo completes, verify that `docs/matrix.md` was updated
 with entries for the REQs your tasks covered. If any are missing, add them.
 
 ### 4. Ship: run /tai-ship
@@ -538,6 +587,10 @@ confirms your PR has been merged.
 - After merge, verify main CI stays green
 - Address ALL review feedback before requesting re-review
 - Coding work is dispatched to Codex/Gemini — you coordinate, not hand-code
+- Implement against APPROVED specs only; never edit `docs/specs/` to match your code.
+  If a spec is wrong or unapproved, STOP and flag the team lead for human re-approval
+- Every Behavior row ID (R1…RN) must be covered by a test that references it
+  (`test_R3_*` or `// covers: <SPEC-id> R3`)
 ```
 
 ---

@@ -262,24 +262,16 @@ Create `.github/workflows/test.yml` with:
 
 If non-GitHub CI detected → skip CI generation with note: "Detected {provider} — CI pipeline generation supports GitHub Actions only. Add test step to your existing pipeline manually."
 
-### B6. Create docs/trace/testing.md
-
-First check: If `docs/trace/testing.md` already exists → read it and update/append rather than overwriting. Never destroy existing content.
-
-Write `docs/trace/testing.md` with:
-- Philosophy: "100% test coverage is the key to great vibe coding. Tests let you move fast, trust your instincts, and ship with confidence — without them, vibe coding is just yolo coding. With tests, it's a superpower."
-- Framework name and version
-- How to run tests (the verified command from B5)
-- Test layers: Unit tests (what, where, when), Integration tests, Smoke tests, E2E tests
-- Conventions: file naming, assertion style, setup/teardown patterns
-
 ### B7. Update CLAUDE.md
 
 First check: If CLAUDE.md already has a `## Testing` section → skip. Don't duplicate.
 
-Append a `## Testing` section:
-- Run command and test directory
-- Reference to docs/trace/testing.md
+Append a `## Testing` section (testing info lives in CLAUDE.md — there is no separate testing doc):
+- Philosophy: "100% test coverage is the key to great vibe coding. Tests let you move fast, trust your instincts, and ship with confidence — without them, vibe coding is just yolo coding. With tests, it's a superpower."
+- Framework name and version
+- Run command and test directory (the verified command from B5)
+- Test layers: Unit tests (what, where, when), Integration tests, Smoke tests, E2E tests
+- Conventions: file naming, assertion style, setup/teardown patterns
 - Test expectations:
   - 100% test coverage is the goal — tests make vibe coding safe
   - When writing new functions, write a corresponding test
@@ -294,7 +286,7 @@ Append a `## Testing` section:
 git status --porcelain
 ```
 
-Only commit if there are changes. Stage all bootstrap files (config, test directory, docs/trace/testing.md, CLAUDE.md, .github/workflows/test.yml if created):
+Only commit if there are changes. Stage all bootstrap files (config, test directory, CLAUDE.md, .github/workflows/test.yml if created):
 `git commit -m "chore: bootstrap test framework ({framework name})"`
 
 ---
@@ -792,12 +784,12 @@ Write to `.tai/state/design-audit-{domain}-{YYYY-MM-DD}.md`
 
 ---
 
-## Phase 11: docs/plan/todos.md Update
+## Phase 11: docs/plan/backlog.md Update
 
-If the repo has a `docs/plan/todos.md`:
+If the repo has a `docs/plan/backlog.md`:
 
-1. **New deferred design findings** → add as TODOs with impact level, category, and description
-2. **Fixed findings that were in docs/plan/todos.md** → annotate with "Fixed by /design-review on {branch}, {date}"
+1. **New deferred design findings** → add as backlog items with impact level, category, and description
+2. **Fixed findings that were in docs/plan/backlog.md** → annotate with "Fixed by /design-review on {branch}, {date}"
 
 ---
 
