@@ -185,6 +185,28 @@ def test_INV3_foreign_host_rejected(repo):
         assert dash.parse_frontmatter((repo / "docs" / "specs" / "draft.md").read_text())["status"] == "draft"
 
 
+# covers: SPEC-dashboard-ui INV3 — CSRF: cross-origin simple POST + foreign Origin rejected, no write
+def test_INV3_csrf_guard(repo):
+    spec = repo / "docs" / "specs" / "draft.md"
+    with _server(repo / "docs") as base:
+        # simple request (text/plain, no preflight) → 415, no mutation
+        r1 = urllib.request.Request(base + "/api/gate/approve", data=b'{"id":"SPEC-draft"}',
+                                    headers={"Content-Type": "text/plain"}, method="POST")
+        try:
+            urllib.request.urlopen(r1, timeout=3); assert False
+        except urllib.error.HTTPError as e:
+            assert e.code == 415
+        # JSON but foreign Origin → 403
+        r2 = urllib.request.Request(base + "/api/gate/approve", data=b'{"id":"SPEC-draft"}',
+                                    headers={"Content-Type": "application/json", "Origin": "http://evil.example.com"},
+                                    method="POST")
+        try:
+            urllib.request.urlopen(r2, timeout=3); assert False
+        except urllib.error.HTTPError as e:
+            assert e.code == 403
+        assert dash.parse_frontmatter(spec.read_text())["status"] == "draft"  # never written
+
+
 # covers: SPEC-dashboard-ui — POST error paths (missing id 400, unknown action 404)
 def test_post_error_paths(repo):
     with _server(repo / "docs") as base:

@@ -301,7 +301,7 @@ _PAGE = """<!doctype html><html><head><meta charset=utf-8>
 <script>
 try{mermaid&&mermaid.initialize({startOnLoad:false,theme:'dark',securityLevel:'strict'});}catch(e){}
 const app=document.getElementById('app');let tab='overview';
-const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const j=async(u,o)=>(await fetch(u,o)).json();
 function setTab(t){tab=t;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));draw();}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
@@ -416,8 +416,17 @@ def _make_handler(docs: Path):
             if path not in actions:
                 self._send(404, "text/plain", b"not found")
                 return
-            length = int(self.headers.get("Content-Length", 0) or 0)
+            # CSRF guard: require JSON content-type (forces a CORS preflight for cross-origin,
+            # which we don't answer → blocked); reject a present non-loopback Origin outright.
+            if "application/json" not in (self.headers.get("Content-Type") or ""):
+                self._send(415, "text/plain", b"application/json required")
+                return
+            origin = self.headers.get("Origin")
+            if origin and urlparse(origin).hostname not in ("127.0.0.1", "localhost", "::1"):
+                self._send(403, "text/plain", b"forbidden origin")
+                return
             try:
+                length = int(self.headers.get("Content-Length", 0) or 0)
                 body = _json.loads(self.rfile.read(length) or b"{}")
                 doc_id = body["id"]
             except Exception:
