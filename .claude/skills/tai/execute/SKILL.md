@@ -1042,7 +1042,9 @@ When all sub-phases have passed review + QA + merged:
 ```
 
 4. Shut down the team: send `{type: "shutdown_request"}` to all engineers
-5. Suggest: "Run `/docs-update` to update project docs."
+5. Confirm each engineer maintained its derived docs live (matrix + architecture §4 +
+   touched prose) as part of definition-of-done — `/ship`'s gate will verify this. Do NOT
+   run `/docs-update` (it is on-demand only, not a pipeline step).
 
 ### Engineer Prompt Template (Team)
 

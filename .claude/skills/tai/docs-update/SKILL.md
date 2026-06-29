@@ -316,7 +316,7 @@ repos pick up the banner on their next `/docs-update` run):
    the first line if there is no frontmatter):
 
    ```
-   > ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
+   > ⚠️ Derived doc — maintained live by an agent as code changes; may still lag. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
    ```
 
 This is a factual, mechanical auto-fix — apply it directly, do not ask. **NEVER** add

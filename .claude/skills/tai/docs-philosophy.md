@@ -89,9 +89,11 @@ Three rules make every change reviewable and traceable:
 - Derived docs are kept current *during* implementation: `/tai-execute` maintains
   `matrix.md` + `architecture.md` §4 + any touched derived prose as part of its
   definition-of-done; `/ship` writes `changelog.md`.
-- `/ship`'s conformance gate **verifies** derived docs are in sync and blocks if stale —
-  it verifies, it doesn't sweep. A stale derived doc is a gate failure to fix before
-  shipping, not a post-ship chore.
+- `/ship`'s conformance gate **verifies** the machine-checkable derived docs are in sync
+  and blocks if stale — `matrix.md`, `architecture.md` §4, `changelog.md`. It verifies, it
+  doesn't sweep. (Derived *prose* — README/CLAUDE/contributing — is execute's responsibility
+  but best-effort/unverified, not gate-blocked.) A stale gate-checked doc is a failure to
+  fix before shipping, not a post-ship chore.
 - `/docs-update` is **on-demand only** (onboarding, regenerating a disposable map, a
   periodic consistency pass) — never auto-chained by `/tai-flow`, never run by `/ship`.
 - No skill edits a source layer (`specs/`, `prd.md`, `decisions/`) to match shipped code.
@@ -101,7 +103,7 @@ source.** Every derived doc has `derived: true` in frontmatter AND a one-line ba
 right under the frontmatter:
 
 ```
-> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source
+> ⚠️ Derived doc — maintained live by an agent as code changes; may still lag. Source
 > of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 ```
 

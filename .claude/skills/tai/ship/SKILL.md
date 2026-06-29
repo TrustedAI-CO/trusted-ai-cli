@@ -924,6 +924,12 @@ PRs. The enforceable rule:
    - Aim for one spec per PR (smallest reviewable contract change); >1 is allowed but
      each must be declared + approved.
 
+**6. spec-exempt escape hatch.** A `spec-exempt:` marker may waive a finding ONLY when ALL hold:
+   - It was **reviewer-applied**, not author-applied (the ship operator/reviewer adds it during this gate — never carried in by the diff author).
+   - Its category is one of the fixed set: `refactor`, `docs`, `revert`. Any other category is invalid.
+   - It is **counted** and reported (how many findings it waived, and which).
+   - An exempt that is author-supplied, mis-categorized, or uncounted does NOT waive — treat the finding as a **FAIL**.
+
 **7. Derived docs in sync (VERIFY, don't sweep).** Derived docs are maintained live by
 `/tai-execute`; this gate confirms they actually are. There is no post-ship docs-update
 step to lean on — if any of these is stale, **FAIL** (fix before shipping):
@@ -935,14 +941,10 @@ step to lean on — if any of these is stale, **FAIL** (fix before shipping):
      trace; here it's the directory-map view). A new container absent from §4 → FAIL.
    - **changelog:** `docs/changelog.md` has an entry for this version with the
      spec-id/PR cross-ref (Step 5). Missing → FAIL.
+   Derived prose (README/CLAUDE/contributing) is execute's responsibility but is **not**
+   blocked here (best-effort, unverified) — only matrix, §4, and changelog are gate-enforced.
    Fixing derived docs is allowed at this gate (they're derived, not source) — but it is
    a *fix to pass*, surfaced as a finding, not a silent post-ship rewrite.
-
-**6. spec-exempt escape hatch.** A `spec-exempt:` marker may waive a finding ONLY when ALL hold:
-   - It was **reviewer-applied**, not author-applied (the ship operator/reviewer adds it during this gate — never carried in by the diff author).
-   - Its category is one of the fixed set: `refactor`, `docs`, `revert`. Any other category is invalid.
-   - It is **counted** and reported (how many findings it waived, and which).
-   - An exempt that is author-supplied, mis-categorized, or uncounted does NOT waive — treat the finding as a **FAIL**.
 
 **On any FAIL (not waived by a valid spec-exempt):**
 
@@ -1062,8 +1064,8 @@ EOF
 
 **Backfill changelog PR refs.** If the changelog bullets (Step 5) were written with spec
 ids but no `(#NNN)` because the PR didn't exist yet, edit `docs/changelog.md` now to add
-the PR number to each new bullet, then amend the final commit (or include in the Step 8.5
-docs commit). The changelog is the trace index — it must carry the PR number.
+the PR number to each new bullet, then amend the final commit. The changelog is the trace
+index — it must carry the PR number.
 
 ---
 
