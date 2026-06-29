@@ -83,13 +83,15 @@ def test_R1_spa_tabs(repo):
         assert all(t in html for t in ("Overview", "Specs", "Gates"))
 
 
-# covers: SPEC-dashboard-ui R2
-def test_R2_api_docs(repo):
+# covers: SPEC-dashboard-ui R2 / R11 — Specs tab (?type=spec) and Decisions tab (?type=decision)
+def test_R2_R11_type_filtered_lists(repo):
     with _server(repo / "docs") as base:
-        rows = json.loads(_get(base + "/api/docs")[1])
-        ids = {r["id"] for r in rows}
-        assert "SPEC-draft" in ids and "0003-x" in ids  # specs + ADRs (not architecture)
-        assert "architecture" not in ids
+        specs = json.loads(_get(base + "/api/docs?type=spec")[1])
+        assert {r["id"] for r in specs} == {"SPEC-draft"} and all(r["type"] == "spec" for r in specs)
+        decisions = json.loads(_get(base + "/api/docs?type=decision")[1])
+        assert {r["id"] for r in decisions} == {"0003-x"} and all(r["type"] == "decision" for r in decisions)
+        # architecture (type architecture) appears in neither list
+        assert "architecture" not in {r["id"] for r in specs + decisions}
 
 
 # covers: SPEC-dashboard-ui R3

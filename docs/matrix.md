@@ -37,7 +37,7 @@ derived: true
 | SPEC-docs-query | R1-R8,INV1,INV2 | tai/commands/dashboard.py | tests/test_docs_query.py | COVERED |
 | SPEC-gates-view | R1-R8,INV1,INV2 | tai/commands/dashboard.py | tests/test_gates_view.py | COVERED |
 | SPEC-gates-action | R1-R10,INV2,INV4 | tai/commands/gate.py | tests/test_gate_action.py | COVERED |
-| SPEC-dashboard-ui | R1-R10,INV1-3 | tai/commands/dashboard.py | tests/test_dashboard_ui.py | COVERED |
+| SPEC-dashboard-ui | R1-R13,INV1-4 | tai/commands/dashboard.py | tests/test_dashboard_ui.py | COVERED |
 
 ## Coverage Summary
 - Total Behavior rows: 64

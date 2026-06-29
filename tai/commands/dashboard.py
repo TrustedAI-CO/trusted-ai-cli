@@ -291,11 +291,20 @@ _PAGE = """<!doctype html><html><head><meta charset=utf-8>
  button.act{font:inherit;background:#1a7f37;color:#fff;border:0;border-radius:5px;padding:3px 10px;cursor:pointer}
  pre{white-space:pre-wrap;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow:auto}
  .pill{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid #d0d7de}
+ .md h1,.md h2,.md h3{border:0;text-transform:none;letter-spacing:0;color:#1f2328;margin:14px 0 6px}
+ .md h1{font-size:20px}.md h2{font-size:16px}.md h3{font-size:14px}
+ .md table{border-collapse:collapse;margin:8px 0;width:100%}
+ .md th,.md td{border:1px solid #d0d7de;padding:5px 9px;text-align:left;vertical-align:top}
+ .md th{background:#f6f8fa}
+ .md blockquote{border-left:3px solid #d0d7de;margin:8px 0;padding:2px 12px;color:#656d76}
+ .md code{background:#f6f8fa;padding:1px 5px;border-radius:4px}
+ .md ul,.md ol{margin:6px 0;padding-left:22px}
+ .md hr{border:0;border-top:1px solid #d8dee4;margin:14px 0}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head><body>
 <h1>tai dashboard <span class=muted id=ts></span></h1>
-<nav><button data-t=overview class=on>Overview</button><button data-t=specs>Specs</button><button data-t=gates>Gates</button></nav>
+<nav><button data-t=overview class=on>Overview</button><button data-t=specs>Specs</button><button data-t=decisions>Decisions</button><button data-t=gates>Gates</button><button data-t=architecture>Architecture</button></nav>
 <div id=app style=margin-top:16px></div>
 <div class=foot>localhost · reads live · gate actions write + commit</div>
 <script>
@@ -303,6 +312,31 @@ try{mermaid&&mermaid.initialize({startOnLoad:false,theme:'default',securityLevel
 const app=document.getElementById('app');let tab='overview';
 const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const j=async(u,o)=>(await fetch(u,o)).json();
+// compact, escape-first markdown → HTML (no deps; XSS-safe: escape then add known tags).
+function mdRender(src){
+ const blk=[];
+ src=(src||'').replace(/```(\\w*)\\n?([\\s\\S]*?)```/g,(m,lang,code)=>{blk.push([lang,code.replace(/\\n+$/,'')]);return '@@B'+(blk.length-1)+'@@';});
+ const inl=t=>esc(t).replace(/`([^`]+)`/g,'<code>$1</code>').replace(/\\*\\*([^*]+)\\*\\*/g,'<b>$1</b>').replace(/\\*([^*]+)\\*/g,'<i>$1</i>').replace(/\\[([^\\]]+)\\]\\(([^)\\s]+)\\)/g,(m,txt,url)=>/^(https?:|mailto:|#|\\/)/i.test(url)?`<a href="${url}">${txt}</a>`:m);
+ const L=src.split('\\n');let h='',i=0;
+ while(i<L.length){const s=L[i];let m;
+  if(m=s.match(/^@@B(\\d+)@@$/)){const b=blk[+m[1]];if(b){const[lang,code]=b;h+=(lang==='mermaid'&&window.mermaid)?`<div class=mermaid>${esc(code)}</div>`:`<pre>${esc(code)}</pre>`;}i++;continue;}
+  if(m=s.match(/^(#{1,6})\\s+(.*)/)){const n=m[1].length;h+=`<h${n}>${inl(m[2])}</h${n}>`;i++;continue;}
+  if(/^(---|\\*\\*\\*)\\s*$/.test(s)){h+='<hr>';i++;continue;}
+  if(/^>\\s?/.test(s)){const q=[];while(i<L.length&&/^>\\s?/.test(L[i])){q.push(inl(L[i].replace(/^>\\s?/,'')));i++;}h+=`<blockquote>${q.join('<br>')}</blockquote>`;continue;}
+  if(/^\\s*[-*]\\s/.test(s)){const it=[];while(i<L.length&&/^\\s*[-*]\\s/.test(L[i])){it.push(`<li>${inl(L[i].replace(/^\\s*[-*]\\s/,''))}</li>`);i++;}h+=`<ul>${it.join('')}</ul>`;continue;}
+  if(/^\\s*\\d+\\.\\s/.test(s)){const it=[];while(i<L.length&&/^\\s*\\d+\\.\\s/.test(L[i])){it.push(`<li>${inl(L[i].replace(/^\\s*\\d+\\.\\s/,''))}</li>`);i++;}h+=`<ol>${it.join('')}</ol>`;continue;}
+  if(/^\\|.*\\|/.test(s)){const rs=[];while(i<L.length&&/^\\|/.test(L[i])){rs.push(L[i]);i++;}
+   const cells=r=>r.replace(/^\\||\\|$/g,'').split('|').map(c=>c.trim());let th='',tb='';
+   rs.forEach((r,ri)=>{if(/^\\|[\\s:|-]+\\|?$/.test(r))return;const c=cells(r);
+    if(ri===0)th=`<tr>${c.map(x=>`<th>${inl(x)}</th>`).join('')}</tr>`;else tb+=`<tr>${c.map(x=>`<td>${inl(x)}</td>`).join('')}</tr>`;});
+   h+=`<table>${th}${tb}</table>`;continue;}
+  if(s.trim()===''){i++;continue;}
+  const p=[];while(i<L.length&&L[i].trim()!==''&&!/^(#|>|\\s*[-*]\\s|\\s*\\d+\\.\\s|\\||@@B)/.test(L[i])){p.push(inl(L[i]));i++;}
+  if(!p.length){p.push(inl(s));i++;}  // line fell through all branches → consume as text (guarantee progress)
+  h+=`<p>${p.join(' ')}</p>`;
+ }
+ return h;
+}
 function setTab(t){tab=t;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));draw();}
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
 
@@ -320,21 +354,24 @@ async function drawOverview(){
   (d.recent.length?card('Recent','blue',d.recent.map(b=>`<div class=row><b>${esc(b.version)}</b></div>`+b.entries.slice(0,5).map(e=>`<div class=row><span class=muted>• ${esc(e)}</span></div>`).join('')).join('')):card('Recent','blue','<span class=muted>none</span>'))+
   (iss===0?card('Doc Health','green','<span class=green>healthy — graph intact</span>'):card(`Doc Health (${iss})`,'red',[].concat(h.missing_frontmatter.map(x=>['no frontmatter',x]),h.orphans.map(x=>['orphan',x]),h.broken_links.map(x=>['broken link',x])).map(([k,v])=>`<div class=row><span class=red>${k}</span><span>${esc(v)}</span></div>`).join('')));
 }
-async function drawSpecs(){
+async function docList(type,placeholder){
  app.className='';
- app.innerHTML='<input id=q placeholder="search specs + ADRs…"><div id=list style=margin-top:12px></div><div id=detail style=margin-top:16px></div>';
+ app.innerHTML=`<input id=q placeholder="${placeholder}"><div id=list style=margin-top:12px></div><div id=detail style=margin-top:16px></div>`;
  const q=document.getElementById('q'),list=document.getElementById('list');
- async function load(){const rows=await j(q.value?('/api/search?q='+encodeURIComponent(q.value)):'/api/docs');
-  list.innerHTML=rows.map(r=>`<div class=row><a class=doclink data-id="${esc(r.id)}">${esc(r.id)}</a><span class=muted>${esc(r.type)}</span><span class="pill">${esc(r.status)}</span></div>`).join('')||'<span class=muted>none</span>';
+ async function load(){
+  const rows=(q.value?await j('/api/search?q='+encodeURIComponent(q.value)):await j('/api/docs?type='+type)).filter(r=>r.type===type);
+  list.innerHTML=rows.map(r=>`<div class=row><a class=doclink data-id="${esc(r.id)}">${esc(r.id)}</a><span class="pill">${esc(r.status)}</span><span class=muted>${esc(r.title)}</span></div>`).join('')||'<span class=muted>none</span>';
   list.querySelectorAll('.doclink').forEach(a=>a.onclick=()=>showDoc(a.dataset.id));}
  q.oninput=load;await load();
 }
+const drawSpecs=()=>docList('spec','search specs…');
+const drawDecisions=()=>docList('decision','search decisions…');
+async function drawArchitecture(){app.className='';app.innerHTML='<div id=detail></div>';await showDoc('architecture');}
 async function showDoc(id){
  const d=await j('/api/doc/'+encodeURIComponent(id));const det=document.getElementById('detail');
+ if(!d||!d.frontmatter){det.innerHTML=card(esc(id),'red','not found — no such doc');return;}
  const meta=Object.entries(d.frontmatter).filter(([k])=>['id','type','status','approved_at'].includes(k)).map(([k,v])=>`<span class=pill>${k}: ${esc(''+v)}</span>`).join(' ');
- // render body; swap each ```mermaid block for a .mermaid div (degrades to <pre> if no mermaid lib)
- let i=0;const html=esc(d.body).replace(/```mermaid([\\s\\S]*?)```/g,(m,code)=>window.mermaid?`<div class=mermaid>${code.trim()}</div>`:`<pre>${code.trim()}</pre>`);
- det.innerHTML=card(esc(id),'cyan',`<div>${meta}</div><div style=margin-top:10px>${html}</div>`);
+ det.innerHTML=card(esc(id),'cyan',`<div>${meta}</div><div class=md style=margin-top:10px>${mdRender(d.body)}</div>`);
  if(window.mermaid){try{await mermaid.run({nodes:det.querySelectorAll('.mermaid')});}catch(e){}}
 }
 async function drawGates(){
@@ -353,7 +390,7 @@ async function act(action,id){
  if(!r.ok)alert('Refused: '+r.message);
  drawGates();
 }
-function draw(){({overview:drawOverview,specs:drawSpecs,gates:drawGates}[tab])();document.getElementById('ts').textContent=new Date().toLocaleTimeString();}
+function draw(){({overview:drawOverview,specs:drawSpecs,decisions:drawDecisions,gates:drawGates,architecture:drawArchitecture}[tab])();document.getElementById('ts').textContent=new Date().toLocaleTimeString();}
 draw();
 </script></body></html>"""
 
