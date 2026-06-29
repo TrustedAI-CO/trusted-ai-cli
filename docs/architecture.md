@@ -2,7 +2,7 @@
 id: architecture
 type: architecture
 parent: null
-children: [0001-markdown-docs, SPEC-dashboard-render]
+children: [0001-markdown-docs, SPEC-dashboard-render, SPEC-dashboard-serve, 0002-dashboard-web-stack]
 related: [prd]
 derived: true
 ---
