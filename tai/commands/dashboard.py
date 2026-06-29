@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import json as _json
 import re
+import socket
+import webbrowser
 from dataclasses import dataclass, field
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Optional
 
@@ -260,19 +263,132 @@ def render(d: Dashboard, out: Console) -> None:
         out.print(Panel(t, title=f"Doc Health ({issues} issue{'s' if issues != 1 else ''})", border_style="red"))
 
 
+# ── web server (SPEC-dashboard-serve; ADR 0002 — stdlib http.server) ──────────
+
+_PAGE = """<!doctype html><html><head><meta charset=utf-8>
+<title>tai dashboard</title>
+<style>
+ body{font:14px/1.5 ui-monospace,monospace;background:#0d1117;color:#c9d1d9;margin:0;padding:24px}
+ h1{font-size:18px;color:#58a6ff;margin:0 0 16px}
+ .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+ .card{border:1px solid #30363d;border-radius:8px;padding:16px}
+ .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px}
+ .cyan{color:#39c5cf}.yellow{color:#d29922}.green{color:#3fb950}.blue{color:#58a6ff}.red{color:#f85149}
+ .row{display:flex;justify-content:space-between;border-bottom:1px solid #21262d;padding:3px 0}
+ .muted{color:#8b949e}.foot{margin-top:16px;color:#8b949e;font-size:12px}
+</style></head><body>
+<h1>tai dashboard <span class=muted id=ts></span></h1>
+<div class=grid id=app></div>
+<div class=foot>auto-refresh every 5s · read-only · localhost</div>
+<script>
+async function tick(){
+ try{const d=await (await fetch('/api/dashboard.json')).json();render(d);}
+ catch(e){document.getElementById('app').innerHTML='<div class=card><span class=red>fetch failed</span></div>';}
+}
+function card(title,cls,body){return `<div class=card><h2 class="${cls}">${title}</h2>${body}</div>`;}
+function rows(pairs){return pairs.map(([k,v])=>`<div class=row><span>${k}</span><span>${v}</span></div>`).join('');}
+function render(d){
+ const p=d.pipeline,c=d.coverage;
+ const cov=c.total?`${c.covered}/${c.total} (${c.percent}%)`:'n/a';
+ const pipe=card('Pipeline','cyan',rows([['Specs',p.total],['draft',p.draft],['approved',p.approved],['implemented',p.implemented],['Coverage',cov]]));
+ const ny=d.needs_you.length
+   ?card(`Needs you (${d.needs_you.length})`,'yellow',d.needs_you.map(i=>`<div class=row><span class=yellow>${i.id}</span><span>${i.title}</span></div>`).join(''))
+   :card('Needs you (0)','green','<span class=green>nothing pending</span>');
+ const rec=d.recent.length
+   ?card('Recent','blue',d.recent.map(b=>`<div class=row><b>${b.version}</b></div>`+b.entries.slice(0,5).map(e=>`<div class=row><span class=muted>• ${e}</span></div>`).join('')).join(''))
+   :card('Recent','blue','<span class=muted>none</span>');
+ const h=d.doc_health,iss=h.orphans.length+h.broken_links.length+h.missing_frontmatter.length;
+ const dh=iss===0?card('Doc Health','green','<span class=green>healthy — graph intact</span>')
+   :card(`Doc Health (${iss})`,'red',[].concat(h.missing_frontmatter.map(x=>['no frontmatter',x]),h.orphans.map(x=>['orphan',x]),h.broken_links.map(x=>['broken link',x])).map(([k,v])=>`<div class=row><span class=red>${k}</span><span>${v}</span></div>`).join(''));
+ document.getElementById('app').innerHTML=pipe+ny+rec+dh;
+ document.getElementById('ts').textContent=new Date().toLocaleTimeString();
+}
+tick();setInterval(tick,5000);
+</script></body></html>"""
+
+
+def _make_handler(docs: Path):
+    class Handler(BaseHTTPRequestHandler):
+        def log_message(self, *a):  # silence default stderr logging
+            pass
+
+        def do_GET(self):  # noqa: N802
+            if self.path.startswith("/api/dashboard.json"):
+                payload = _json.dumps(build_dashboard(docs).to_dict()).encode()
+                self._send(200, "application/json", payload)
+            elif self.path in ("/", "/index.html"):
+                self._send(200, "text/html; charset=utf-8", _PAGE.encode())
+            else:
+                self._send(404, "text/plain", b"not found")
+
+        def _send(self, code: int, ctype: str, body: bytes):
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+    return Handler
+
+
+def find_free_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.bind(("127.0.0.1", 0))
+        return s.getsockname()[1]
+
+
+def build_server(docs: Path, host: str, port: int) -> ThreadingHTTPServer:
+    """Bind a localhost web server serving the dashboard. Raises OSError if port in use."""
+    return ThreadingHTTPServer((host, port), _make_handler(docs))
+
+
+def serve(docs: Path, host: str, port: Optional[int], open_browser: bool, out: Console) -> None:
+    bind_port = port if port is not None else find_free_port()
+    try:
+        httpd = build_server(docs, host, bind_port)
+    except OSError as exc:
+        err_console.print(f"[bold red]Cannot bind {host}:{bind_port}[/bold red] — {exc}")
+        err_console.print("[dim]Hint: the port may be in use; pass a free --port.[/dim]")
+        raise typer.Exit(1)
+    url = f"http://{host}:{bind_port}/"
+    out.print(f"[green]tai dashboard serving at[/green] [bold]{url}[/bold]  [dim](Ctrl-C to stop)[/dim]")
+    if open_browser:
+        try:
+            webbrowser.open(url)
+        except Exception:
+            pass
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        out.print("\n[dim]shutting down…[/dim]")
+    finally:
+        httpd.shutdown()
+        httpd.server_close()
+
+
 # ── command ───────────────────────────────────────────────────────────────────
 
 @app.callback(invoke_without_command=True)
 def dashboard(
     ctx: typer.Context,
     json_output: bool = typer.Option(False, "--json", help="Emit JSON instead of the rendered view."),
+    serve_web: bool = typer.Option(False, "--serve", help="Serve a live web view (localhost)."),
+    port: Optional[int] = typer.Option(None, "--port", help="Port for --serve (default: auto-pick free)."),
+    host: str = typer.Option("127.0.0.1", "--host", help="Bind host for --serve (default loopback)."),
+    no_open: bool = typer.Option(False, "--no-open", help="Don't auto-open the browser with --serve."),
 ) -> None:
-    """Render a one-screen overview of project state from docs/."""
+    """Render a one-screen overview of project state from docs/ (terminal or --serve web)."""
     docs = find_docs_dir()
     if docs is None:
         err_console.print("[bold red]No docs/ found.[/bold red]")
         err_console.print("[dim]Hint: run /docs-init (or tai setup) to bootstrap the docs tree.[/dim]")
         raise typer.Exit(1)
+
+    if serve_web:
+        if host != "127.0.0.1" and not host.startswith("127."):
+            err_console.print(f"[yellow]Warning:[/yellow] binding non-loopback host {host} — the dashboard has no auth.")
+        serve(docs, host, port, open_browser=not no_open, out=console)
+        return
 
     as_json = json_output
     try:

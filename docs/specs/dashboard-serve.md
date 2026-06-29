@@ -1,7 +1,7 @@
 ---
 id: SPEC-dashboard-serve
 type: spec
-status: approved
+status: implemented
 approved_at: 2026-06-29T14:54:10Z
 implements: [prd, 0002-dashboard-web-stack]
 parent: architecture
