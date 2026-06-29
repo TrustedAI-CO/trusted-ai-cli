@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Optional
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, unquote, urlparse
 
 import typer
 from rich.console import Console
@@ -334,7 +334,7 @@ async function showDoc(id){
  const meta=Object.entries(d.frontmatter).filter(([k])=>['id','type','status','approved_at'].includes(k)).map(([k,v])=>`<span class=pill>${k}: ${esc(''+v)}</span>`).join(' ');
  // render body; swap each ```mermaid block for a .mermaid div (degrades to <pre> if no mermaid lib)
  let i=0;const html=esc(d.body).replace(/```mermaid([\\s\\S]*?)```/g,(m,code)=>window.mermaid?`<div class=mermaid>${code.trim()}</div>`:`<pre>${code.trim()}</pre>`);
- det.innerHTML=card(id,'cyan',`<div>${meta}</div><div style=margin-top:10px>${html}</div>`);
+ det.innerHTML=card(esc(id),'cyan',`<div>${meta}</div><div style=margin-top:10px>${html}</div>`);
  if(window.mermaid){try{await mermaid.run({nodes:det.querySelectorAll('.mermaid')});}catch(e){}}
 }
 async function drawGates(){
@@ -399,7 +399,7 @@ def _make_handler(docs: Path):
             elif path == "/api/gates":
                 self._json(collect_gates(docs))
             elif path.startswith("/api/doc/"):
-                detail = doc_detail(docs, path[len("/api/doc/"):])
+                detail = doc_detail(docs, unquote(path[len("/api/doc/"):]))
                 self._json(detail) if detail else self._send(404, "application/json", b'{"error":"not found"}')
             elif path in ("/", "/index.html"):
                 self._send(200, "text/html; charset=utf-8", _PAGE.encode())
