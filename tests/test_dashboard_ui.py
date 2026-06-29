@@ -161,3 +161,38 @@ def test_R10_loopback_bind(repo):
         assert httpd.server_address[0] == "127.0.0.1"
     finally:
         httpd.server_close()
+
+
+# covers: SPEC-dashboard-ui INV3 — non-loopback Host header is rejected (DNS-rebinding guard)
+def test_INV3_foreign_host_rejected(repo):
+    with _server(repo / "docs") as base:
+        req = urllib.request.Request(base + "/api/docs", headers={"Host": "evil.example.com"})
+        try:
+            urllib.request.urlopen(req, timeout=3)
+            assert False, "expected 403"
+        except urllib.error.HTTPError as e:
+            assert e.code == 403
+        # write endpoint too
+        wreq = urllib.request.Request(base + "/api/gate/approve", data=b'{"id":"SPEC-draft"}',
+                                      headers={"Host": "evil.example.com", "Content-Type": "application/json"},
+                                      method="POST")
+        try:
+            urllib.request.urlopen(wreq, timeout=3)
+            assert False, "expected 403"
+        except urllib.error.HTTPError as e:
+            assert e.code == 403
+        # the spec was NOT approved
+        assert dash.parse_frontmatter((repo / "docs" / "specs" / "draft.md").read_text())["status"] == "draft"
+
+
+# covers: SPEC-dashboard-ui — POST error paths (missing id 400, unknown action 404)
+def test_post_error_paths(repo):
+    with _server(repo / "docs") as base:
+        assert _post(base + "/api/gate/approve", {})["ok"] is False  # missing id → ok:false
+        bad = urllib.request.Request(base + "/api/gate/bogus", data=b"{}",
+                                     headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            urllib.request.urlopen(bad, timeout=3)
+            assert False
+        except urllib.error.HTTPError as e:
+            assert e.code == 404

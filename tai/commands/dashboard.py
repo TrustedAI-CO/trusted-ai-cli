@@ -9,6 +9,7 @@ from __future__ import annotations
 import json as _json
 import re
 import socket
+import threading
 import webbrowser
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -298,7 +299,7 @@ _PAGE = """<!doctype html><html><head><meta charset=utf-8>
 <div id=app style=margin-top:16px></div>
 <div class=foot>localhost · reads live · gate actions write + commit</div>
 <script>
-try{mermaid&&mermaid.initialize({startOnLoad:false,theme:'dark',securityLevel:'loose'});}catch(e){}
+try{mermaid&&mermaid.initialize({startOnLoad:false,theme:'dark',securityLevel:'strict'});}catch(e){}
 const app=document.getElementById('app');let tab='overview';
 const esc=s=>(s||'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const j=async(u,o)=>(await fetch(u,o)).json();
@@ -324,7 +325,8 @@ async function drawSpecs(){
  app.innerHTML='<input id=q placeholder="search specs + ADRs…"><div id=list style=margin-top:12px></div><div id=detail style=margin-top:16px></div>';
  const q=document.getElementById('q'),list=document.getElementById('list');
  async function load(){const rows=await j(q.value?('/api/search?q='+encodeURIComponent(q.value)):'/api/docs');
-  list.innerHTML=rows.map(r=>`<div class=row><a onclick="showDoc('${r.id}')">${r.id}</a><span class=muted>${r.type}</span><span class="pill">${r.status}</span></div>`).join('')||'<span class=muted>none</span>';}
+  list.innerHTML=rows.map(r=>`<div class=row><a class=doclink data-id="${esc(r.id)}">${esc(r.id)}</a><span class=muted>${esc(r.type)}</span><span class="pill">${esc(r.status)}</span></div>`).join('')||'<span class=muted>none</span>';
+  list.querySelectorAll('.doclink').forEach(a=>a.onclick=()=>showDoc(a.dataset.id));}
  q.oninput=load;await load();
 }
 async function showDoc(id){
@@ -341,8 +343,9 @@ async function drawGates(){
  const total=groups.reduce((n,[k])=>n+g[k].length,0);
  if(!total){app.className='grid';app.innerHTML=card('Gates','green','<span class=green>all clear — no gates open</span>');return;}
  app.innerHTML=groups.filter(([k])=>g[k].length).map(([k,label,cls])=>card(`${label} (${g[k].length})`,cls,
-   g[k].map(it=>`<div class=row><span class=${cls}>${it.id}</span><span>${esc(it.title)}</span>`+
-     (it.action==='sign'?'<span class=muted>sign (manual)</span>':`<button class=act onclick="act('${it.action}','${it.id}')">${it.action}</button>`)+`</div>`).join(''))).join('');
+   g[k].map(it=>`<div class=row><span class=${cls}>${esc(it.id)}</span><span>${esc(it.title)}</span>`+
+     (it.action==='sign'?'<span class=muted>sign (manual)</span>':`<button class=act data-action="${esc(it.action)}" data-id="${esc(it.id)}">${esc(it.action)}</button>`)+`</div>`).join(''))).join('');
+ app.querySelectorAll('button.act').forEach(b=>b.onclick=()=>act(b.dataset.action,b.dataset.id));
 }
 async function act(action,id){
  if(!confirm(`${action} ${id}? This writes to the doc and commits.`))return;
@@ -366,12 +369,23 @@ def doc_detail(docs: Path, doc_id: str) -> Optional[dict]:
     return {"id": doc_id, "frontmatter": parse_frontmatter(text), "body": body, "mermaid": mermaid}
 
 
+_GATE_LOCK = threading.Lock()  # serialize web gate writes (one git index at a time)
+
+
 def _make_handler(docs: Path):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *a):  # silence default stderr logging
             pass
 
+        def _host_ok(self) -> bool:
+            # DNS-rebinding / cross-origin guard: only serve requests whose Host is loopback.
+            host = (self.headers.get("Host") or "").rsplit(":", 1)[0].strip("[]")
+            return host in ("127.0.0.1", "localhost", "::1", "")
+
         def do_GET(self):  # noqa: N802
+            if not self._host_ok():
+                self._send(403, "text/plain", b"forbidden host")
+                return
             u = urlparse(self.path)
             path, qs = u.path, parse_qs(u.query)
             if path == "/api/dashboard.json":
@@ -393,6 +407,9 @@ def _make_handler(docs: Path):
                 self._send(404, "text/plain", b"not found")
 
         def do_POST(self):  # noqa: N802
+            if not self._host_ok():
+                self._send(403, "text/plain", b"forbidden host")
+                return
             path = urlparse(self.path).path
             actions = {"/api/gate/approve": "approve", "/api/gate/accept": "accept",
                        "/api/gate/resolve": "resolve"}
@@ -404,11 +421,12 @@ def _make_handler(docs: Path):
                 body = _json.loads(self.rfile.read(length) or b"{}")
                 doc_id = body["id"]
             except Exception:
-                self._json({"ok": False, "message": "missing id"}, code=400)
+                self._json({"ok": False, "message": "missing id"})  # 200 + ok:false (client reads `ok`)
                 return
             from tai.commands import gate  # lazy import — avoids dashboard↔gate cycle
             fn = {"approve": gate.gate_approve, "accept": gate.gate_accept, "resolve": gate.gate_resolve}[actions[path]]
-            ok, message = fn(docs, doc_id)
+            with _GATE_LOCK:  # serialize concurrent writes/commits
+                ok, message = fn(docs, doc_id)
             self._json({"ok": ok, "message": message})
 
         def _json(self, obj, code: int = 200):
