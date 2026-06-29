@@ -83,10 +83,10 @@ These skills should tell their agents/subagents to add YAML frontmatter:
 
 #### 4b. Framework Guardrails + Doc-First Gate (CRITICAL)
 
-- Every pipeline skill (`plan-*`, `execute-*`, `review`, `ship`, `design-consultation`)
+- Every pipeline skill (`plan-*`, `execute`, `review`, `ship`, `design-consultation`)
   has a "Framework Guardrails (read first)" block referencing `docs-philosophy.md`.
-  `docs-update` (on-demand, not a pipeline step) and `docs-init` (defines the framework)
-  also carry the guardrails block but are not pipeline stages.
+  `docs-update` also carries the guardrails block, though it is on-demand, not a pipeline
+  step. `docs-init` defines the framework, so it is exempt.
 - `docs-update` must NEVER write to `docs/specs/`, `docs/prd.md`, or `docs/decisions/`
   (gate G2). Grep its body for edits to those paths — any is a violation.
 - `ship` and `review` run the doc-first gate G1: code under a spec's `code:` path may not
