@@ -47,6 +47,12 @@ single source of truth) before acting. Non-negotiable:
    flag staleness as `[CRITICAL]`; a human reconciles.
 4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 
+## Conventions
+
+Shared conventions (AskUserQuestion Format, Boil-the-Lake, tai Field Report) live in
+`docs-conventions.md` (ADR 0005). `/tai-flow` loads it once per run; in a standalone run,
+read it once.
+
 ## Language
 
 Respond in the same language the user is using. If the user writes in Japanese,
