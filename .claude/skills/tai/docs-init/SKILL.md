@@ -540,7 +540,7 @@ test under `tests:`, and the trace check resolves.
 ### `docs/decisions/adr.template.md`
 
 This is the template for Architecture Decision Records (L1). Skills like
-`/plan-eng` and `/research-tech` may *draft* concrete ADRs from it, but a human
+`/plan-eng` and `/tai-research` may *draft* concrete ADRs from it, but a human
 flips `status: accepted`. ADRs are immutable point-in-time records.
 
 ```markdown

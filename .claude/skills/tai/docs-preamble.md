@@ -160,6 +160,8 @@ One spec = one public surface. Agent drafts at `status: draft`; a **human** sets
 id: SPEC-{area}-{name}
 type: spec
 status: draft            # draft → approved (human gate) → implemented
+approved_at:             # ISO timestamp, set when human flips to approved
+baseline_sha:            # repo HEAD at approval — the staleness anchor (see below)
 implements: [prd, 0003-some-adr]
 parent: architecture
 children: []
@@ -167,6 +169,22 @@ related: []
 code: {dir or file under an architecture.md §4 container}
 tests: {dir or file}
 ---
+```
+
+### Approval anchor (`approved_at` + `baseline_sha`)
+
+`approved` means *approved against `baseline_sha`*, not approved-forever. When a human
+approves a spec, record the timestamp and the repo HEAD sha. Before an autonomous run
+(`/tai-loop`) builds the spec, it re-checks staleness with one diff:
+
+```bash
+git diff --name-only "$baseline_sha" HEAD | grep -qF "$code_path"  # touched? → STALE
+```
+
+If another change has touched the spec's `code:` path since `baseline_sha`, the spec is
+**stale** — treat it exactly like an unapproved spec: re-park for human re-approval. No
+content hashes, no dependency graph — git already tracks what changed. A serial loop
+needs nothing more.
 
 # {Surface Name}
 

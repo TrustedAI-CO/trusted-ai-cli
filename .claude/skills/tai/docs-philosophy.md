@@ -94,7 +94,7 @@ one per internal function; never one giant spec for many surfaces.
 Each spec MUST carry:
 - **Frontmatter:** `id: SPEC-{area}-{name}`, `status:` (`draft` → `approved` →
   `implemented`), `implements:` (the PRD/ADR ids), and **`code:` / `tests:`** paths telling
-  `/execute-solo` and `/execute-team` exactly where the implementation and its tests live.
+  `/tai-execute` exactly where the implementation and its tests live.
   `code:` must sit under a container in `architecture.md` §4.
 - **Behavior:** a table of observable rules, each with a **stable R-id** (`R1`, `R2`, …),
   Given / When / Then columns.
@@ -167,7 +167,8 @@ the gate humans flip.
 | `/plan-eng` | prd, architecture | `docs/architecture.md`, `docs/specs/` (draft), `docs/plan/tasks.md` | L1+L2 — author spec contracts |
 | `/plan-design` | prd, design/visual | `docs/design/visual.md`, `docs/decisions/` (ADRs) | L1 — design ADRs |
 | `/design-consultation` | — | `docs/design/visual.md` | design system |
-| `/execute-solo`, `/execute-team` | plan/tasks, **approved** specs | code+tests, `docs/matrix.md`, `docs/REVIEW.md` | L3 — implement against approved L2 |
+| `/tai-execute` (auto solo/team) | plan/tasks, **approved** specs | code+tests, `docs/matrix.md`, `docs/REVIEW.md` | L3 — implement against approved L2 |
+| `/tai-loop` | backlog, **approved** specs | drives the pipeline autonomously over the backlog | trigger/loop layer over `/tai-flow` |
 | `/review` | specs, matrix | — (conformance check) | L2 gate check |
 | `/ship` | REVIEW, matrix | — (pre-merge gates) | enforces doc-first gate |
 | `/docs-update` | all derived docs | derived docs only | post-ship — never touches source |

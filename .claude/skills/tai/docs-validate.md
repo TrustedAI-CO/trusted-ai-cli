@@ -111,7 +111,7 @@ if errors found.
 |-------|------|
 | `/plan-eng` | A1–A5 after writing specs + plan docs |
 | `/plan-ceo`, `/plan-product` | A1–A5 after drafting prd.md + decisions |
-| `/execute-solo`, `/execute-team` | A1–A6 after updating matrix.md; G4 self-check |
+| `/tai-execute` | A1–A6 after updating matrix.md; G4 self-check |
 | `/docs-init` | A1–A5 after scaffolding |
 | `/docs-update` | A1–A7 as part of the audit; **must self-check G2 (never edits source layers)** |
 | `/review` | G1–G4 conformance gate against the diff |

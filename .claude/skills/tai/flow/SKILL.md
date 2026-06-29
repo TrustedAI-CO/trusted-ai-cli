@@ -71,7 +71,7 @@ removal as mandatory cleanup on every exit path.
 [GATE A]    prd.md draft/unsigned    → HALT: human signs PRD wording
 [GATE B]    ADR status != accepted   → HALT: human flips status: accepted
 [GATE C]    spec status != approved  → HALT: human flips status: approved
-[S2 build]  specs approved           → /execute-solo or /execute-team
+[S2 build]  specs approved           → /tai-execute (auto-picks solo vs team)
 [S3 review] code written             → /review
 [S4 qa]     review clean             → /qa
 [S5 ship]   qa clean                 → /ship
@@ -152,15 +152,16 @@ report and HALT — the human edits `status:` in the file directly later and re-
 Once gates clear, chain WITHOUT asking between steps:
 
 ```
-/execute-solo (or /execute-team if plan has parallel sub-phases)
+/tai-execute (auto-picks solo vs team)
   → /review
     → /qa
       → /ship
         → /docs-update
 ```
 
-- Pick `/execute-team` when `docs/plan/tasks.md` has ≥2 independent sub-phases;
-  else `/execute-solo`.
+- `/tai-execute` auto-selects its strategy: it uses the parallel team strategy when
+  `docs/plan/tasks.md` has ≥2 independent sub-phases, otherwise the solo
+  single-context strategy. No manual choice needed.
 - Pass each step's output to the next. Announce each transition with one line:
   `▶ S3 review (specs: 3, diff: 412 lines)`.
 - Surface to the human only on: failure (see Step 5), a new `docs/REVIEW.md` entry,
@@ -172,9 +173,9 @@ When a step fails (test fail, review `[CRITICAL]`/`[HIGH]`, qa bug, ship gate bl
 
 1. **Classify** the failure: implementation bug, spec gap, or environment.
 2. **Spawn a fix pass** with the right skill:
-   - Test/logic failure or qa bug → `/investigate` (root-cause) then `/execute-solo`
+   - Test/logic failure or qa bug → `/investigate` (root-cause) then `/tai-execute`
      to apply the verified fix.
-   - Review CRITICAL/HIGH → feed findings back to `/execute-solo` for targeted fix.
+   - Review CRITICAL/HIGH → feed findings back to `/tai-execute` for targeted fix.
 3. **Retry the failed step ONCE.** If it now passes → resume the chain.
 4. **If it still fails → HALT.** Print failure + repro + what was tried:
 

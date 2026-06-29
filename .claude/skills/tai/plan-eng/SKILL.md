@@ -282,7 +282,7 @@ docs/
 **Layer model:** L0 `prd.md` (human) → L1 `decisions/` + `architecture.md` → **L2 `specs/`** → L3 code.
 This skill is the engineering plan gate. Its primary L2 output is the **spec layer**: the
 `docs/specs/{area}-{name}.md` files are the *implementation contract* handed to
-`/execute-solo` and `/execute-team`. Code is written against approved specs — never the
+`/tai-execute`. Code is written against approved specs — never the
 reverse.
 
 ```bash
@@ -337,7 +337,7 @@ surfaces. Spec count should track surface count.
 Each spec MUST use the template's shape:
 - **Frontmatter:** `id: SPEC-{area}-{name}`, `status:` (`draft` → `approved` → `implemented`),
   `implements:` (the intent/ADR ids), and the **`code:` / `tests:`** paths telling
-  `/execute-solo`/`team` exactly where the implementation and its tests live. `code:` must
+  `/tai-execute` exactly where the implementation and its tests live. `code:` must
   sit under a container directory from `architecture.md` §4.
 - **Interface:** the typed contract surface callers depend on (signatures / endpoints / events).
 - **Behavior:** a table of observable rules, each with a **stable R-id** (`R1`, `R2`, …,
@@ -397,7 +397,7 @@ review and set `status: approved`** — this is a hard, human-gated step.
 
 > **No code under a spec's `code:` path may be written until that spec is `status: approved`.**
 
-This is the doc-first contract: L2 before L3. `/execute-solo` and `/execute-team` read the
+This is the doc-first contract: L2 before L3. `/tai-execute` reads the
 approved spec, implement code + tests that reference the R-ids, and **never edit the spec to
 match the code**. If during a review you cannot get a spec to `approved` (open questions
 remain), say so explicitly and treat the plan as not yet lockable for that surface — list it
@@ -435,8 +435,8 @@ date: {YYYY-MM-DD}
 
 #### 4. Execution Tasks (`docs/plan/tasks.md`)
 
-Contains both the implementation tasks AND the QA test plan, consumed by `/execute-solo`,
-`/execute-team`, and `/qa`. Each task names the **spec(s) it implements** (by `SPEC-` id and
+Contains both the implementation tasks AND the QA test plan, consumed by `/tai-execute`
+and `/qa`. Each task names the **spec(s) it implements** (by `SPEC-` id and
 R-ids) so executors know which approved contract governs the work.
 
 ```markdown
@@ -483,14 +483,14 @@ Fold any milestone/exit-criteria detail into this file's **Exit Criteria** secti
 `docs/prd.md` for product-level milestones) — plan-eng no longer writes a separate
 milestones doc.
 
-Each task's `Implements spec` field maps to L2 spec R-ids — this is how `/execute-solo`
+Each task's `Implements spec` field maps to L2 spec R-ids — this is how `/tai-execute`
 knows which approved contract to satisfy and what to add to the traceability matrix
 (`docs/matrix.md`) after completing a task.
 
 #### Migration
 
 If legacy planning files exist at the project root (e.g., `PLAN.md`), migrate their content
-into `docs/plan/tasks.md` and delete the root file. `/execute-solo` reads `docs/plan/tasks.md`.
+into `docs/plan/tasks.md` and delete the root file. `/tai-execute` reads `docs/plan/tasks.md`.
 
 ### 4. Performance review
 Evaluate implementation performance, capacity, and complexity risks only. Product prioritization belongs in `/plan-ceo`; visual/perceived-performance design choices belong in `/plan-design` unless they require engineering work.
@@ -508,7 +508,7 @@ Evaluate:
 After the full review is complete and the user has responded to all sections, the skill MUST write the following Markdown docs before logging the review result:
 
 1. **`docs/architecture.md`** — architecture decided during the review (ASCII diagrams, component boundaries, data flow, dependency graph, §4 container→directory map).
-2. **`docs/specs/{area}-{name}.md`** (`status: draft`, promoted to `approved` via the human-gated step) — **one spec per public surface** discussed, using `spec.template.md` (R-id Behavior rows, `code:`/`tests:` frontmatter, Interface/Invariants). These are the L2 implementation contract for `/execute-solo` and `/execute-team`.
+2. **`docs/specs/{area}-{name}.md`** (`status: draft`, promoted to `approved` via the human-gated step) — **one spec per public surface** discussed, using `spec.template.md` (R-id Behavior rows, `code:`/`tests:` frontmatter, Interface/Invariants). These are the L2 implementation contract for `/tai-execute`.
 3. **`docs/decisions/{NNNN}-{slug}.md`** (`status: proposed`) — one file per architecture decision made during the review. Number sequentially from the highest existing ADR number in `docs/decisions/`.
 
 If no public surfaces were discussed (rare), skip specs. If no architecture decisions were made (rare), skip ADRs. The architecture doc is always required.
