@@ -24,6 +24,17 @@ allowed-tools:
   - WebFetch
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Preamble (run first)
 
 ```bash
@@ -123,7 +134,7 @@ SLUG=$(basename "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || ec
 echo "SLUG: $SLUG"
 ```
 
-1. Read `CLAUDE.md`, `docs/plan/todos.html` if they exist.
+1. Read `CLAUDE.md`, `docs/plan/backlog.md` (sections `## Active` / `## Backlog`) if they exist.
 2. Run `git log --oneline -30` and `git diff origin/main --stat 2>/dev/null` to understand recent context.
 3. Use Grep/Glob to map the codebase areas most relevant to the user's request.
 4. **List existing design docs for this project:**
@@ -511,119 +522,94 @@ Supersedes: {prior filename — omit this line if first design on this branch}
 
 ---
 
-## Phase 5.5: Write Repo Docs (HTML)
+## Phase 5.5: Write Repo Docs (Markdown)
 
 After the design doc is written (Phase 5), persist the product discovery output into
-the repository's `docs/` tree as HTML files. This is mandatory — the design doc in
+the repository's `docs/` tree as Markdown files. This is mandatory — the design doc in
 `~/.tai-skills/projects/` is a working artifact; the repo docs are the source of truth.
 
-### 1. Write `docs/intent.html`
+**Ownership — `docs/prd.md` is HUMAN-owned.** `docs/prd.md` is the PRD / product
+intent, and it belongs to the human. This skill does NOT autonomously author the final
+PRD. Your role is to ASSIST the human in shaping it: draft proposed content from the
+session, then present it for the human to confirm, edit, or reject. Treat the session
+content as a draft proposal that the human owns and approves — never write final PRD
+language over the human's intent without their explicit sign-off. When `docs/prd.md`
+already has human-authored content, preserve it and propose additive edits rather than
+overwriting.
 
-If `docs/intent.html` already exists, update its sections with real content from the
-session (replace any TODO placeholders). If it does not exist, create it.
+### 1. Draft `docs/prd.md` (human-owned PRD)
+
+If `docs/prd.md` already exists, propose updates to its sections with real content
+from the session (filling TODO placeholders), but leave existing human-written content
+intact unless the human asks you to change it. If it does not exist, draft a first
+version for the human to review and adopt.
 
 Use the product intent discovered during the session — context, problem, solution, and
-success criteria. Write **real content**, not TODOs.
+success criteria. Write **real content**, not TODOs. Present the draft to the human and
+let them own the final wording.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="doc-type" content="intent">
-  <meta name="doc-date" content="YYYY-MM-DD">
-  <title>Product Intent</title>
-  <link rel="stylesheet" href="_assets/style.css">
-</head>
-<body>
-  <article>
-    <h1>Product Intent</h1>
-    <section data-section="context">
-      <h2>Context</h2>
-      <p>{Background and context from the session — why this product exists.}</p>
-    </section>
-    <section data-section="problem">
-      <h2>Problem</h2>
-      <p>{The problem this product solves and who it serves, from Phase 2A/2B.}</p>
-    </section>
-    <section data-section="solution">
-      <h2>Solution</h2>
-      <p>{The solution approach and recommended approach from Phase 4.}</p>
-    </section>
-    <section data-section="success-criteria">
-      <h2>Success Criteria</h2>
-      <ul>
-        <li>{Measurable success criteria from the session.}</li>
-      </ul>
-    </section>
-  </article>
-  <script src="_assets/docs.js"></script>
-</body>
-</html>
+```markdown
+---
+doc-type: intent
+doc-date: YYYY-MM-DD
+owner: human
+---
+
+# Product Intent
+
+## Context
+
+{Background and context from the session — why this product exists.}
+
+## Problem
+
+{The problem this product solves and who it serves, from Phase 2A/2B.}
+
+## Solution
+
+{The solution approach and recommended approach from Phase 4.}
+
+## Success Criteria
+
+- {Measurable success criteria from the session.}
 ```
 
 Replace `YYYY-MM-DD` with the actual date. Replace all `{...}` placeholders with real
-content synthesized from the session.
+content synthesized from the session. Remember: you are drafting for human approval, not
+finalizing the PRD on your own.
 
-### 2. Write feature specs as `docs/specs/{slug}.html`
+### 2. Write feature specs as `docs/specs/{slug}.md`
 
 For each distinct feature identified during the discovery session, create a spec file.
 Use a kebab-case slug derived from the feature name.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="doc-type" content="spec">
-  <meta name="doc-status" content="draft">
-  <meta name="doc-date" content="YYYY-MM-DD">
-  <title>{Feature Name}</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-</head>
-<body>
-  <article>
-    <h1>{Feature Name}</h1>
-    <section data-section="problem">
-      <h2>Problem</h2>
-      <p>{Why this feature needs to exist — user pain or business gap.}</p>
-    </section>
-    <section data-section="requirements">
-      <h2>Requirements</h2>
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Status</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>REQ-001</td><td>{requirement from session}</td><td>must</td><td>open</td></tr>
-        </tbody>
-      </table>
-    </section>
-    <section data-section="acceptance-criteria">
-      <h2>Acceptance Criteria</h2>
-      <ul>
-        <li>{Concrete, testable criterion from the session.}</li>
-      </ul>
-    </section>
-  </article>
-  <script src="../_assets/docs.js"></script>
-</body>
-</html>
+```markdown
+---
+doc-type: spec
+doc-status: draft
+doc-date: YYYY-MM-DD
+---
+
+# {Feature Name}
+
+## Problem
+
+{Why this feature needs to exist — user pain or business gap.}
+
+## Requirements
+
+| ID | Requirement | Priority | Status |
+|----|-------------|----------|--------|
+| REQ-001 | {requirement from session} | must | open |
+
+## Acceptance Criteria
+
+- {Concrete, testable criterion from the session.}
 ```
 
 Replace `YYYY-MM-DD` with the actual date. Fill all `{...}` placeholders with real
 content from the session. If no distinct features were identified (e.g., the product
 is a single-feature wedge), skip this step.
-
-### 3. Rebuild the sidebar
-
-After writing any docs, run write_index to rebuild the sidebar navigation:
-
-```bash
-python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
-```
 
 ---
 
@@ -720,6 +706,7 @@ The design doc at `~/.tai-skills/projects/` is automatically discoverable by dow
 ## Important Rules
 
 - **Never start implementation.** This skill produces design docs, not code. Not even scaffolding.
+- **Capture-reflex:** When the user declines or defers a suggestion, append one line to `docs/plan/backlog.md` before continuing.
 - **Questions ONE AT A TIME.** Never batch multiple questions into one AskUserQuestion.
 - **The assignment is mandatory.** Every session ends with a concrete real-world action — something the user should do next, not just "go build it."
 - **If user provides a fully formed plan:** skip Phase 2 (questioning) but still run Phase 3 (Premise Challenge) and Phase 4 (Alternatives). Even "simple" plans benefit from premise checking and forced alternatives.

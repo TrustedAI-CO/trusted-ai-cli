@@ -19,6 +19,22 @@ allowed-tools:
   - Bash
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already loaded
+> `docs-philosophy.md` and established the shared interaction conventions (AskUserQuestion
+> format, Boil-the-Lake completeness) — SKIP re-reading the philosophy file and skip
+> restating those blocks; assume them in effect. The numbered rules below still apply.
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Preamble (run first)
 
 ```bash
@@ -183,7 +199,7 @@ Before reviewing anything, answer these questions:
 1. **What existing code already partially or fully solves each sub-problem?** Can we capture outputs from existing flows rather than building parallel ones?
 2. **What is the minimum set of changes that achieves the stated goal?** Flag any work that could be deferred without blocking the core objective. Be ruthless about scope creep.
 3. **Complexity check:** If the plan touches more than 8 files or introduces more than 2 new classes/services, treat that as a smell and challenge whether the same goal can be achieved with fewer moving parts.
-4. **TODOS cross-reference:** Read `docs/plan/todos.html` if it exists. Are any deferred items blocking this plan? Can any deferred items be bundled into this PR without expanding scope? Does this plan create new work that should be captured as a TODO?
+4. **Backlog cross-reference:** Read `docs/plan/backlog.md` if it exists. Are any deferred items (in `## Active` or `## Backlog`) blocking this plan? Can any deferred items be bundled into this PR without expanding scope? Does this plan create new work that should be captured in the backlog?
 5. **Completeness check:** Is the plan doing the complete version or a shortcut? With AI-assisted coding, the cost of completeness (100% test coverage, full edge case handling, complete error paths) is 10-100x cheaper than with a human team. If the plan proposes a shortcut that saves human-hours but only saves minutes with CC+tai, recommend the complete version. Boil the lake.
 
 If the complexity check triggers (8+ files or 2+ new classes/services), proactively recommend scope reduction via AskUserQuestion — explain what's overbuilt, propose a minimal version that achieves the core goal, and ask whether to reduce or proceed as-is. If the complexity check does not trigger, present your Step 0 findings and proceed directly to Section 1.
@@ -248,242 +264,254 @@ For LLM/prompt changes: check the "Prompt/LLM changes" file patterns listed in C
 ### Structured Docs Generation
 
 After producing the test diagram, generate the structured documentation tree.
-See `docs-preamble.md` for the full docs/ directory structure and frontmatter format.
+All docs are plain **Markdown** under `docs/`. The canonical tree and layer model:
+
+```
+docs/
+  prd.md            # L0 PRD / product intent — HUMAN-owned (not written here)
+  architecture.md      # L1 C4 Context+Container, §4 container→dir map
+  decisions/
+    NNNN-title.md      # L1 one ADR per decision (agent drafts, human accepts)
+  specs/
+    {area}-{name}.md   # L2 behavioral contract — one spec per public surface
+  plan/
+    tasks.md  backlog.md
+  matrix.md            # derived traceability matrix (spec R-id → test)
+```
+
+**Layer model:** L0 `prd.md` (human) → L1 `decisions/` + `architecture.md` → **L2 `specs/`** → L3 code.
+This skill is the engineering plan gate. Its primary L2 output is the **spec layer**: the
+`docs/specs/{area}-{name}.md` files are the *implementation contract* handed to
+`/tai-execute`. Code is written against approved specs — never the
+reverse.
 
 ```bash
 _REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 _DOCS_DIR="$_REPO_ROOT/docs"
-mkdir -p "$_DOCS_DIR/design" "$_DOCS_DIR/specs" "$_DOCS_DIR/decisions" "$_DOCS_DIR/plan"
+mkdir -p "$_DOCS_DIR/specs" "$_DOCS_DIR/decisions" "$_DOCS_DIR/plan"
 ```
 
 Generate these documents (create or update if they exist).
 
-**All docs/ files MUST be HTML** with this structure:
-- `<meta name="doc-type" content="{type}">` and `<meta name="doc-date" content="{YYYY-MM-DD}">`
-- `<section data-section="{name}">` wrappers for each logical section
-- Subdirectory files (design/, specs/, decisions/, plan/) link `../_assets/style.css` and `../_assets/docs.js`
-- Root-level files (e.g., docs/intent.html) link `_assets/style.css` and `_assets/docs.js`
+#### 1. Architecture (`docs/architecture.md`)
 
-#### 1. Architecture Design (`docs/design/system.html`)
+Extract architecture decisions from Section 1 (Architecture review). Update the existing
+`docs/architecture.md` if present, otherwise create it. Include ASCII diagrams, component
+boundaries, data flow, the dependency graph, and a **§4 container→directory map** (each
+container names the source directory that implements it — specs' `code:` paths must sit
+under one of these).
 
-Extract architecture decisions from Section 1 (Architecture review). Include ASCII
-diagrams, component boundaries, data flow, and dependency graph.
+```markdown
+---
+id: architecture
+type: architecture
+parent: null
+children: []
+related: []
+---
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="doc-type" content="design">
-  <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>System Design</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-  <script defer src="../_assets/docs.js"></script>
-</head>
-<body>
-  <section data-section="header">
-    <h1>System Design</h1>
-    <p>Generated by /plan-eng on {date} — Branch: {branch}</p>
-  </section>
-  <section data-section="architecture">
-    <h2>Architecture</h2>
-    <pre>{ASCII diagram and component descriptions from architecture review}</pre>
-  </section>
-  <section data-section="data-flow">
-    <h2>Data Flow</h2>
-    <p>{How data moves through the system}</p>
-  </section>
-  <section data-section="boundaries">
-    <h2>Boundaries</h2>
-    <p>{Module boundaries and integration points}</p>
-  </section>
-</body>
-</html>
+# Architecture — {project}
+
+> Generated/updated by /plan-eng on {date} — Branch: {branch}
+
+## 1. Context & Containers
+{C4 context + container ASCII diagram and component descriptions}
+
+## 2. Data Flow
+{How data moves through the system}
+
+## 3. Boundaries
+{Module boundaries and integration points}
+
+## 4. Container → Directory Map
+| Container | Source dir |
+|-----------|-----------|
+| {container} | {dir, e.g. api/src/auth/} |
 ```
 
-If `docs/intent.html` exists, add `design-system` to its children list.
+#### 2. L2 Specs (`docs/specs/{area}-{name}.md`) — the implementation contract
 
-#### 2. Module Specs (`docs/specs/{module}.html`)
+**This is the core output of the plan gate.** For each **public surface** discussed in
+the plan — an HTTP endpoint, event/message handler, queue consumer, scheduled job, or a
+module's exported API — produce or update one spec using `spec.template.md`. **One spec =
+one public surface.** Never one per internal function; never one giant spec for many
+surfaces. Spec count should track surface count.
 
-For each module or component identified in the plan, generate a spec with REQ IDs.
-Extract requirements from the plan's feature descriptions and the test diagram.
+Each spec MUST use the template's shape:
+- **Frontmatter:** `id: SPEC-{area}-{name}`, `status:` (`draft` → `approved` → `implemented`),
+  `implements:` (the intent/ADR ids), and the **`code:` / `tests:`** paths telling
+  `/tai-execute` exactly where the implementation and its tests live. `code:` must
+  sit under a container directory from `architecture.md` §4.
+- **Interface:** the typed contract surface callers depend on (signatures / endpoints / events).
+- **Behavior:** a table of observable rules, each with a **stable R-id** (`R1`, `R2`, …,
+  never renumbered). Given / When / Then with concrete values. Every R-id must later be
+  referenced by a passing test (`test_R3_*` or `// covers: SPEC-{area}-{name} R3`).
+- **Invariants:** properties that always hold. Precedence when sections disagree:
+  **Invariants > Interface > Behavior**.
+- **Data / Acceptance / Open questions** as in the template.
 
-Use the **compact table format** (matching `docs/specs/_template.html`):
+**Spec-evolution reset (updating an `implemented` spec).** When UPDATING a spec whose
+`status: implemented`, if your edit touches the Interface, any Behavior row, or an
+Invariant, you MUST in the same edit set `status: draft` and clear `approved_at:`
+(blank it). This forces re-approval through GATE C — never leave a
+behavior-changed spec at `implemented`. Editing only prose sections (Overview, Open
+questions) does not require the reset. This is the docs-philosophy "Spec Evolution" rule:
+a behavior change to a shipped surface gets the **same human gate** as a new one.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="doc-type" content="spec">
-  <meta name="doc-status" content="draft">
-  <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>{Feature Name}</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-</head>
-<body>
-  <article>
-    <h1>{Feature Name}</h1>
-    <section data-section="problem">
-      <h2>Problem</h2>
-      <p>{Why this needs to exist}</p>
-    </section>
-    <section data-section="requirements">
-      <h2>Requirements</h2>
-      <table>
-        <thead>
-          <tr><th>ID</th><th>Requirement</th><th>Priority</th><th>Status</th></tr>
-        </thead>
-        <tbody>
-          <tr><td>REQ-{MOD}-001</td><td>{requirement description}</td><td>must</td><td>open</td></tr>
-        </tbody>
-      </table>
-      <p>Priority: <code>must</code>, <code>should</code>, <code>could</code>, <code>wont</code>.
-      Status: <code>open</code>, <code>in-progress</code>, <code>done</code>, <code>cut</code>.</p>
-    </section>
-    <section data-section="acceptance-criteria">
-      <h2>Acceptance Criteria</h2>
-      <ul>
-        <li>{concrete, testable criterion}</li>
-      </ul>
-    </section>
-    <h2>Dependencies</h2>
-    <ul><li>{dependencies}</li></ul>
-    <h2>Out of Scope</h2>
-    <ul><li>{non-goals}</li></ul>
-  </article>
-  <script src="../_assets/docs.js"></script>
-</body>
-</html>
+**Bidirectional architecture link (creating a new spec).** When CREATING a new spec
+(`parent: architecture`), append the spec's `id` to `docs/architecture.md`'s `children:`
+list in the same plan-eng run. Every spec must be reachable from architecture
+(docs-validate A1 orphan check + A3 bidirectional). If A lists B as child, B must list A
+as parent — the spec's `parent: architecture` and architecture's `children: [..., SPEC-id]`
+are two halves of the same link.
+
+```markdown
+---
+id: SPEC-{area}-{name}
+type: spec
+status: draft            # draft → approved (human gate) → implemented
+approved_at:             # ISO timestamp, set when human flips to approved
+implements: [prd, 0003-some-adr]
+parent: architecture
+children: []
+related: []
+code: {dir or file under an architecture.md §4 container}
+tests: {dir or file}
+---
+
+# {Component / Feature} — Spec
+
+## Purpose
+{What this surface does and why; link up to `implements:`, don't restate it.}
+
+## Interface
+{Typed contract surface — signatures / endpoints / events.}
+
+## Behavior
+| ID | Given | When | Then |
+|----|-------|------|------|
+| R1 | {precondition} | {action, concrete values} | {observable result} |
+
+## Invariants
+- {property that always holds}
+
+## Data
+- **In:** ... **Out:** ... **Reads/writes:** ...
+
+## Acceptance
+- [ ] Each Behavior row ID (R1…RN) is referenced by a passing test.
+- [ ] Each Invariant has a property/assertion test.
+- [ ] `code:` and `tests:` paths exist; `code:` sits under a container in `architecture.md` §4.
+
+## Open questions
+- ...
 ```
 
-**IMPORTANT:** Always use the compact table format for requirements — one row per
-requirement with ID, description, priority, status. Do NOT use verbose list format
-with `<h3>` headers and `<ul>` per requirement. The table is scannable; the list is not.
+##### Doc-first gate (specs are human-gated to `approved` BEFORE code)
 
-Derive REQ IDs from the module name: `REQ-AUTH-001`, `REQ-GW-001`, etc.
-Each requirement should map to a testable behavior — if you can't write a test for it,
-it's too vague.
+**Specs are the gate, not a side effect.** Locking the plan means the relevant
+`docs/specs/{area}-{name}.md` files exist with their `code:`/`tests:` paths and R-id
+Behavior rows filled in. The agent drafts specs at `status: draft`. A **human must
+review and set `status: approved`** — this is a hard, human-gated step.
 
-#### 3. Architecture Decision Records (`docs/decisions/ADR-{NNN}-{slug}.html`)
+> **No code under a spec's `code:` path may be written until that spec is `status: approved`.**
 
-For each architecture decision made during the review, generate an ADR.
+This is the doc-first contract: L2 before L3. `/tai-execute` reads the
+approved spec, implement code + tests that reference the R-ids, and **never edit the spec to
+match the code**. If during a review you cannot get a spec to `approved` (open questions
+remain), say so explicitly and treat the plan as not yet lockable for that surface — list it
+under "Unresolved decisions."
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="doc-type" content="decision">
-  <meta name="doc-status" content="accepted">
-  <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>ADR-{NNN}: {Decision Title}</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-  <script defer src="../_assets/docs.js"></script>
-</head>
-<body>
-  <section data-section="header">
-    <h1>ADR-{NNN}: {Decision Title}</h1>
-    <p>Status: Accepted — {date}</p>
-  </section>
-  <section data-section="context">
-    <h2>Context</h2>
-    <p>{Why this decision was needed}</p>
-  </section>
-  <section data-section="decision">
-    <h2>Decision</h2>
-    <p>{What was decided}</p>
-  </section>
-  <section data-section="consequences">
-    <h2>Consequences</h2>
-    <p>{Trade-offs and implications}</p>
-  </section>
-</body>
-</html>
+Before completing, surface the approval decision to the user via AskUserQuestion (one per
+spec, or batched per the Batching Rule): present the drafted spec and ask whether to mark it
+`approved` (unblock implementation) or hold it `draft` (open questions remain).
+
+#### 3. Architecture Decision Records (`docs/decisions/{NNNN}-{slug}.md`)
+
+For each architecture decision made during the review, draft an ADR (the agent drafts; a
+human accepts). Number sequentially from the highest existing ADR in `docs/decisions/`.
+
+```markdown
+---
+id: {NNNN}-{slug}
+type: decision
+status: proposed
+parent: architecture
+children: []
+related: []
+# supersedes: {NNNN}-{slug}   # keep only when this ADR replaces an earlier one
+---
+
+# {NNNN}-{slug}: {Decision Title}
+
+## Context
+{Why this decision was needed}
+
+## Decision
+{What was decided}
+
+## Consequences
+{Trade-offs and implications}
 ```
 
-#### 4. Execution Tasks (`docs/plan/tasks.html`)
+#### 4. Execution Tasks (`docs/plan/tasks.md`)
 
-This replaces the old test plan artifact. Contains both the implementation tasks
-AND the QA test plan, consumed by `/execute-solo`, `/qa`, and `/qa`.
+Contains both the implementation tasks AND the QA test plan, consumed by `/tai-execute`
+and `/qa`. Each task names the **spec(s) it implements** (by `SPEC-` id and
+R-ids) so executors know which approved contract governs the work.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="doc-type" content="plan">
-  <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>Implementation Tasks</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-  <script defer src="../_assets/docs.js"></script>
-</head>
-<body>
-  <section data-section="header">
-    <h1>Implementation Tasks</h1>
-    <p>Generated by /plan-eng on {date} — Branch: {branch} — Repo: {owner/repo}</p>
-  </section>
-  <section data-section="tasks">
-    <h2>Tasks</h2>
-    <h3>Task 1: {name}</h3>
-    <ul>
-      <li><strong>Files:</strong> {file list with (create)/(modify)}</li>
-      <li><strong>Depends on:</strong> none | Task N</li>
-      <li><strong>Acceptance:</strong> {criteria}</li>
-      <li><strong>REQs covered:</strong> REQ-{MOD}-NNN, REQ-{MOD}-NNN</li>
-    </ul>
-  </section>
-  <section data-section="test-plan">
-    <h2>Test Plan</h2>
-    <h3>Affected Pages/Routes</h3>
-    <ul><li>{URL path} — {what to test and why}</li></ul>
-    <h3>Key Interactions to Verify</h3>
-    <ul><li>{interaction description} on {page}</li></ul>
-    <h3>Edge Cases</h3>
-    <ul><li>{edge case} on {page}</li></ul>
-    <h3>Critical Paths</h3>
-    <ul><li>{end-to-end flow that must work}</li></ul>
-  </section>
-</body>
-</html>
+```markdown
+---
+doc: Plan
+doc-date: {YYYY-MM-DD}
+---
+
+# Implementation Tasks
+
+> Generated by /plan-eng on {date} — Branch: {branch} — Repo: {owner/repo}
+
+## Tasks
+
+### Task 1: {name}
+- **Files:** {file list with (create)/(modify)}
+- **Depends on:** none | Task N
+- **Implements spec:** SPEC-{area}-{name} (R1, R2, …) — must be `status: approved`
+- **Acceptance:** {criteria}
+
+## Test Plan
+
+### Affected Pages/Routes
+- {URL path} — {what to test and why}
+
+### Key Interactions to Verify
+- {interaction description} on {page}
+
+### Edge Cases
+- {edge case} on {page}
+
+### Critical Paths
+- {end-to-end flow that must work}
+
+## Exit Criteria
+- All tasks above completed
+- Every spec in docs/specs/ governing this work is `status: approved` before its code merged
+- Every Behavior R-id in docs/specs/ is referenced by a passing test
+- Tests pass
+- No PENDING items in docs/REVIEW.md
 ```
 
-Each task's `REQs covered` field maps to spec requirements — this is how `/execute-solo`
-knows what to add to the traceability matrix after completing a task.
+Fold any milestone/exit-criteria detail into this file's **Exit Criteria** section (or
+`docs/prd.md` for product-level milestones) — plan-eng no longer writes a separate
+milestones doc.
 
-#### 5. Milestones (`docs/plan/milestones.html`)
-
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="doc-type" content="plan">
-  <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>Milestones</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-  <script defer src="../_assets/docs.js"></script>
-</head>
-<body>
-  <section data-section="exit-criteria">
-    <h1>Milestones</h1>
-    <h2>Exit Criteria</h2>
-    <ul>
-      <li>All tasks in docs/plan/tasks.html completed</li>
-      <li>All REQs in docs/specs/ have traceability entries</li>
-      <li>Tests pass</li>
-      <li>No PENDING items in docs/REVIEW.md</li>
-    </ul>
-  </section>
-</body>
-</html>
-```
+Each task's `Implements spec` field maps to L2 spec R-ids — this is how `/tai-execute`
+knows which approved contract to satisfy and what to add to the traceability matrix
+(`docs/matrix.md`) after completing a task.
 
 #### Migration
 
 If legacy planning files exist at the project root (e.g., `PLAN.md`), migrate their content
-into `docs/plan/tasks.html` and delete the root file. `/execute-solo` reads `docs/plan/tasks.html`.
+into `docs/plan/tasks.md` and delete the root file. `/tai-execute` reads `docs/plan/tasks.md`.
 
 ### 4. Performance review
 Evaluate implementation performance, capacity, and complexity risks only. Product prioritization belongs in `/plan-ceo`; visual/perceived-performance design choices belong in `/plan-design` unless they require engineering work.
@@ -498,19 +526,15 @@ Evaluate:
 
 ### Mandatory Doc Output (after review is complete)
 
-After the full review is complete and the user has responded to all sections, the skill MUST write the following HTML docs before logging the review result:
+After the full review is complete and the user has responded to all sections, the skill MUST write the following Markdown docs before logging the review result:
 
-1. **`docs/design/system.html`** (doc-type="design") — architecture decided during the review (ASCII diagrams, component boundaries, data flow, dependency graph).
-2. **`docs/specs/{slug}.html`** (doc-type="spec", doc-status="draft") — one file per feature or module discussed. Slug derived from module name (e.g., `auth`, `gateway`).
-3. **`docs/decisions/ADR-{NNN}-{slug}.html`** (doc-type="decision", doc-status="accepted") — one file per architecture decision made during the review. Number sequentially from the highest existing ADR number in `docs/decisions/`.
+1. **`docs/architecture.md`** — architecture decided during the review (ASCII diagrams, component boundaries, data flow, dependency graph, §4 container→directory map).
+2. **`docs/specs/{area}-{name}.md`** (`status: draft`, promoted to `approved` via the human-gated step) — **one spec per public surface** discussed, using `spec.template.md` (R-id Behavior rows, `code:`/`tests:` frontmatter, Interface/Invariants). These are the L2 implementation contract for `/tai-execute`.
+3. **`docs/decisions/{NNNN}-{slug}.md`** (`status: proposed`) — one file per architecture decision made during the review. Number sequentially from the highest existing ADR number in `docs/decisions/`.
 
-If no features were discussed (rare), skip specs. If no architecture decisions were made (rare), skip ADRs. The system design doc is always required.
+If no public surfaces were discussed (rare), skip specs. If no architecture decisions were made (rare), skip ADRs. The architecture doc is always required.
 
-After writing any docs, rebuild the sidebar index:
-
-```bash
-python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
-```
+**Doc-first gate:** specs must reach `status: approved` (human-gated) before any code under their `code:` path is written. The plan is not "locked" for a surface until its governing spec is approved.
 
 ## CRITICAL RULE — How to ask questions
 Follow the AskUserQuestion format from the Preamble above. Additional rules for plan reviews:
@@ -530,10 +554,12 @@ Every plan review MUST produce a "NOT in scope" section listing work that was co
 ### "What already exists" section
 List existing code/flows that already partially solve sub-problems in this plan, and whether the plan reuses them or unnecessarily rebuilds them.
 
-### docs/plan/todos.html updates
-After all review sections are complete, present each potential TODO as its own individual AskUserQuestion. Never batch TODOs — one per question. Never silently skip this step. Follow the format in `.claude/skills/tai/review/TODOS-format.md`.
+### docs/plan/backlog.md updates
+After all review sections are complete, present each potential deferred item as its own individual AskUserQuestion. Never batch them — one per question. Never silently skip this step. Captured items live in `docs/plan/backlog.md` under `## Active` (committed-to, near-term) or `## Backlog` (deferred, someday). Follow the format in `.claude/skills/tai/review/TODOS-format.md`.
 
-For each TODO, describe:
+When the user declines or defers a suggestion, append one line to `docs/plan/backlog.md` before continuing.
+
+For each item, describe:
 * **What:** One-line description of the work.
 * **Why:** The concrete problem it solves or value it unlocks.
 * **Pros:** What you gain by doing this work.
@@ -541,9 +567,9 @@ For each TODO, describe:
 * **Context:** Enough detail that someone picking this up in 3 months understands the motivation, the current state, and where to start.
 * **Depends on / blocked by:** Any prerequisites or ordering constraints.
 
-Then present options: **A)** Add to docs/plan/todos.html **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
+Then present options: **A)** Add to docs/plan/backlog.md **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
 
-Do NOT just append vague bullet points. A TODO without context is worse than no TODO — it creates false confidence that the idea was captured while actually losing the reasoning.
+Do NOT just append vague bullet points. A backlog item without context is worse than none — it creates false confidence that the idea was captured while actually losing the reasoning.
 
 ### Diagrams
 The plan itself should use ASCII diagrams for any non-trivial data flow, state machine, or processing pipeline. Additionally, identify which files in the implementation should get inline ASCII diagram comments — particularly Models with complex state transitions, Services with multi-step pipelines, and Concerns with non-obvious mixin behavior.
@@ -565,7 +591,7 @@ At the end of the review, fill in and display this summary so the user can see a
 - Performance Review: ___ issues found
 - NOT in scope: written
 - What already exists: written
-- docs/plan/todos.html updates: ___ items proposed to user
+- docs/plan/backlog.md updates: ___ items proposed to user
 - Failure modes: ___ critical gaps flagged
 - Lake Score: X/Y recommendations chose complete option
 

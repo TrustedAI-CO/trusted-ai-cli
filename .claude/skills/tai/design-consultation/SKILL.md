@@ -20,6 +20,17 @@ allowed-tools:
   - WebSearch
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Preamble (run first)
 
 ```bash
@@ -449,7 +460,7 @@ Do not deviate without explicit user approval.
 In QA mode, flag any code that doesn't match the design doc.
 ```
 
-If `docs/intent.md` exists, update its `children` frontmatter to include `design-visual`.
+If `docs/prd.md` exists, update its `children` frontmatter to include `design-visual`.
 
 **AskUserQuestion Q-final — show summary and confirm:**
 

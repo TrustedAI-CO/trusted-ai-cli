@@ -23,6 +23,10 @@ echo "BRANCH: $_BRANCH"
 
 ## AskUserQuestion Format
 
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already
+> established the shared interaction conventions — skip restating this block and the
+> Boil-the-Lake block; assume them in effect.
+
 **ALWAYS follow this structure for every AskUserQuestion call:**
 1. **Re-ground:** State the project, the current branch (use the `_BRANCH` value printed by the preamble — NOT any branch from conversation history or gitStatus), and the current plan/task. (1-2 sentences)
 2. **Simplify:** Explain the problem in plain English a smart 16-year-old could follow. No raw function names, no internal jargon, no implementation details. Use concrete examples and analogies. Say what it DOES, not what it's called.
@@ -184,7 +188,7 @@ This is the **primary mode** for developers verifying their work. When the user 
 
 5. **Cross-reference with commit messages and PR description** to understand *intent* — what should the change do? Verify it actually does that.
 
-6. **Check `docs/plan/todos.md`** for known bugs or issues related to the changed files. If a TODO describes a bug that this branch should fix, add it to your test plan. If you find a new bug during QA that isn't in the todos file, note it in the report.
+6. **Check `docs/plan/backlog.md`** for known bugs or issues related to the changed files. If a backlog item describes a bug that this branch should fix, add it to your test plan. If you find a new bug during QA that isn't in the backlog file, note it in the report.
 
 7. **Report findings** scoped to the branch changes:
    - "Changes tested: N pages/routes affected by this branch"

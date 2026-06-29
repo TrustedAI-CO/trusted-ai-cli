@@ -16,6 +16,22 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already loaded
+> `docs-philosophy.md` and established the shared interaction conventions (AskUserQuestion
+> format, Boil-the-Lake completeness) — SKIP re-reading the philosophy file and skip
+> restating those blocks; assume them in effect. The numbered rules below still apply.
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Unbiased Review — Always Use Subagent
 
 **CRITICAL:** The review MUST run in a fresh subagent to avoid bias from the
@@ -188,7 +204,7 @@ Before reviewing code quality, check whether the diff matches its stated intent.
 1. **Gather intent signals:**
    - Read commit messages on this branch: `git log origin/<base>..HEAD --format="%s%n%b"`
    - Read PR description if available: `gh pr view --json body -q .body 2>/dev/null`
-   - Read `docs/plan/todos.md` if it exists — check for items this branch claims to address
+   - Read `docs/plan/backlog.md` if it exists — check for items this branch claims to address
    - Check branch name for intent clues
 
 2. **Compare diff against intent:**
@@ -243,7 +259,7 @@ _DIFF_FILES=$(git diff --name-only <base>...HEAD 2>/dev/null); SCOPE_FRONTEND=$(
 
 **If `SCOPE_FRONTEND=true`:**
 
-1. **Check for design doc.** Check `docs/design/visual.html`. All design findings are calibrated against it — patterns blessed in the design doc are not flagged. If not found, use universal design principles.
+1. **Check for design doc.** Check `docs/design/visual.md`. All design findings are calibrated against it — patterns blessed in the design doc are not flagged. If not found, use universal design principles.
 
 2. **Read `.claude/skills/review/design-checklist.md`.** If the file cannot be read, skip design review with a note: "Design checklist not found — skipping design review."
 
@@ -273,37 +289,82 @@ Include any design findings alongside the findings from Step 4. They follow the 
 
 ## Step 4.7: Spec Conformance + Traceability Review (conditional)
 
-Check if `docs/specs/` exists and has `.html` files. If not, skip silently.
+Check if `docs/specs/` exists and has `.md` files. If not, skip silently.
 
 If specs exist:
 
-1. **Read each spec** in `docs/specs/*.html` (skip `_template.html`). Parse the
-   requirements table — each `<tr>` in the requirements section has: ID, description,
-   priority, status.
+1. **Read each spec** in `docs/specs/*.md` (skip `spec.template.md`). Parse the
+   Behavior table — each row has: ID (`R1`…`RN`), Given, When, Then. Read the
+   frontmatter `code:`, `tests:`, and `status:` fields.
 
-2. **Check implementation matches spec:** For each requirement with status `open` or
-   `in-progress`, check if the diff contains changes that implement it:
-   - Read the requirement description
+2. **Check implementation matches spec:** For each Behavior row, check if the diff
+   contains changes that implement it:
+   - Read the row's Given/When/Then
    - Search the diff for files/patterns that match
-   - Flag requirements that appear implemented but still marked `open`:
-     `[INFO] REQ-MTG-002 appears implemented in this diff but spec still says "open"`
+   - Flag rows that appear implemented but whose spec is still `status: draft`:
+     `[INFO] SPEC-mtg-create R2 appears implemented in this diff but spec status is still "draft"`
 
-3. **Check for spec violations:** For each requirement with status `done`, verify the
+3. **Check for spec violations:** For specs with `status: implemented`, verify the
    implementation still exists (hasn't been reverted or broken by this diff):
-   - `[WARNING] REQ-MTG-002 marked done but implementation file was modified/deleted`
+   - `[WARNING] SPEC-mtg-create marked implemented but code: file was modified/deleted`
 
 4. **Scope creep detection:** For each file changed in the diff with >20 lines added,
-   check if it relates to any spec requirement. Files with significant changes not
-   traceable to any REQ:
-   - `[INFO] SCOPE CREEP: {file} changed but not traceable to any REQ`
+   check if it relates to any spec. Files with significant changes not traceable to
+   any spec:
+   - `[INFO] SCOPE CREEP: {file} changed but not traceable to any spec`
 
-5. **Matrix check:** If `docs/trace/matrix.html` exists, check REQ coverage.
+5. **Matrix check:** If `docs/matrix.md` exists, check spec coverage.
 
-6. **REVIEW.html check:** If `docs/REVIEW.html` has PENDING items, note them:
-   - `[INFO] {N} pending review items in docs/REVIEW.html`
+6. **REVIEW.md check:** If `docs/REVIEW.md` has PENDING items, note them:
+   - `[INFO] {N} pending review items in docs/REVIEW.md`
 
 Include these findings in the review output. Spec conformance findings are
-INFORMATIONAL — they guide docs-update to mark requirements done.
+INFORMATIONAL — they guide docs-update to keep specs current.
+
+---
+
+## Step 4.8: Framework Conformance (advisory — report, don't block)
+
+Run this dimension **in the same fresh subagent** that performs the rest of the
+review. Framework Conformance is **ADVISORY**: report findings as `[INFO]`
+(or `[WARNING]` for clear violations) but **never block, never AUTO-FIX** — these
+findings inform the author, and the blocking version of this gate lives in `/ship`.
+
+Skip silently if `docs/specs/` does not exist.
+
+Run these five checks against the diff and the `docs/` tree:
+
+1. **Trace** — every `docs/specs/*.md` `code:`/`tests:` path exists on disk, and each
+   `code:` path sits under a container path declared in `docs/architecture.md` §4
+   (container→dir map). Flag any missing path or any `code:` outside all containers:
+   `[WARNING] SPEC-auth-login code: api/src/auth/ not found under any container in architecture.md §4`
+
+2. **Doc-first** — if the diff changes a spec's **Interface** section or a **Behavior**
+   row, require a matching spec change in the same diff AND that the spec is
+   `status: approved`. Trigger ONLY on interface/behavior change, NOT on any file
+   touch under `code:`:
+   `[WARNING] api/src/auth/login.ts changes the login interface but SPEC-auth-login is status: draft (must be approved)`
+
+3. **Row coverage** — every Behavior row ID (`R1`…`RN`) in each spec is referenced by a
+   passing test under that spec's `tests:` path, via test name (`test_R3_*`) or a tag
+   comment (`// covers: <SPEC-id> R3`). Flag uncovered rows:
+   `[INFO] SPEC-auth-login R3 has no test under tests: (expected test_R3_* or "// covers: SPEC-auth-login R3")`
+
+4. **Unspec'd module** — code added under spec-required paths (the `code:` globs /
+   container dirs) with no governing spec → flag:
+   `[INFO] api/src/billing/ has code changes but no governing spec in docs/specs/`
+
+5. **spec-exempt escape hatch** — a `spec-exempt:` marker may waive a doc-first or
+   unspec'd finding, but ONLY when: it is **reviewer-applied (not the author)**, its
+   category is one of the fixed set `refactor` / `docs` / `revert`, and each use is
+   **counted** in the output. Report the count and reject author-applied or
+   out-of-category exemptions:
+   `[INFO] 2 spec-exempt waivers applied (1 refactor, 1 docs)` /
+   `[WARNING] spec-exempt category "hotfix" is not allowed (must be refactor/docs/revert)`
+
+Include all Framework Conformance findings in the review output under a
+"Framework Conformance (advisory)" header. They are reported only — they do not
+enter the AUTO-FIX/ASK Fix-First flow.
 
 ---
 
@@ -385,19 +446,19 @@ Before replying to any comment, run the **Escalation Detection** algorithm from 
 
 ## Step 5.5: TODOS cross-reference
 
-Read `docs/plan/todos.md` if it exists. Cross-reference the PR against open TODOs:
+Read `docs/plan/backlog.md` if it exists. Cross-reference the PR against open TODOs:
 
 - **Does this PR close any open TODOs?** If yes, note which items in your output: "This PR addresses TODO: <title>"
 - **Does this PR create work that should become a TODO?** If yes, flag it as an informational finding.
 - **Are there related TODOs that provide context for this review?** If yes, reference them when discussing related findings.
 
-If `docs/plan/todos.md` doesn't exist, skip this step silently.
+If `docs/plan/backlog.md` doesn't exist, skip this step silently.
 
 ---
 
 ## Step 5.6: Documentation staleness check
 
-Cross-reference the diff against documentation files. For each `.md` file in the repo root and `docs/` directory (README.md, docs/trace/code-map.md, docs/contributing.md, CLAUDE.md, etc.):
+Cross-reference the diff against documentation files. For each `.md` file in the repo root and `docs/` directory (README.md, docs/architecture.md, docs/contributing.md, CLAUDE.md, etc.):
 
 1. Check if code changes in the diff affect features, components, or workflows described in that doc file.
 2. If the doc file was NOT updated in this branch but the code it describes WAS changed, flag it as an INFORMATIONAL finding:

@@ -14,6 +14,22 @@ allowed-tools:
   - WebSearch
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already loaded
+> `docs-philosophy.md` and established the shared interaction conventions (AskUserQuestion
+> format, Boil-the-Lake completeness) — SKIP re-reading the philosophy file and skip
+> restating those blocks; assume them in effect. The numbered rules below still apply.
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Preamble (run first)
 
 ```bash
@@ -117,7 +133,7 @@ You are running the `/ship` workflow. This is a **non-interactive, fully automat
 **Fast mode skips:**
 - Step 3.4 (Test Coverage Audit) — note "Skipped — run `/ship thorough` for full coverage audit" in PR body
 - Step 3.75 (Greptile Review) — skip silently
-- Step 5.5 (docs/plan/todos.html) — skip silently
+- Step 5.5 (docs/plan/backlog.md) — skip silently
 - Design review portion of Step 3.5 — skip silently (code review still runs)
 
 **Only stop for:**
@@ -138,10 +154,10 @@ You are running the `/ship` workflow. This is a **non-interactive, fully automat
 **Thorough mode additionally runs:**
 - Step 3.4 (Test Coverage Audit)
 - Step 3.75 (Greptile Review) — stops for user decision on comments
-- Step 5.5 (docs/plan/todos.html) — stops if missing or disorganized
+- Step 5.5 (docs/plan/backlog.md) — stops if missing or disorganized
 - Design review in Step 3.5
 - Test coverage gaps (auto-generate and commit, or flag in PR body)
-- docs/plan/todos.html completed-item detection (auto-mark)
+- docs/plan/backlog.md completed-item detection (auto-remove)
 
 ---
 
@@ -171,8 +187,8 @@ cat "$_STATE_DIR/${_BRANCH_SAFE}-reviews.jsonl" 2>/dev/null || cat "$HOME/.tai-s
 echo "---CONFIG---"
 echo "false"
 echo "---DOCS---"
-[ -f "$_DOCS_DIR/REVIEW.html" ] && grep -c 'PENDING' "$_DOCS_DIR/REVIEW.html" 2>/dev/null || echo "0"
-[ -f "$_DOCS_DIR/trace/matrix.html" ] && echo "MATRIX_EXISTS" || echo "NO_MATRIX"
+[ -f "$_DOCS_DIR/REVIEW.md" ] && grep -c 'PENDING' "$_DOCS_DIR/REVIEW.md" 2>/dev/null || echo "0"
+[ -f "$_DOCS_DIR/matrix.md" ] && echo "MATRIX_EXISTS" || echo "NO_MATRIX"
 ```
 
 Parse the output. Find the most recent entry for each skill (plan-ceo, plan-eng, plan-design, design-review-lite). Ignore entries with timestamps older than 7 days. For Design Review, show whichever is more recent between `plan-design` (full visual audit) and `design-review-lite` (code-level check). Append "(FULL)" or "(LITE)" to the status to distinguish. Display:
@@ -231,14 +247,14 @@ If the Eng Review is NOT "CLEAR":
 If `docs/` directory exists in the project, run these additional checks:
 
 **REVIEW.md check:**
-If `docs/REVIEW.html` has PENDING items, use AskUserQuestion:
-- "There are {N} pending items in docs/REVIEW.html that haven't been reviewed by a human.
+If `docs/REVIEW.md` has PENDING items, use AskUserQuestion:
+- "There are {N} pending items in docs/REVIEW.md that haven't been reviewed by a human.
   These are decisions the agent made during implementation that may need your approval."
 - Show each PENDING item title
 - Options: A) Review now (show full details)  B) Defer — ship anyway, I'll review later  C) Abort
 
 **Spec coverage check:**
-If `docs/trace/matrix.md` exists, compute coverage:
+If `docs/matrix.md` exists, compute coverage:
 - Count total REQs from `docs/specs/*.md`
 - Count COVERED + PARTIAL rows in matrix
 - Display: "Spec coverage: {covered}/{total} ({percentage}%)"
@@ -386,24 +402,17 @@ Create `.github/workflows/test.yml` with:
 
 If non-GitHub CI detected → skip CI generation with note: "Detected {provider} — CI pipeline generation supports GitHub Actions only. Add test step to your existing pipeline manually."
 
-### B6. Create docs/trace/testing.md
-
-First check: If `docs/trace/testing.md` already exists → read it and update/append rather than overwriting. Never destroy existing content.
-
-Write `docs/trace/testing.md` with:
-- Philosophy: "100% test coverage is the key to great vibe coding. Tests let you move fast, trust your instincts, and ship with confidence — without them, vibe coding is just yolo coding. With tests, it's a superpower."
-- Framework name and version
-- How to run tests (the verified command from B5)
-- Test layers: Unit tests (what, where, when), Integration tests, Smoke tests, E2E tests
-- Conventions: file naming, assertion style, setup/teardown patterns
-
-### B7. Update CLAUDE.md
+### B6. Update CLAUDE.md
 
 First check: If CLAUDE.md already has a `## Testing` section → skip. Don't duplicate.
 
-Append a `## Testing` section:
+Append a `## Testing` section (this is now the single home for testing docs — there is no separate testing doc):
+- Philosophy: "100% test coverage is the key to great vibe coding. Tests let you move fast, trust your instincts, and ship with confidence — without them, vibe coding is just yolo coding. With tests, it's a superpower."
+- Framework name and version
 - Run command and test directory
-- Reference to docs/trace/testing.md
+- How to run tests (the verified command from B5)
+- Test layers: Unit tests (what, where, when), Integration tests, Smoke tests, E2E tests
+- Conventions: file naming, assertion style, setup/teardown patterns
 - Test expectations:
   - 100% test coverage is the goal — tests make vibe coding safe
   - When writing new functions, write a corresponding test
@@ -412,13 +421,13 @@ Append a `## Testing` section:
   - When adding a conditional (if/else, switch), write tests for BOTH paths
   - Never commit code that makes existing tests fail
 
-### B8. Commit
+### B7. Commit
 
 ```bash
 git status --porcelain
 ```
 
-Only commit if there are changes. Stage all bootstrap files (config, test directory, docs/trace/testing.md, CLAUDE.md, .github/workflows/test.yml if created):
+Only commit if there are changes. Stage all bootstrap files (config, test directory, CLAUDE.md, .github/workflows/test.yml if created):
 `git commit -m "chore: bootstrap test framework ({framework name})"`
 
 ---
@@ -802,40 +811,51 @@ For each classified comment:
    - Insert after the file header (line 5), dated today
    - Format: `## [X.Y.Z.W] - YYYY-MM-DD`
 
+**Spec + PR cross-reference (REQUIRED when `docs/specs/` exists).** Every bullet that
+ships code under a spec's `code:` path must name the governing spec id(s) and the PR
+number. This makes `changelog.md` the durable trace index — one anchor that chains to
+the spec's git history and the PR diff. Format:
+
+```
+### Added
+- Workspace project creation — SPEC-hub-create, SPEC-auth (#142)
+### Fixed
+- Token refresh race — SPEC-auth-token (#143)
+```
+
+If the PR number isn't known yet at this step (PR created in Step 8), write the spec
+ids now and backfill `(#NNN)` after Step 8. Bullets touching no spec (pure refactor,
+docs) need no spec id.
+
 **Do NOT ask the user to describe changes.** Infer from the diff and commit history.
 
 ---
 
-## Step 5.5: docs/plan/todos.html (THOROUGH MODE ONLY — skip in fast mode)
+## Step 5.5: docs/plan/backlog.md (THOROUGH MODE ONLY — skip in fast mode)
 
 **In fast mode:** Skip this step silently. Continue to Step 6.
 
-Cross-reference the project's `docs/plan/todos.html` against the changes being shipped. Mark completed items automatically; prompt only if the file is missing or disorganized.
+Cross-reference the project's `docs/plan/backlog.md` (the deferred-work doc) against the changes being shipped. Remove completed items automatically; prompt only if the file is missing or disorganized.
 
-Read `.claude/skills/review/TODOS-format.md` for the canonical format reference.
-
-**1. Check if `docs/plan/todos.html` exists.**
+**1. Check if `docs/plan/backlog.md` exists.**
 
 **If it doesn't exist:** Use AskUserQuestion:
-- Message: "GStack recommends maintaining a `docs/plan/todos.html` organized by skill/component, then priority (P0 at top through P4, then Completed at bottom). See TODOS-format.md for the full format. Would you like to create one?"
+- Message: "GStack recommends maintaining a `docs/plan/backlog.md` split into a `## Active` section (work in flight) and a `## Backlog` section (deferred work). Would you like to create one?"
 - Options: A) Create it now, B) Skip for now
-- If A: Create `docs/plan/todos.html` with a skeleton (# TODOS heading + ## Completed section). Continue to step 3.
+- If A: Create `docs/plan/backlog.md` with a skeleton (`# Backlog` heading + `## Active` and `## Backlog` sections). Continue to step 3.
 - If B: Skip the rest of Step 5.5. Continue to Step 6.
 
 **2. Check structure and organization:**
 
-Read `docs/plan/todos.html` and verify it follows the recommended structure:
-- Items grouped under `## <Skill/Component>` headings
-- Each item has `**Priority:**` field with P0-P4 value
-- A `## Completed` section at the bottom
+Read `docs/plan/backlog.md` and verify it has an `## Active` section and a `## Backlog` section.
 
-**If disorganized** (missing priority fields, no component groupings, no Completed section): Use AskUserQuestion:
-- Message: "docs/plan/todos.html doesn't follow the recommended structure (skill/component groupings, P0-P4 priority, Completed section). Would you like to reorganize it?"
+**If disorganized** (missing `## Active` or `## Backlog` section): Use AskUserQuestion:
+- Message: "docs/plan/backlog.md doesn't follow the recommended structure (## Active and ## Backlog sections). Would you like to reorganize it?"
 - Options: A) Reorganize now (recommended), B) Leave as-is
-- If A: Reorganize in-place following TODOS-format.md. Preserve all content — only restructure, never delete items.
+- If A: Reorganize in-place into `## Active` and `## Backlog`. Preserve all content — only restructure, never delete items.
 - If B: Continue to step 3 without restructuring.
 
-**3. Detect completed TODOs:**
+**3. Detect completed items:**
 
 This step is fully automatic — no user interaction.
 
@@ -843,23 +863,87 @@ Use the diff and commit history already gathered in earlier steps:
 - `git diff <base>...HEAD` (full diff against the base branch)
 - `git log <base>..HEAD --oneline` (all commits being shipped)
 
-For each TODO item, check if the changes in this PR complete it by:
-- Matching commit messages against the TODO title and description
-- Checking if files referenced in the TODO appear in the diff
-- Checking if the TODO's described work matches the functional changes
+For each backlog item, check if the changes in this PR complete it by:
+- Matching commit messages against the item title and description
+- Checking if files referenced in the item appear in the diff
+- Checking if the item's described work matches the functional changes
 
-**Be conservative:** Only mark a TODO as completed if there is clear evidence in the diff. If uncertain, leave it alone.
+**Be conservative:** Only mark an item as completed if there is clear evidence in the diff. If uncertain, leave it alone.
 
-**4. Move completed items** to the `## Completed` section at the bottom. Append: `**Completed:** vX.Y.Z (YYYY-MM-DD)`
+**4. Remove completed items** from the `## Active` and `## Backlog` sections — once shipped, the work leaves the backlog.
 
 **5. Output summary:**
-- `docs/plan/todos.html: N items marked complete (item1, item2, ...). M items remaining.`
-- Or: `docs/plan/todos.html: No completed items detected. M items remaining.`
-- Or: `docs/plan/todos.html: Created.` / `docs/plan/todos.html: Reorganized.`
+- `docs/plan/backlog.md: N items marked complete (item1, item2, ...). M items remaining.`
+- Or: `docs/plan/backlog.md: No completed items detected. M items remaining.`
+- Or: `docs/plan/backlog.md: Created.` / `docs/plan/backlog.md: Reorganized.`
 
-**6. Defensive:** If `docs/plan/todos.html` cannot be written (permission error, disk full), warn the user and continue. Never stop the ship workflow for a TODOS failure.
+**6. Defensive:** If `docs/plan/backlog.md` cannot be written (permission error, disk full), warn the user and continue. Never stop the ship workflow for a backlog failure.
 
 Save this summary — it goes into the PR body in Step 8.
+
+---
+
+## Step 5.75: Framework Conformance Gate (BLOCKING)
+
+**This is the real enforcement gate. It runs AFTER changelog/todos and BEFORE any commit, push, or PR.** It is the blocking counterpart to the advisory framework check in `/review`. If it fails, you HARD-STOP the ship — do not commit, do not push, do not open a PR.
+
+**Skip only if** `docs/specs/` does not exist in the project (no spec layer to enforce). Print "Framework Conformance Gate: no docs/specs/ — skipped." and continue to Step 6.
+
+Otherwise, run the same checklist as the review skill (framework-reviewer, contract §4). Gather the diff against the base branch (`git diff origin/<base>...HEAD`) and the spec/architecture sources, then check:
+
+**1. Trace.** For every `docs/specs/*.md`, read its `code:` and `tests:` frontmatter.
+   - Every `code:` and `tests:` path must exist on disk.
+   - Every `code:` path must sit under a container directory declared in `docs/architecture.md` §4 (container → directory map).
+   - Any missing path, or a `code:` path with no matching container → **FAIL**.
+
+**2. Doc-first.** For each spec, detect whether the diff changes that spec's **Interface** section or any **Behavior** row (the contract surface — not just any file touch under `code:`).
+   - If an Interface/Behavior change is detected in the code, there must be a matching change to the governing spec in the **same diff**, AND that spec must be `status: approved` in its frontmatter.
+   - Interface/Behavior changed in code but spec unchanged, or spec changed but still `status: draft` → **FAIL**.
+   - **`status: implemented` does NOT satisfy this for a behavior change.** Per the
+     "Spec Evolution" rule, changing the Interface/Behavior of an already-`implemented`
+     spec must reset it to `draft` and re-approve it to `approved` (re-stamping
+     `approved_at`). An Interface/Behavior change shipping against a spec
+     still marked `implemented` (never re-approved) → **FAIL** — this is the hole that
+     lets unreviewed contract changes ship on a shipped surface.
+
+**3. Row coverage.** For every Behavior row ID (`R1`…`RN`) in each spec, there must be a passing test under that spec's `tests:` path that references the ID — named `test_R3_*` or tagged `// covers: <SPEC-id> R3`.
+   - Any Behavior row with no referencing passing test → **FAIL**.
+
+**4. Unspec'd module.** Any code under the project's `spec-required` paths (the globs that require a governing spec) that has no spec naming it via `code:` → **FAIL**.
+
+**5. Declared specs (one PR, declared + approved).** A PR may touch more than one spec
+when the work is genuinely coupled, but it must DECLARE every spec it touches and all of
+them must be approved. There is NO hard "one spec per PR" rule — coupled specs (a new
+interface its caller depends on) ship together rather than forcing merge-ordering across
+PRs. The enforceable rule:
+   - Compute the set of specs whose `code:` paths the diff touches.
+   - **Every** such spec must be `status: approved` (or `implemented`) — already covered
+     by check 2 per-spec; here verify the *whole set*.
+   - The PR body must list that set (Step 8 `## Specs`). A touched spec missing from the
+     list → **FAIL** (trace gap).
+   - Aim for one spec per PR (smallest reviewable contract change); >1 is allowed but
+     each must be declared + approved.
+
+**6. spec-exempt escape hatch.** A `spec-exempt:` marker may waive a finding ONLY when ALL hold:
+   - It was **reviewer-applied**, not author-applied (the ship operator/reviewer adds it during this gate — never carried in by the diff author).
+   - Its category is one of the fixed set: `refactor`, `docs`, `revert`. Any other category is invalid.
+   - It is **counted** and reported (how many findings it waived, and which).
+   - An exempt that is author-supplied, mis-categorized, or uncounted does NOT waive — treat the finding as a **FAIL**.
+
+**On any FAIL (not waived by a valid spec-exempt):**
+
+**HARD-STOP the ship.** Do NOT run Step 6 (commit), Step 7 (push), or Step 8 (PR). Report each violation with: the check that failed (Trace / Doc-first / Row coverage / Unspec'd module / Declared specs), the spec ID and/or file:line, and what is missing. Then use AskUserQuestion (following the AskUserQuestion Format above — re-ground, simplify, recommend, options):
+- Explain in plain English which framework rule was broken and why it blocks the ship.
+- `RECOMMENDATION: Choose A because the spec is the ground truth code is verified against — fixing it now keeps doc and code in sync.`
+- Options:
+  - A) Fix the violation now (write/approve the spec, add the missing test, correct the path) — `Completeness: 10/10`
+  - B) Apply a governed `spec-exempt` (reviewer-applied, category `refactor`/`docs`/`revert`, counted) if and only if the change genuinely qualifies — `Completeness: 6/10`
+  - C) Abort the ship — `Completeness: —`
+- If A: apply the fix, then **STOP** and tell the user to re-run `/ship` so the gate re-evaluates against the corrected state.
+- If B: record the exempt with its category and the count of findings it waives, report it, then re-run the checklist; continue only if the gate is now clean.
+- If C: abort without committing.
+
+**On PASS:** Print `Framework Conformance Gate: PASS — N specs traced, all Behavior rows covered, doc-first satisfied{, M spec-exempt applied}.` Continue to Step 6.
 
 ---
 
@@ -873,7 +957,7 @@ Save this summary — it goes into the PR body in Step 8.
    - **Infrastructure:** migrations, config changes, route additions
    - **Models & services:** new models, services, concerns (with their tests)
    - **Controllers & views:** controllers, views, JS/React components (with their tests)
-   - **VERSION + docs/changelog.md + docs/plan/todos.html:** always in the final commit
+   - **VERSION + docs/changelog.md + docs/plan/backlog.md:** always in the final commit
 
 3. **Rules for splitting:**
    - A model and its test file go in the same commit
@@ -920,6 +1004,12 @@ gh pr create --base <base> --title "<type>: <summary>" --body "$(cat <<'EOF'
 ## Summary
 <bullet points from CHANGELOG>
 
+## Specs
+<If docs/specs/ exists: list every spec this PR touches, each with status — e.g.
+"- SPEC-hub-create (approved)\n- SPEC-auth (approved)". This is the declared set from
+Step 5.75 check 5; all must be approved. If the PR touches no spec: "No spec touched
+(refactor/docs).">
+
 ## Test Coverage
 <coverage diagram from Step 3.4, or "All new code paths have test coverage.">
 <If Step 3.4 ran: "Tests: {before} → {after} (+{delta} new)">
@@ -939,11 +1029,11 @@ gh pr create --base <base> --title "<type>: <summary>" --body "$(cat <<'EOF'
 <If no Greptile comments found: "No Greptile comments.">
 <If no PR existed during Step 3.75: omit this section entirely>
 
-## TODOS
+## Backlog
 <If items marked complete: bullet list of completed items with version>
-<If no items completed: "No TODO items completed in this PR.">
-<If docs/plan/todos.html created or reorganized: note that>
-<If docs/plan/todos.html doesn't exist and user skipped: omit this section>
+<If no items completed: "No backlog items completed in this PR.">
+<If docs/plan/backlog.md created or reorganized: note that>
+<If docs/plan/backlog.md doesn't exist and user skipped: omit this section>
 
 ## Test plan
 - [x] All Rails tests pass (N runs, 0 failures)
@@ -956,42 +1046,29 @@ EOF
 
 **Output the PR URL.**
 
+**Backfill changelog PR refs.** If the changelog bullets (Step 5) were written with spec
+ids but no `(#NNN)` because the PR didn't exist yet, edit `docs/changelog.md` now to add
+the PR number to each new bullet, then amend the final commit (or include in the Step 8.5
+docs commit). The changelog is the trace index — it must carry the PR number.
+
 ---
 
 ## Step 8.5: Documentation Update (if docs/ exists)
 
 If `docs/` directory exists, run the docs-update workflow inline:
 
-1. **Sync trace docs** — Cross-reference the diff against `docs/trace/` files.
-   Auto-update factual content (paths, commands, component lists). Leave narrative
-   sections alone.
+1. **Sync derived docs** — Cross-reference the diff against `docs/matrix.md` and
+   `docs/architecture.md`. Auto-update factual content (paths, commands, component
+   lists; architecture §4 container → directory map). Leave narrative sections alone.
 
-2. **Update sidebar** — Run `write_index` to rebuild static nav in all HTML docs:
+2. **Sync derived docs only** — Update `README`, `docs/matrix.md`,
+   `docs/architecture.md`, `changelog.md`, `contributing.md`, `CLAUDE.md`. NEVER
+   touch `docs/specs/`, `docs/prd.md`, or
+   `docs/decisions/` here — post-ship edits to those invert doc-first. If a spec is
+   stale vs shipped code, that's a Framework Conformance failure (Step 5.75), not a
+   docs-update fix.
 
-```bash
-python3 -c "
-from tai.commands.docs import write_index, find_docs_root
-write_index(find_docs_root())
-print('Sidebar rebuilt')
-"
-```
-
-3. **Validate** — Run validation, report issues but don't block:
-
-```bash
-python3 -c "
-from tai.commands.docs import validate_all, find_docs_root
-issues = validate_all(find_docs_root())
-if issues:
-    for path, errs in issues.items():
-        for e in errs:
-            print(f'ISSUE: {path}: {e}')
-else:
-    print('All docs valid.')
-"
-```
-
-4. **Commit docs changes** (if any) and push:
+3. **Commit docs changes** (if any) and push:
 
 ```bash
 git add docs/
@@ -1013,7 +1090,7 @@ cross-doc consistency, VERSION check), run `/docs-update` separately.
 - **Always use the 4-digit version format** from the VERSION file.
 - **Date format in CHANGELOG:** `YYYY-MM-DD`
 - **Split commits for bisectability** — each commit = one logical change.
-- **docs/plan/todos.html completion detection must be conservative.** Only mark items as completed when the diff clearly shows the work is done.
+- **docs/plan/backlog.md completion detection must be conservative.** Only mark items as completed when the diff clearly shows the work is done.
 - **Use Greptile reply templates from greptile-triage.md.** Every reply includes evidence (inline diff, code references, re-rank suggestion). Never post vague replies.
 - **Step 3.4 generates coverage tests.** They must pass before committing. Never commit failing tests.
 - **The goal is: user says `/ship`, next thing they see is the review + PR URL.**

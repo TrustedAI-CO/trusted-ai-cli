@@ -21,7 +21,7 @@ from tai.core.config import load_config
 from tai.core.context import AppContext
 from tai.core.errors import ConfigError, TaiError, handle_error
 
-from tai.commands import secret, config, ai, api, claude, codex, pdf, style, sales, browser, agent, vastai, hub
+from tai.commands import secret, config, ai, api, claude, codex, pdf, style, sales, browser, agent, vastai, hub, dashboard
 from tai.commands.auth import login, logout, whoami
 from tai.commands.setup import setup
 from tai.commands.update import update
@@ -125,6 +125,7 @@ app.add_typer(browser.app)
 app.add_typer(agent.app)
 app.add_typer(vastai.app)
 app.add_typer(hub.app)
+app.add_typer(dashboard.app)
 app.command(name="setup")(setup)
 app.command(name="update")(update)
 app.command(name="login")(login)

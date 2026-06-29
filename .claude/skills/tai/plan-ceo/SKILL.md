@@ -21,6 +21,22 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+## Framework Guardrails (read first)
+
+This skill is part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (the
+single source of truth) before acting. Non-negotiable:
+
+> **Flow mode:** if `.tai/state/flow-session` exists, the orchestrator already loaded
+> `docs-philosophy.md` and established the shared interaction conventions (AskUserQuestion
+> format, Boil-the-Lake completeness) — SKIP re-reading the philosophy file and skip
+> restating those blocks; assume them in effect. The numbered rules below still apply.
+
+1. **`docs/prd.md` is HUMAN-owned** — draft/quote, never finalize.
+2. **Doc-first order** — spec before code, same PR; no code merges under a spec's `code:`
+   path until that spec is `status: approved`.
+3. **Never edit `docs/specs/`, `docs/prd.md`, or `docs/decisions/` to match shipped code** —
+   flag staleness as `[CRITICAL]`; a human reconciles.
+4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 ## Preamble (run first)
 
 ```bash
@@ -179,7 +195,7 @@ Stay CEO-focused:
 4. Interactions have edge cases. Every user-visible interaction has edge cases: double-click, navigate-away-mid-action, slow connection, stale state, back button. Map them.
 5. Observability is scope, not afterthought. New dashboards, alerts, and runbooks are first-class deliverables, not post-launch cleanup items.
 6. Diagrams are mandatory. No non-trivial flow goes undiagrammed. ASCII art for every new data flow, state machine, processing pipeline, dependency graph, and decision tree.
-7. Everything deferred must be written down. Vague intentions are lies. `docs/plan/todos.html` or it doesn't exist.
+7. Everything deferred must be written down. Vague intentions are lies. `docs/plan/backlog.md` (sections `## Active` / `## Backlog`) or it doesn't exist. When the user declines or defers a suggestion, append one line to `docs/plan/backlog.md` before continuing.
 8. Optimize for the 6-month future, not just today. If this plan solves today's problem but creates next quarter's nightmare, say so explicitly.
 9. You have permission to say "scrap it and do this instead." If there's a fundamentally better approach, table it. I'd rather hear it now.
 
@@ -235,11 +251,11 @@ git stash list                                 # Any stashed work
 grep -r "TODO\|FIXME\|HACK\|XXX" -l --exclude-dir=node_modules --exclude-dir=vendor --exclude-dir=.git . | head -30
 git log --since=30.days --name-only --format="" | sort | uniq -c | sort -rn | head -20  # Recently touched files
 ```
-Then read CLAUDE.md, `docs/plan/todos.html`, and any existing architecture docs. When reading the todos file, specifically:
-* Note any TODOs this plan touches, blocks, or unlocks
+Then read CLAUDE.md, `docs/plan/backlog.md` (sections `## Active` / `## Backlog`), and any existing architecture docs. When reading the backlog file, specifically:
+* Note any backlog items this plan touches, blocks, or unlocks
 * Check if deferred work from prior reviews relates to this plan
 * Flag dependencies: does this plan enable or depend on deferred items?
-* Map known pain points (from TODOS) to this plan's scope
+* Map known pain points (from the backlog) to this plan's scope
 
 Map:
 * What is the current system state?
@@ -310,7 +326,7 @@ Rules:
 1. 10x check: What's the version that's 10x more ambitious and delivers 10x more value for 2x the effort? Describe it concretely.
 2. Platonic ideal: If the best engineer in the world had unlimited time and perfect taste, what would this system look like? What would the user feel when using it? Start from experience, not architecture.
 3. Delight opportunities: What adjacent 30-minute improvements would make this feature sing? Things where a user would think "oh nice, they thought of that." List at least 5.
-4. **Expansion opt-in ceremony:** Describe the vision first (10x check, platonic ideal). Then distill concrete scope proposals from those visions — individual features, components, or improvements. Present each proposal as its own AskUserQuestion. Recommend enthusiastically — explain why it's worth doing. But the user decides. Options: **A)** Add to this plan's scope **B)** Defer to docs/plan/todos.html **C)** Skip. Accepted items become plan scope for all remaining review sections. Rejected items go to "NOT in scope."
+4. **Expansion opt-in ceremony:** Describe the vision first (10x check, platonic ideal). Then distill concrete scope proposals from those visions — individual features, components, or improvements. Present each proposal as its own AskUserQuestion. Recommend enthusiastically — explain why it's worth doing. But the user decides. Options: **A)** Add to this plan's scope **B)** Defer to docs/plan/backlog.md **C)** Skip. Accepted items become plan scope for all remaining review sections. Rejected items go to "NOT in scope."
 
 **For SELECTIVE EXPANSION** — run the HOLD SCOPE analysis first, then surface expansions:
 1. Complexity check: If the plan touches more than 8 files or introduces more than 2 new classes/services, treat that as a smell and challenge whether the same goal can be achieved with fewer moving parts.
@@ -319,7 +335,7 @@ Rules:
    - 10x check: What's the version that's 10x more ambitious? Describe it concretely.
    - Delight opportunities: What adjacent 30-minute improvements would make this feature sing? List at least 5.
    - Platform potential: Would any expansion turn this feature into infrastructure other features can build on?
-4. **Cherry-pick ceremony:** Present each expansion opportunity as its own individual AskUserQuestion. Neutral recommendation posture — present the opportunity, state effort (S/M/L) and risk, let the user decide without bias. Options: **A)** Add to this plan's scope **B)** Defer to docs/plan/todos.html **C)** Skip. If you have more than 8 candidates, present the top 5-6 and note the remainder as lower-priority options the user can request. Accepted items become plan scope for all remaining review sections. Rejected items go to "NOT in scope."
+4. **Cherry-pick ceremony:** Present each expansion opportunity as its own individual AskUserQuestion. Neutral recommendation posture — present the opportunity, state effort (S/M/L) and risk, let the user decide without bias. Options: **A)** Add to this plan's scope **B)** Defer to docs/plan/backlog.md **C)** Skip. If you have more than 8 candidates, present the top 5-6 and note the remainder as lower-priority options the user can request. Accepted items become plan scope for all remaining review sections. Rejected items go to "NOT in scope."
 
 **For HOLD SCOPE** — run this:
 1. Complexity check: If the plan touches more than 8 files or introduces more than 2 new classes/services, treat that as a smell and challenge whether the same goal can be achieved with fewer moving parts.
@@ -339,124 +355,93 @@ _DOCS_DIR="$_REPO_ROOT/docs"
 mkdir -p "$_DOCS_DIR/decisions"
 ```
 
-Before writing, check for an existing intent doc. If `docs/intent.html` exists, offer to
-update it or create a new version with a dated decision record in `docs/decisions/`.
+**Ownership — `docs/prd.md` is HUMAN-owned.** `docs/prd.md` is the PRD / product
+intent and belongs to the human. This skill does NOT autonomously author the final PRD.
+Your role is to ASSIST the human in shaping it: draft proposed intent and scope content
+from the review, then present it for the human to confirm, edit, or reject. Never
+overwrite existing human-authored intent — preserve it and propose additive edits. The
+human signs off on the final wording.
 
-Write to `docs/intent.html` using this HTML structure:
+Before writing, check for an existing intent doc. If `docs/prd.md` exists, offer to
+update it (additively, preserving human content) or create a new dated decision record in
+`docs/decisions/`.
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="doc-type" content="intent">
-  <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>Product Intent: {Feature Name}</title>
-  <link rel="stylesheet" href="_assets/style.css">
-</head>
-<body>
-  <section data-section="header">
-    <h1>Product Intent: {Feature Name}</h1>
-    <p>Generated by /plan-ceo on {date}</p>
-    <p>Branch: {branch} | Mode: {EXPANSION / SELECTIVE EXPANSION}</p>
-    <p>Repo: {owner/repo}</p>
-  </section>
+Draft `docs/prd.md` for the human using this Markdown structure (present it for human
+approval — do not finalize the PRD on your own):
 
-  <section data-section="vision">
-    <h2>Vision</h2>
-    <h3>10x Check</h3>
-    <p>{10x vision description}</p>
-    <h3>Platonic Ideal</h3>
-    <p>{platonic ideal description — EXPANSION mode only}</p>
-  </section>
+```markdown
+---
+doc-type: intent
+doc-date: {YYYY-MM-DD}
+owner: human
+generated-by: /plan-ceo on {date}
+branch: {branch}
+mode: {EXPANSION / SELECTIVE EXPANSION}
+repo: {owner/repo}
+---
 
-  <section data-section="scope-decisions">
-    <h2>Scope Decisions</h2>
-    <table>
-      <thead><tr><th>#</th><th>Proposal</th><th>Effort</th><th>Decision</th><th>Reasoning</th></tr></thead>
-      <tbody>
-        <tr><td>1</td><td>{proposal}</td><td>S/M/L</td><td>ACCEPTED / DEFERRED / SKIPPED</td><td>{why}</td></tr>
-      </tbody>
-    </table>
-  </section>
+# Product Intent: {Feature Name}
 
-  <section data-section="accepted-scope">
-    <h2>Accepted Scope (added to this plan)</h2>
-    <ul>
-      <li>{bullet list of what's now in scope}</li>
-    </ul>
-  </section>
+## Vision
 
-  <section data-section="deferred">
-    <h2>Deferred to docs/plan/todos.html</h2>
-    <ul>
-      <li>{items with context}</li>
-    </ul>
-  </section>
+### 10x Check
 
-  <script src="_assets/docs.js"></script>
-</body>
-</html>
+{10x vision description}
+
+### Platonic Ideal
+
+{platonic ideal description — EXPANSION mode only}
+
+## Scope Decisions
+
+| # | Proposal | Effort | Decision | Reasoning |
+|---|----------|--------|----------|-----------|
+| 1 | {proposal} | S/M/L | ACCEPTED / DEFERRED / SKIPPED | {why} |
+
+## Accepted Scope (added to this plan)
+
+- {bullet list of what's now in scope}
+
+## Deferred to docs/plan/backlog.md
+
+- {items with context}
 ```
 
 Additionally, for each ACCEPTED scope decision that represents a significant trade-off,
-write a decision record to `docs/decisions/NNN-slug.html`:
+write a decision record to `docs/decisions/NNN-slug.md`:
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="doc-type" content="decision">
-  <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>Decision NNN: {Short title}</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-</head>
-<body>
-  <section data-section="context">
-    <h1>Decision NNN: {Short title}</h1>
-    <h2>Context</h2>
-    <p>{What was the problem or question}</p>
-  </section>
+```markdown
+---
+doc-type: decision
+doc-date: {YYYY-MM-DD}
+---
 
-  <section data-section="options">
-    <h2>Options Considered</h2>
-    <ol>
-      <li>{Option A} — {pros/cons}</li>
-      <li>{Option B} — {pros/cons}</li>
-    </ol>
-  </section>
+# Decision NNN: {Short title}
 
-  <section data-section="decision">
-    <h2>Decision</h2>
-    <p>{What was chosen and why}</p>
-  </section>
+## Context
 
-  <section data-section="decided-by">
-    <h2>Decided by</h2>
-    <p>/plan-ceo, {date}</p>
-  </section>
+{What was the problem or question}
 
-  <section data-section="affects">
-    <h2>Affects</h2>
-    <ul>
-      <li>{what specs or modules this impacts}</li>
-    </ul>
-  </section>
+## Options Considered
 
-  <script src="../_assets/docs.js"></script>
-</body>
-</html>
+1. {Option A} — {pros/cons}
+2. {Option B} — {pros/cons}
+
+## Decision
+
+{What was chosen and why}
+
+## Decided by
+
+/plan-ceo, {date}
+
+## Affects
+
+- {what specs or modules this impacts}
 ```
 
-After writing the decisions, update `docs/intent.html` to reference each decision doc
-(add links in the header section).
-
-After writing any docs (intent, decisions, or design), rebuild the sidebar index:
-
-```bash
-python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
-```
+After writing the decisions, update `docs/prd.md` to reference each decision doc
+(add links in the header/frontmatter) — proposing the change for the human's approval.
 
 After writing the CEO plan, run the spec review loop on it:
 
@@ -839,10 +824,10 @@ Complete table of every method that can fail, every exception class, rescued sta
 ```
 Any row with RESCUED=N, TEST=N, USER SEES=Silent → **CRITICAL GAP**.
 
-### docs/plan/todos.html updates
-Present each potential TODO as its own individual AskUserQuestion. Never batch TODOs — one per question. Never silently skip this step. Follow the format in `.claude/skills/tai/review/TODOS-format.md`.
+### docs/plan/backlog.md updates
+Present each potential backlog item as its own individual AskUserQuestion. Never batch items — one per question. Never silently skip this step. Add items to `docs/plan/backlog.md` (sections `## Active` / `## Backlog`).
 
-For each TODO, describe:
+For each item, describe:
 * **What:** One-line description of the work.
 * **Why:** The concrete problem it solves or value it unlocks.
 * **Pros:** What you gain by doing this work.
@@ -852,12 +837,12 @@ For each TODO, describe:
 * **Priority:** P1/P2/P3
 * **Depends on / blocked by:** Any prerequisites or ordering constraints.
 
-Then present options: **A)** Add to docs/plan/todos.html **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
+Then present options: **A)** Add to docs/plan/backlog.md **B)** Skip — not valuable enough **C)** Build it now in this PR instead of deferring.
 
 ### Scope Expansion Decisions (EXPANSION and SELECTIVE EXPANSION only)
 For EXPANSION and SELECTIVE EXPANSION modes: expansion opportunities and delight items were surfaced and decided in Step 0D (opt-in/cherry-pick ceremony). The decisions are persisted in the CEO plan document. Reference the CEO plan for the full record. Do not re-surface them here — list the accepted expansions for completeness:
 * Accepted: {list items added to scope}
-* Deferred: {list items sent to docs/plan/todos.html}
+* Deferred: {list items sent to docs/plan/backlog.md}
 * Skipped: {list items rejected}
 
 ### Diagrams (mandatory, produce all that apply)
@@ -896,7 +881,7 @@ List every ASCII diagram in files this plan touches. Still accurate?
   | Dream state delta    | written                                     |
   | Error/rescue registry| ___ methods, ___ CRITICAL GAPS              |
   | Failure modes        | ___ total, ___ CRITICAL GAPS                |
-  | docs/plan/todos.html   | ___ items proposed                          |
+  | docs/plan/backlog.md | ___ items proposed                          |
   | Scope proposals      | ___ proposed, ___ accepted (EXP + SEL)      |
   | CEO plan             | written / skipped (HOLD/REDUCTION)           |
   | Lake Score           | X/Y recommendations chose complete option   |
@@ -911,25 +896,23 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default.
 
 ## Mandatory Intent Doc (ALL modes)
 
-After the review is complete (all sections finished, completion summary produced), you MUST
-write or update `docs/intent.html` with the product intent discovered during the session.
-This applies to ALL modes, not just EXPANSION/SELECTIVE EXPANSION. For HOLD SCOPE and
-SCOPE REDUCTION modes, write a focused intent doc capturing the premise challenge findings,
-dream state mapping, and verdict. This must contain real content from the conversation --
-not a TODO stub or placeholder.
+`docs/prd.md` is the HUMAN-owned PRD / product intent. This skill ASSISTS the human in
+shaping it — it does NOT autonomously author the final PRD. After the review is complete
+(all sections finished, completion summary produced), draft or propose updates to
+`docs/prd.md` with the product intent discovered during the session, then present the
+draft for the human to confirm, edit, or reject. This applies to ALL modes, not just
+EXPANSION/SELECTIVE EXPANSION. For HOLD SCOPE and SCOPE REDUCTION modes, draft a focused
+intent doc capturing the premise challenge findings, dream state mapping, and verdict.
+This must contain real content from the conversation -- not a TODO stub or placeholder.
 
-If `docs/intent.html` already exists (written by 0D-POST for EXPANSION/SELECTIVE EXPANSION),
-verify it contains the final reviewed content. If the review changed the intent, update it.
+If `docs/prd.md` already exists (written by 0D-POST for EXPANSION/SELECTIVE EXPANSION,
+or authored by the human), preserve the human-owned content and propose additive edits
+only. If the review changed the intent, surface the proposed change for the human's
+sign-off rather than overwriting it silently.
 
-For HOLD SCOPE and SCOPE REDUCTION modes, use the same HTML structure from 0D-POST but
+For HOLD SCOPE and SCOPE REDUCTION modes, use the same Markdown structure from 0D-POST but
 omit the scope decisions table and deferred items if not applicable. Populate the vision
 section with the premise challenge and dream state mapping content.
-
-After writing, rebuild the sidebar index:
-
-```bash
-python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
-```
 
 ## Review Log
 
@@ -1007,49 +990,34 @@ Use AskUserQuestion to present the next step. Include only applicable options:
 
 ## Design Doc Promotion (EXPANSION and SELECTIVE EXPANSION only)
 
-The intent doc is already committed in `docs/intent.html`. If the vision produced
+The intent doc is already committed in `docs/prd.md`. If the vision produced
 architectural decisions that should inform `/plan-eng`, offer to create a design doc:
 
 "The vision from this review produced {N} accepted scope expansions. Want to create a system design doc?"
-- **A)** Create `docs/design/system.html` with architecture notes from this review
+- **A)** Create `docs/design/system.md` with architecture notes from this review
 - **B)** Skip — let /plan-eng create the design doc
 
-If creating, write `docs/design/system.html` using this HTML structure:
+If creating, write `docs/design/system.md` using this Markdown structure:
 
-```html
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="doc-type" content="design">
-  <meta name="doc-date" content="{YYYY-MM-DD}">
-  <title>System Design</title>
-  <link rel="stylesheet" href="../_assets/style.css">
-</head>
-<body>
-  <section data-section="header">
-    <h1>System Design</h1>
-    <p>Parent: <a href="../intent.html">intent</a></p>
-    <p>Related: dec-NNN-slug</p>
-  </section>
+```markdown
+---
+doc-type: design
+doc-date: {YYYY-MM-DD}
+parent: ../prd.md
+related: dec-NNN-slug
+---
 
-  <section data-section="architecture">
-    <h2>Architecture</h2>
-    <!-- architecture notes from this review -->
-  </section>
+# System Design
 
-  <script src="../_assets/docs.js"></script>
-</body>
-</html>
+Parent: [intent](../prd.md)
+
+## Architecture
+
+<!-- architecture notes from this review -->
 ```
 
-And update `docs/intent.html` to add a link to `design/system.html` in the header section.
-
-After writing the design doc, rebuild the sidebar index:
-
-```bash
-python3 -c "from tai.commands.docs import write_index, find_docs_root; write_index(find_docs_root()); print('Sidebar rebuilt')"
-```
+And propose an additive update to the HUMAN-owned `docs/prd.md` to link
+`design/system.md` (for the human's sign-off — do not overwrite their intent).
 
 ## Formatting Rules
 * NUMBER issues (1, 2, 3...) and LETTERS for options (A, B, C...).
