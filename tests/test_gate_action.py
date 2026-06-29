@@ -83,12 +83,27 @@ def test_R3_accept_proposed(repo):
     assert _status(repo / "docs" / "decisions" / "0003-x.md") == "accepted"
 
 
-# covers: SPEC-gates-action R4
+# covers: SPEC-gates-action R4 — accept an ADR not in `proposed` (wrong STATUS) is refused
 def test_R4_accept_non_proposed_refused(repo):
-    # accept a spec-as-adr mismatch: the ADR is now... use the draft spec id which isn't proposed
-    r = runner.invoke(app, ["gate", "accept", "SPEC-x-y", "--yes"])
-    assert r.exit_code == 1
-    assert _status(repo / "docs" / "specs" / "x-y.md") == "draft"
+    adr = repo / "docs" / "decisions" / "0007-acc.md"
+    adr.write_text(
+        "---\nid: 0007-acc\ntype: decision\nstatus: accepted\nparent: architecture\nchildren: []\nrelated: []\n---\n# 0007-acc\n"
+    )
+    subprocess.run(["git", "-C", str(repo), "add", "-A"], check=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-qm", "add"], check=True, capture_output=True)
+    before = adr.read_text()
+    r = runner.invoke(app, ["gate", "accept", "0007-acc", "--yes"])
+    assert r.exit_code == 1 and adr.read_text() == before
+
+
+# covers: SPEC-gates-action INV3 — doc-type guard (approve an ADR / accept a spec) is refused, no write
+def test_INV3_type_guard(repo):
+    spec = repo / "docs" / "specs" / "x-y.md"
+    adr = repo / "docs" / "decisions" / "0003-x.md"
+    sbefore, abefore = spec.read_text(), adr.read_text()
+    assert runner.invoke(app, ["gate", "approve", "0003-x", "--yes"]).exit_code == 1   # ADR via approve
+    assert runner.invoke(app, ["gate", "accept", "SPEC-x-y", "--yes"]).exit_code == 1  # spec via accept
+    assert spec.read_text() == sbefore and adr.read_text() == abefore
 
 
 # covers: SPEC-gates-action R5 (+ INV4 commit, INV2 body intact)
