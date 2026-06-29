@@ -366,6 +366,138 @@ def serve(docs: Path, host: str, port: Optional[int], open_browser: bool, out: C
         httpd.server_close()
 
 
+# ── doc query (SPEC-docs-query) + gates (SPEC-gates-view) ─────────────────────
+
+@dataclass(frozen=True)
+class DocRow:
+    id: str
+    type: str
+    status: str
+    title: str
+    path: str
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "type": self.type, "status": self.status,
+                "title": self.title, "path": self.path}
+
+
+def _first_heading(text: str) -> str:
+    for line in text.splitlines():
+        if line.startswith("# "):
+            return line[2:].strip()
+    return ""
+
+
+def _doc_body(text: str) -> str:
+    """Strip leading frontmatter + the derived banner line, return the markdown body."""
+    if text.startswith("---"):
+        parts = text.split("---", 2)
+        if len(parts) == 3:
+            text = parts[2]
+    return text.lstrip("\n")
+
+
+def _doc_row(path: Path, docs: Path) -> Optional[DocRow]:
+    fm = parse_frontmatter(_read(path))
+    if not fm or "id" not in fm:
+        return None
+    body = _doc_body(_read(path))
+    return DocRow(
+        id=fm["id"], type=fm.get("type") or "?", status=fm.get("status") or "—",
+        title=_first_heading(body) or fm["id"], path=str(path.relative_to(docs)),
+    )
+
+
+def _doc_rows(docs: Path) -> list:
+    rows = []
+    for p in _md_docs(docs):
+        row = _doc_row(p, docs)
+        if row:
+            rows.append(row)
+    return rows
+
+
+def collect_list(docs: Path, type_filter: str = "all", status_filter: Optional[str] = None) -> list:
+    rows = _doc_rows(docs)
+    if type_filter and type_filter != "all":
+        rows = [r for r in rows if r.type == type_filter]
+    if status_filter:
+        rows = [r for r in rows if r.status == status_filter]
+    return sorted(rows, key=lambda r: (r.type, r.id))
+
+
+def collect_search(docs: Path, query: str) -> list:
+    q = query.lower()
+    hits = []
+    for p in _md_docs(docs):
+        row = _doc_row(p, docs)
+        if not row:
+            continue
+        in_id, in_title = q in row.id.lower(), q in row.title.lower()
+        in_body = q in _read(p).lower()
+        if in_id or in_title or in_body:
+            rank = 0 if in_id else (1 if in_title else 2)
+            hits.append((rank, row))
+    return [r for _, r in sorted(hits, key=lambda t: (t[0], t[1].id))]
+
+
+def find_doc_by_id(docs: Path, doc_id: str) -> Optional[Path]:
+    for p in _md_docs(docs):
+        if parse_frontmatter(_read(p)).get("id") == doc_id:
+            return p
+    return None
+
+
+def collect_gates(docs: Path) -> dict:
+    gate_a, gate_b, gate_c = [], [], []
+    prd = docs / "prd.md"
+    if prd.exists():
+        st = parse_frontmatter(_read(prd)).get("status")
+        if st not in ("approved", "shipped"):
+            gate_a.append({"id": "prd", "title": _first_heading(_doc_body(_read(prd))) or "prd",
+                           "action": "sign"})
+    dec = docs / "decisions"
+    if dec.is_dir():
+        for p in sorted(dec.glob("*.md")):
+            if _TEMPLATE in p.name.lower():
+                continue
+            r = _doc_row(p, docs)
+            if r and r.status == "proposed":
+                gate_b.append({"id": r.id, "title": r.title, "action": "accept"})
+    specs = docs / "specs"
+    if specs.is_dir():
+        for p in sorted(specs.glob("*.md")):
+            if _TEMPLATE in p.name.lower():
+                continue
+            r = _doc_row(p, docs)
+            if r and r.status == "draft":
+                gate_c.append({"id": r.id, "title": r.title, "action": "approve"})
+    review = [{**it, "action": "resolve"} for it in collect_needs_you(docs)]
+    return {"gate_a": gate_a, "gate_b": gate_b, "gate_c": gate_c, "review": review}
+
+
+def _require_docs() -> Path:
+    docs = find_docs_dir()
+    if docs is None:
+        err_console.print("[bold red]No docs/ found.[/bold red]")
+        err_console.print("[dim]Hint: run /docs-init (or tai setup) to bootstrap the docs tree.[/dim]")
+        raise typer.Exit(1)
+    return docs
+
+
+def _print_rows(rows: list, out: Console, title: str) -> None:
+    if not rows:
+        out.print(f"[dim]{title}: none[/dim]")
+        return
+    t = Table(title=title, title_style="bold", header_style="dim")
+    t.add_column("id"); t.add_column("type"); t.add_column("status"); t.add_column("title")
+    for r in rows:
+        sc = {"approved": "green", "implemented": "cyan", "draft": "yellow",
+              "proposed": "yellow", "accepted": "green"}.get(r.status, "white")
+        t.add_row(r.id, r.type, f"[{sc}]{r.status}[/{sc}]", r.title)
+    out.print(t)
+
+
 # ── command ───────────────────────────────────────────────────────────────────
 
 @app.callback(invoke_without_command=True)
@@ -378,6 +510,9 @@ def dashboard(
     no_open: bool = typer.Option(False, "--no-open", help="Don't auto-open the browser with --serve."),
 ) -> None:
     """Render a one-screen overview of project state from docs/ (terminal or --serve web)."""
+    if ctx.invoked_subcommand is not None:
+        return  # a subcommand (list/search/show/gates) handles it
+
     docs = find_docs_dir()
     if docs is None:
         err_console.print("[bold red]No docs/ found.[/bold red]")
@@ -402,3 +537,81 @@ def dashboard(
         console.print_json(_json.dumps(data.to_dict()))
     else:
         render(data, console)
+
+
+@app.command("list")
+def list_docs(
+    type_filter: str = typer.Option("all", "--type", help="spec | decision | all"),
+    status_filter: Optional[str] = typer.Option(None, "--status", help="draft|approved|implemented|proposed|accepted"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    """List specs + ADRs (filter by --type / --status)."""
+    docs = _require_docs()
+    rows = collect_list(docs, type_filter, status_filter)
+    if json_output:
+        console.print_json(_json.dumps([r.to_dict() for r in rows]))
+    else:
+        _print_rows(rows, console, f"Docs ({len(rows)})")
+
+
+@app.command("search")
+def search_docs(
+    query: str = typer.Argument(..., help="substring to match in id / title / body"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    """Search specs + ADRs by id / title / body (case-insensitive)."""
+    docs = _require_docs()
+    rows = collect_search(docs, query)
+    if json_output:
+        console.print_json(_json.dumps([r.to_dict() for r in rows]))
+    else:
+        _print_rows(rows, console, f"Search '{query}' ({len(rows)})")
+
+
+@app.command("show")
+def show_doc(
+    doc_id: str = typer.Argument(..., help="doc id, e.g. SPEC-dashboard-render"),
+    json_output: bool = typer.Option(False, "--json"),
+) -> None:
+    """Show one doc: frontmatter summary + body (mermaid shown raw)."""
+    docs = _require_docs()
+    path = find_doc_by_id(docs, doc_id)
+    if path is None:
+        err_console.print(f"[bold red]No doc with id '{doc_id}'.[/bold red]")
+        ids = [r.id for r in _doc_rows(docs)]
+        near = [i for i in ids if doc_id.lower() in i.lower()][:3]
+        if near:
+            err_console.print(f"[dim]Did you mean: {', '.join(near)}?[/dim]")
+        raise typer.Exit(1)
+    text = _read(path)
+    fm, body = parse_frontmatter(text), _doc_body(text)
+    if json_output:
+        console.print_json(_json.dumps({"frontmatter": fm, "body": body}))
+    else:
+        meta = "  ".join(f"[dim]{k}:[/dim] {v}" for k, v in fm.items() if k in ("id", "type", "status", "approved_at"))
+        console.print(Panel(meta, title=str(path.relative_to(docs)), border_style="cyan"))
+        console.print(body)
+
+
+@app.command("gates")
+def gates(json_output: bool = typer.Option(False, "--json")) -> None:
+    """Show the pending-gates board: what needs a human, grouped by gate."""
+    docs = _require_docs()
+    g = collect_gates(docs)
+    if json_output:
+        console.print_json(_json.dumps(g))
+        return
+    total = sum(len(g[k]) for k in g)
+    if total == 0:
+        console.print(Panel("[green]all clear — no gates open[/green]", title="Gates", border_style="green"))
+        return
+    labels = [("gate_a", "GATE A — PRD sign", "magenta"), ("gate_b", "GATE B — ADR accept", "blue"),
+              ("gate_c", "GATE C — spec approve", "yellow"), ("review", "REVIEW — resolve", "red")]
+    for key, label, color in labels:
+        items = g[key]
+        if not items:
+            continue
+        t = Table.grid(padding=(0, 2))
+        for it in items:
+            t.add_row(f"[{color}]{it['id']}[/{color}]", it["title"], f"[dim]→ {it['action']}[/dim]")
+        console.print(Panel(t, title=f"{label} ({len(items)})", border_style=color))
