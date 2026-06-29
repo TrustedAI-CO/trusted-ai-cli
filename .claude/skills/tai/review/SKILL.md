@@ -61,6 +61,51 @@ Report findings as: [SEVERITY] file:line — description.
 "
 ```
 
+## Review Loop — Iterate Until Clean (blind rounds, K=2)
+
+Review is **not single-pass**. The skill is a loop controller: review → fix → review
+again → fix → … until the diff is clean. The controller (you) owns the loop; each
+reviewer is a **fresh, stateless subagent**.
+
+**The blind-reviewer rule (non-negotiable).** Every round spawns a NEW reviewer that is
+given ONLY the current diff (`base...HEAD`) + the specs/architecture. It is NEVER told:
+- what the previous round found,
+- that anything was "already fixed,"
+- to "re-check" or "focus on" anything.
+
+Fixes are carried between rounds **only as commits** — they're already in the next
+round's diff, so a fresh reviewer re-derives whatever is still wrong on its own. A
+reviewer told "we fixed the SQL injection" rubber-stamps that area; a blind reviewer
+re-checks it. The *code* carries state across rounds; the *findings list never does*.
+Do not paste prior findings, a changelog of fixes, or "round N" context into the reviewer
+prompt. Each round is a cold read.
+
+**The loop:**
+```
+clean_streak = 0
+for round in 1..MAX (MAX = 5):
+    findings = spawn FRESH blind reviewer (current diff + specs only)
+    worth_fixing = findings with severity CRITICAL or HIGH
+    if worth_fixing is empty:
+        clean_streak += 1
+        if clean_streak >= 2:  →  DONE (clean — two consecutive blind rounds found nothing worth fixing)
+        else: continue          # one more blind round to confirm
+    else:
+        clean_streak = 0        # any worth-fixing finding resets the streak
+        fix worth_fixing (Step 5 flow / investigate→execute), commit
+        # nits (LOW/INFO) → docs/plan/backlog.md, never block, never fixed in-loop
+if round == MAX and still not clean:  →  HALT to human with the outstanding findings
+```
+
+**Why K=2.** A single clean round can be a fix that *introduced* a new bug the same
+round didn't look for. Requiring **two consecutive clean blind rounds** catches the tail:
+round N's fix is itself reviewed cold in round N+1. Stop only when two back-to-back fresh
+reviewers find nothing CRITICAL/HIGH.
+
+**Termination bar = "worth fixing," not "zero nits."** CRITICAL/HIGH gate the loop;
+LOW/INFO/style nits are logged to `backlog.md` and do not keep the loop running. Don't
+chase perfection — stop at "nothing worth fixing, twice."
+
 ## Preamble (run first)
 
 ```bash
@@ -412,9 +457,19 @@ If 3 or fewer ASK items, you may use individual AskUserQuestion calls instead of
 
 ### Step 5d: Apply user-approved fixes
 
-Apply fixes for items where the user chose "Fix." Output what was fixed.
+Apply fixes for items where the user chose "Fix." Output what was fixed. Commit the
+fixes (they become the input to the next round's diff).
 
 If no ASK items exist (everything was AUTO-FIX), skip the question entirely.
+
+### Step 5e: Loop back (blind next round)
+
+After fixes are committed, **return to the Review Loop**: spawn the NEXT round's fresh
+blind reviewer on the now-current diff. Do NOT carry this round's findings or "I fixed
+X" into the next reviewer — it reads cold (see "Review Loop — Iterate Until Clean").
+Continue until **two consecutive blind rounds** find nothing CRITICAL/HIGH (K=2), or the
+round cap (5) is hit → HALT to human with the outstanding findings. LOW/INFO nits go to
+`backlog.md` and never keep the loop running.
 
 ### Greptile comment resolution
 
