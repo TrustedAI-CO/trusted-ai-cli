@@ -12,6 +12,10 @@ related: []
 - [ ] (scheduled deferred work)
 
 ## Backlog
+- gate nits (#79 review LOW, deferred): `_flip_status` doesn't match quoted YAML
+  (`status: "draft"`) → misleading "is 'draft', not 'draft'" message; CRLF normalization
+  behavior documented but untested; no-git case writes-then-reverts (transient on-disk
+  mutation if SIGKILL between write and rollback) — INV4 presumes git.
 - Dashboard nits (#78 review LOW, deferred): subcommands honor only local `--json`, not the
   global `tai --json` app-context flag (bare dashboard does) — fold global json into subcommands;
   minor double-read in collect_search / re-walk in find_doc_by_id (fine at current tree size).

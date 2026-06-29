@@ -2,7 +2,7 @@
 id: architecture
 type: architecture
 parent: null
-children: [0001-markdown-docs, SPEC-dashboard-render, SPEC-dashboard-serve, 0002-dashboard-web-stack, SPEC-docs-query, SPEC-gates-view]
+children: [0001-markdown-docs, SPEC-dashboard-render, SPEC-dashboard-serve, 0002-dashboard-web-stack, SPEC-docs-query, SPEC-gates-view, SPEC-gates-action]
 related: [prd]
 derived: true
 ---
