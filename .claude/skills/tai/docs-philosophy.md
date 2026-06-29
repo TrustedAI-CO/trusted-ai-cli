@@ -87,6 +87,19 @@ Three rules make every change reviewable and traceable:
 `docs-update` is **post-ship** and touches **derived docs only**. It must NEVER edit a
 source layer (`specs/`, `prd.md`, `decisions/`).
 
+**Derived docs carry a trust marker so a human reading one knows not to trust it as
+source.** Every derived doc has `derived: true` in frontmatter AND a one-line banner
+right under the frontmatter:
+
+```
+> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source
+> of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
+```
+
+Without this, a human opening `architecture.md` or `matrix.md` cannot tell — while
+reading — that it is derived and possibly stale (the distinction otherwise lives only in
+this philosophy file). Source docs carry `status:`; derived docs carry `derived: true`.
+
 ## Directory Structure
 
 ```

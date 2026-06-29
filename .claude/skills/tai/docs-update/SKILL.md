@@ -289,6 +289,29 @@ else:
 **Any root-level .md files (README.md, CLAUDE.md, etc.):**
 - These remain Markdown. Read and audit as before.
 
+**Derived-doc trust marker (auto-fix, every derived doc this skill maintains):**
+
+Every derived doc must advertise that it is derived so a human reading it knows not to
+trust it as source. For each derived doc you maintain — `README.md`, `docs/architecture.md`,
+`docs/matrix.md`, `docs/changelog.md`, `docs/contributing.md`, `CLAUDE.md` — ensure BOTH of
+these are present, and **insert them if missing** during this audit (this is how existing
+repos pick up the banner on their next `/docs-update` run):
+
+1. `derived: true` in the YAML frontmatter. (Root `README.md` / `CLAUDE.md` may have no
+   frontmatter — if so, leave their structure alone and just ensure the banner line is the
+   first line of the file.)
+2. The one-line trust banner immediately after the closing `---` of the frontmatter (or as
+   the first line if there is no frontmatter):
+
+   ```
+   > ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
+   ```
+
+This is a factual, mechanical auto-fix — apply it directly, do not ask. **NEVER** add
+`derived: true` or this banner to a source-layer doc (`docs/specs/`, `docs/prd.md`,
+`docs/decisions/`) — those carry `status:`, not `derived:`, and are off-limits per the HARD
+RULE. Do not duplicate the banner if it already exists.
+
 For each file, classify needed updates as:
 
 - **Auto-update** — Factual corrections clearly warranted by the diff: adding an item to a

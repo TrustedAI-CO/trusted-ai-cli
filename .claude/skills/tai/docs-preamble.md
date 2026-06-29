@@ -66,6 +66,10 @@ status: draft | approved | accepted | implemented   # source layers only
 - Every doc must be reachable from at least one other doc (no orphans)
 - Exception: `REVIEW.md` is always root-level (parent: null) and doesn't need a parent reference
 - Source-layer docs (`spec`, `decision`) carry `status:`. It is the gate a **human** flips.
+- Derived docs (`architecture`, `matrix`, `changelog`, `contributing`, plus root `README.md`,
+  `CLAUDE.md`) carry `derived: true` and a one-line "⚠️ Derived doc — may lag code" banner
+  under the frontmatter (see docs-philosophy "Source vs Derived Layers"). Source docs never
+  carry `derived`.
 
 ### ID Conventions
 

@@ -44,11 +44,21 @@ _DOCS_DIR="$_REPO_ROOT/docs"
 _STATE_DIR="$_REPO_ROOT/.tai/state"
 _BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 mkdir -p "$_STATE_DIR"
-touch "$_STATE_DIR/flow-session"   # signals downstream skills to skip redundant preamble
+# Self-heal: a pre-existing marker means a prior flow died without cleanup. A new run
+# owns the session, so clear any orphan first, then write OUR marker with a timestamp,
+# and trap so Ctrl-C / TERM still clean up (SIGKILL/context-reset won't — hence timestamp).
+rm -f "$_STATE_DIR/flow-session"
+trap 'rm -f "$_STATE_DIR/flow-session"' EXIT INT TERM
+date +%s > "$_STATE_DIR/flow-session"   # signals downstream skills to skip redundant preamble
 echo "BRANCH: $_BRANCH"
 echo "DOCS: $_DOCS_DIR"
 ls "$_DOCS_DIR" 2>/dev/null || echo "NO docs/ — repo not initialized"
 ```
+
+Downstream skills that honor the marker should treat it as **absent if older than ~2h**
+(`flow-session` holds an epoch timestamp): `[ -f F ] && [ $(( $(date +%s) - $(cat F) )) -lt 7200 ]`.
+A stale marker from a crashed run then can't silently suppress a later standalone skill's
+preamble.
 
 Then read **`docs-philosophy.md` ONCE** for this whole flow run. The `flow-session`
 marker tells every delegated skill the framework + interaction conventions are already
@@ -73,7 +83,7 @@ removal as mandatory cleanup on every exit path.
 [GATE C]    spec status != approved  → HALT: human flips status: approved
 [S2 build]  specs approved           → /tai-execute (auto-picks solo vs team)
 [S3 review] code written             → /review
-[S4 qa]     review clean             → /qa
+[S4 qa]     review clean             → /qa (web only; CLI/lib → smoke check or skip, see Step 4)
 [S5 ship]   qa clean                 → /ship
 [S6 docs]   shipped                  → /docs-update
 [DONE]
@@ -175,6 +185,18 @@ Once gates clear, chain WITHOUT asking between steps:
 - `/tai-execute` auto-selects its strategy: it uses the parallel team strategy when
   `docs/plan/tasks.md` has ≥2 independent sub-phases, otherwise the solo
   single-context strategy. No manual choice needed.
+- **QA surface-type guard (do NOT chain `/qa` blindly).** `/qa` is a **web/browser**
+  tester (it drives a browser, takes screenshots, scores a running web app). Before the
+  qa step, detect the surface type of what shipped:
+  - **Web app** (frontend files changed, a dev server / localhost target exists) → run
+    `/qa` as normal.
+  - **CLI / library / backend-only** (no servable UI — e.g. a `tai notes` command) →
+    do NOT run `/qa`; it would find no app and emit a vacuous "clean" report, which is
+    false confidence. Instead run a **CLI/lib smoke check**: invoke the shipped surface
+    (run the command / call the API) and assert exit codes, stdout, file effects, and
+    error paths against the spec's Behavior rows. If no smoke path is feasible, SKIP qa
+    with an explicit line: `▶ S4 qa SKIPPED — CLI/lib target, no servable UI; relying on
+    execute + ship test gates.` Never let a non-web target pass through a silent green qa.
 - Pass each step's output to the next. Announce each transition with one line:
   `▶ S3 review (specs: 3, diff: 412 lines)`.
 - Surface to the human only on: failure (see Step 5), a new `docs/REVIEW.md` entry,

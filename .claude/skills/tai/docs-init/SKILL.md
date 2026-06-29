@@ -280,7 +280,10 @@ type: architecture
 parent: null
 children: []
 related: []
+derived: true
 ---
+
+> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 
 # Architecture — <Project>
 
@@ -430,7 +433,10 @@ type: changelog
 parent: null
 children: []
 related: []
+derived: true
 ---
+
+> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 
 # Changelog
 
@@ -449,7 +455,10 @@ type: contributing
 parent: null
 children: []
 related: []
+derived: true
 ---
+
+> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 
 # Contributing
 
@@ -603,7 +612,10 @@ type: matrix
 parent: null
 children: []
 related: []
+derived: true
 ---
+
+> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 
 # Requirements Traceability Matrix
 
