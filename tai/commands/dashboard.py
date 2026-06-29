@@ -369,6 +369,7 @@ const drawDecisions=()=>docList('decision','search decisions…');
 async function drawArchitecture(){app.className='';app.innerHTML='<div id=detail></div>';await showDoc('architecture');}
 async function showDoc(id){
  const d=await j('/api/doc/'+encodeURIComponent(id));const det=document.getElementById('detail');
+ if(!d||!d.frontmatter){det.innerHTML=card(esc(id),'red','not found — no such doc');return;}
  const meta=Object.entries(d.frontmatter).filter(([k])=>['id','type','status','approved_at'].includes(k)).map(([k,v])=>`<span class=pill>${k}: ${esc(''+v)}</span>`).join(' ');
  det.innerHTML=card(esc(id),'cyan',`<div>${meta}</div><div class=md style=margin-top:10px>${mdRender(d.body)}</div>`);
  if(window.mermaid){try{await mermaid.run({nodes:det.querySelectorAll('.mermaid')});}catch(e){}}
