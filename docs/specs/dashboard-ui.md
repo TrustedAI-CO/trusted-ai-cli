@@ -93,8 +93,5 @@ POST returns `{ok: bool, message: str}`; the page refreshes the affected view.
 ## Open questions
 - Markdown rendering is escape-first hand-rolled (no marked/dompurify deps) to honor ADR 0002's
   dependency-light stack + keep INV4 simple. Revisit only if doc markdown needs outgrow it.
-
-## Open questions
 - Confirmation on the web Approve button: a JS `confirm()` dialog is enough (the click +
   confirm = human authorization); no server-side prompt.
-- Keep the page dependency-light: mermaid.js from CDN is the only external asset.
