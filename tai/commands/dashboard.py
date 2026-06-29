@@ -395,7 +395,7 @@ def _first_heading(text: str) -> str:
 
 
 def _doc_body(text: str) -> str:
-    """Strip leading frontmatter + the derived banner line, return the markdown body."""
+    """Strip leading frontmatter, return the markdown body (banner line, if any, kept)."""
     if text.startswith("---"):
         parts = text.split("---", 2)
         if len(parts) == 3:
@@ -424,7 +424,9 @@ def _doc_rows(docs: Path) -> list:
 
 
 def collect_list(docs: Path, type_filter: str = "all", status_filter: Optional[str] = None) -> list:
-    rows = _doc_rows(docs)
+    # "all" = all specs + ADRs (the browsable contract docs), per SPEC-docs-query R1 —
+    # not every doc in the tree (prd/architecture/matrix are not listed here).
+    rows = [r for r in _doc_rows(docs) if r.type in ("spec", "decision")]
     if type_filter and type_filter != "all":
         rows = [r for r in rows if r.type == type_filter]
     if status_filter:

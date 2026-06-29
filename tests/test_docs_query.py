@@ -29,6 +29,9 @@ def _make_docs(root: Path) -> Path:
         "---\nid: 0001-stack\ntype: decision\nstatus: proposed\nparent: architecture\nchildren: []\nrelated: []\n---\n# 0001-stack: Pick a stack\n"
     )
     (docs / "specs" / "spec.template.md").write_text("---\nid: SPEC-x\ntype: spec\n---\n# template\n")
+    # non spec/ADR docs that must NOT appear in `list` (R1 = specs + ADRs only)
+    (docs / "prd.md").write_text("---\nid: prd\ntype: prd\nparent: null\nchildren: []\nrelated: []\nstatus: draft\n---\n# Product\n")
+    (docs / "architecture.md").write_text("---\nid: architecture\ntype: architecture\nparent: null\nchildren: []\nrelated: []\n---\n# Arch\n")
     return docs
 
 
@@ -45,6 +48,7 @@ def test_R1_list_all(docs_repo):
     assert result.exit_code == 0
     assert "SPEC-auth-login" in result.output and "0001-stack" in result.output
     assert "SPEC-x" not in result.output  # template excluded
+    assert "architecture" not in result.output and "prd" not in result.output  # non spec/ADR excluded (R1)
 
 
 # covers: SPEC-docs-query R2
