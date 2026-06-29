@@ -276,21 +276,21 @@ def render(d: Dashboard, out: Console) -> None:
 _PAGE = """<!doctype html><html><head><meta charset=utf-8>
 <title>tai dashboard</title>
 <style>
- body{font:14px/1.5 ui-monospace,monospace;background:#0d1117;color:#c9d1d9;margin:0;padding:24px}
- h1{font-size:18px;color:#58a6ff;margin:0 0 12px}
- nav button{font:inherit;background:#161b22;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:6px 14px;margin-right:6px;cursor:pointer}
- nav button.on{background:#1f6feb;border-color:#1f6feb;color:#fff}
+ body{font:14px/1.5 ui-monospace,monospace;background:#ffffff;color:#1f2328;margin:0;padding:24px}
+ h1{font-size:18px;color:#0969da;margin:0 0 12px}
+ nav button{font:inherit;background:#f6f8fa;color:#1f2328;border:1px solid #d0d7de;border-radius:6px;padding:6px 14px;margin-right:6px;cursor:pointer}
+ nav button.on{background:#0969da;border-color:#0969da;color:#fff}
  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
- .card{border:1px solid #30363d;border-radius:8px;padding:16px}
+ .card{border:1px solid #d0d7de;border-radius:8px;padding:16px;background:#fff}
  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px}
- .cyan{color:#39c5cf}.yellow{color:#d29922}.green{color:#3fb950}.blue{color:#58a6ff}.red{color:#f85149}.mag{color:#bc8cff}
- .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #21262d;padding:4px 0}
- .muted{color:#8b949e}.foot{margin-top:16px;color:#8b949e;font-size:12px}
- a{color:#58a6ff;cursor:pointer;text-decoration:none}
- input{font:inherit;background:#0d1117;color:#c9d1d9;border:1px solid #30363d;border-radius:6px;padding:6px 10px;width:280px}
- button.act{font:inherit;background:#238636;color:#fff;border:0;border-radius:5px;padding:3px 10px;cursor:pointer}
- pre{white-space:pre-wrap;background:#161b22;border:1px solid #21262d;border-radius:6px;padding:12px;overflow:auto}
- .pill{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid #30363d}
+ .cyan{color:#0550ae}.yellow{color:#9a6700}.green{color:#1a7f37}.blue{color:#0969da}.red{color:#cf222e}.mag{color:#8250df}
+ .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #d8dee4;padding:4px 0}
+ .muted{color:#656d76}.foot{margin-top:16px;color:#656d76;font-size:12px}
+ a{color:#0969da;cursor:pointer;text-decoration:none}
+ input{font:inherit;background:#fff;color:#1f2328;border:1px solid #d0d7de;border-radius:6px;padding:6px 10px;width:280px}
+ button.act{font:inherit;background:#1a7f37;color:#fff;border:0;border-radius:5px;padding:3px 10px;cursor:pointer}
+ pre{white-space:pre-wrap;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow:auto}
+ .pill{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid #d0d7de}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
 </head><body>
@@ -299,7 +299,7 @@ _PAGE = """<!doctype html><html><head><meta charset=utf-8>
 <div id=app style=margin-top:16px></div>
 <div class=foot>localhost · reads live · gate actions write + commit</div>
 <script>
-try{mermaid&&mermaid.initialize({startOnLoad:false,theme:'dark',securityLevel:'strict'});}catch(e){}
+try{mermaid&&mermaid.initialize({startOnLoad:false,theme:'default',securityLevel:'strict'});}catch(e){}
 const app=document.getElementById('app');let tab='overview';
 const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const j=async(u,o)=>(await fetch(u,o)).json();
@@ -409,6 +409,11 @@ def _make_handler(docs: Path):
         def do_POST(self):  # noqa: N802
             if not self._host_ok():
                 self._send(403, "text/plain", b"forbidden host")
+                return
+            # Writes are loopback-only by design: if the server was bound to a non-loopback
+            # host (--host 0.0.0.0), refuse all gate writes regardless of Host/Origin.
+            if self.server.server_address[0] not in ("127.0.0.1", "::1", "localhost"):
+                self._send(403, "text/plain", b"gate writes are localhost-only")
                 return
             path = urlparse(self.path).path
             actions = {"/api/gate/approve": "approve", "/api/gate/accept": "accept",

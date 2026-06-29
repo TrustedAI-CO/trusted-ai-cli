@@ -207,6 +207,23 @@ def test_INV3_csrf_guard(repo):
         assert dash.parse_frontmatter(spec.read_text())["status"] == "draft"  # never written
 
 
+# covers: SPEC-dashboard-ui INV3 — gate writes refused when bound non-loopback (--host 0.0.0.0)
+def test_INV3_write_refused_non_loopback(repo):
+    port = dash.find_free_port()
+    httpd = dash.build_server(repo / "docs", "0.0.0.0", port)
+    t = threading.Thread(target=httpd.serve_forever, daemon=True); t.start()
+    try:
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/api/gate/approve", data=b'{"id":"SPEC-draft"}',
+                                     headers={"Content-Type": "application/json"}, method="POST")
+        try:
+            urllib.request.urlopen(req, timeout=3); assert False
+        except urllib.error.HTTPError as e:
+            assert e.code == 403
+    finally:
+        httpd.shutdown(); httpd.server_close(); t.join(timeout=2)
+    assert dash.parse_frontmatter((repo / "docs" / "specs" / "draft.md").read_text())["status"] == "draft"
+
+
 # covers: SPEC-dashboard-ui — POST error paths (missing id 400, unknown action 404)
 def test_post_error_paths(repo):
     with _server(repo / "docs") as base:

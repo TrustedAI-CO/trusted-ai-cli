@@ -12,6 +12,10 @@ related: []
 - [ ] (scheduled deferred work)
 
 ## Backlog
+- dashboard-ui nits (#80 review LOW, deferred): mermaid CDN script has no SRI integrity
+  hash (supply-chain + network dep on a "localhost" tool) — pin/vendor; CLI gate type-check
+  runs after the confirm prompt (cosmetic UX — could pre-check in the wrapper); _GATE_LOCK
+  comment oversells (serializes in-process web writes only, not concurrent CLI).
 - gate nits (#79 review LOW, deferred): `_flip_status` doesn't match quoted YAML
   (`status: "draft"`) → misleading "is 'draft', not 'draft'" message; CRLF normalization
   behavior documented but untested; no-git case writes-then-reverts (transient on-disk
