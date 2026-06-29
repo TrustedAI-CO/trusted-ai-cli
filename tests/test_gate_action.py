@@ -20,7 +20,6 @@ def _git(repo: Path, *args: str) -> str:
 
 
 def _make_repo(root: Path) -> Path:
-    _git(root.parent if False else root, "init") if False else None
     subprocess.run(["git", "-C", str(root), "init", "-q"], check=True)
     _git(root, "config", "user.email", "t@test.co")
     _git(root, "config", "user.name", "Test")
@@ -92,11 +91,16 @@ def test_R4_accept_non_proposed_refused(repo):
     assert _status(repo / "docs" / "specs" / "x-y.md") == "draft"
 
 
-# covers: SPEC-gates-action R5
+# covers: SPEC-gates-action R5 (+ INV4 commit, INV2 body intact)
 def test_R5_resolve_pending(repo):
+    review = repo / "docs" / "REVIEW.md"
+    before_commits = _commits(repo)
     r = runner.invoke(app, ["gate", "resolve", "REVIEW-001", "--yes"])
     assert r.exit_code == 0
-    assert "RESOLVED" in (repo / "docs" / "REVIEW.md").read_text()
+    text = review.read_text()
+    assert "RESOLVED" in text and "PENDING" not in text
+    assert _commits(repo) == before_commits + 1          # INV4: one commit
+    assert text.count("### [REVIEW-001]") == 1           # INV2: block not duplicated/corrupted
 
 
 # covers: SPEC-gates-action R6
@@ -135,3 +139,19 @@ def test_R10_one_audited_commit(repo):
     assert _commits(repo) == before + 1
     msg = _git(repo, "log", "-1", "--format=%s")
     assert "SPEC-x-y" in msg and "approved" in msg
+
+
+# covers: SPEC-gates-action INV4 — accept also commits exactly once
+def test_INV4_accept_one_commit(repo):
+    before = _commits(repo)
+    runner.invoke(app, ["gate", "accept", "0003-x", "--yes"])
+    assert _commits(repo) == before + 1
+
+
+# covers: SPEC-gates-action INV4 — a pre-staged unrelated file is NOT swept into the gate commit
+def test_INV4_pathspec_isolated_commit(repo):
+    (repo / "unrelated.txt").write_text("staged but unrelated\n")
+    subprocess.run(["git", "-C", str(repo), "add", "unrelated.txt"], check=True)
+    runner.invoke(app, ["gate", "approve", "SPEC-x-y", "--yes"])
+    files = _git(repo, "show", "--name-only", "--format=", "HEAD").split()
+    assert files == ["docs/specs/x-y.md"]  # only the gate file, not unrelated.txt

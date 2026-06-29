@@ -57,9 +57,26 @@ def _confirm(action: str, target: str, transition: str, yes: bool) -> None:
 
 
 def _git_commit(repo: Path, rel: str, message: str) -> None:
-    subprocess.run(["git", "-C", str(repo), "add", rel], check=True)
-    subprocess.run(["git", "-C", str(repo), "commit", "-m", message], check=True,
-                   capture_output=True)
+    """Stage + commit ONLY `rel` (pathspec commit ignores anything else staged)."""
+    subprocess.run(["git", "-C", str(repo), "add", "--", rel], check=True, capture_output=True)
+    subprocess.run(["git", "-C", str(repo), "commit", "-m", message, "--", rel],
+                   check=True, capture_output=True)
+
+
+def _write_commit_or_rollback(path: Path, docs: Path, original: str, updated: str, message: str) -> None:
+    """Write `updated`, commit just this file; on any commit failure restore `original`
+    so a failed action never leaves an uncommitted source mutation (INV4)."""
+    path.write_text(updated, encoding="utf-8")
+    rel = str(path.relative_to(docs.parent))
+    try:
+        _git_commit(docs.parent, rel, message)
+    except subprocess.CalledProcessError as exc:
+        path.write_text(original, encoding="utf-8")  # rollback the mutation
+        err_console.print("[bold red]Commit failed — reverted, no change.[/bold red]")
+        detail = (exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")).strip()
+        if detail:
+            err_console.print(f"[dim]{detail.splitlines()[-1]}[/dim]")
+        raise typer.Exit(1)
 
 
 def _flip_status(text: str, current: str, new: str, stamp_at: Optional[str]) -> Optional[str]:
@@ -79,6 +96,13 @@ def _flip_status(text: str, current: str, new: str, stamp_at: Optional[str]) -> 
     return head + sep + body
 
 
+def _require_type(path: Path, expected: str, doc_id: str) -> None:
+    actual = parse_frontmatter(_read(path)).get("type")
+    if actual != expected:
+        err_console.print(f"[bold red]{doc_id} is a '{actual}', not a '{expected}'.[/bold red] No change.")
+        raise typer.Exit(1)
+
+
 def _apply(path: Path, docs: Path, current: str, new: str, stamp: bool, label: str, doc_id: str) -> None:
     text = _read(path)
     updated = _flip_status(text, current, new, _now() if stamp else None)
@@ -86,9 +110,7 @@ def _apply(path: Path, docs: Path, current: str, new: str, stamp: bool, label: s
         cur = parse_frontmatter(text).get("status")
         err_console.print(f"[bold red]{doc_id} is '{cur}', not '{current}'.[/bold red] No change.")
         raise typer.Exit(1)
-    path.write_text(updated, encoding="utf-8")
-    rel = str(path.relative_to(docs.parent))
-    _git_commit(docs.parent, rel, f"gate({label}): {doc_id} → {new}")
+    _write_commit_or_rollback(path, docs, text, updated, f"gate({label}): {doc_id} → {new}")
     console.print(f"[green]✓[/green] {doc_id}: {current} → {new} (committed)")
 
 
@@ -99,6 +121,7 @@ def approve(spec_id: str = typer.Argument(...), yes: bool = typer.Option(False, 
     path = find_doc_by_id(docs, spec_id)
     if path is None:
         raise _not_found(docs, spec_id)
+    _require_type(path, "spec", spec_id)
     _confirm("approve", spec_id, "draft → approved", yes)
     _apply(path, docs, "draft", "approved", stamp=True, label="C", doc_id=spec_id)
 
@@ -110,6 +133,7 @@ def accept(adr_id: str = typer.Argument(...), yes: bool = typer.Option(False, "-
     path = find_doc_by_id(docs, adr_id)
     if path is None:
         raise _not_found(docs, adr_id)
+    _require_type(path, "decision", adr_id)
     _confirm("accept", adr_id, "proposed → accepted", yes)
     _apply(path, docs, "proposed", "accepted", stamp=False, label="B", doc_id=adr_id)
 
@@ -130,7 +154,5 @@ def resolve(review_id: str = typer.Argument(...), yes: bool = typer.Option(False
     _confirm("resolve", review_id, "PENDING → RESOLVED", yes)
     new_block = re.sub(r"(?i)(status:\**\s*)pending", r"\1RESOLVED", m.group(0), count=1)
     updated = text[:m.start()] + new_block + text[m.end():]
-    review.write_text(updated, encoding="utf-8")
-    rel = str(review.relative_to(docs.parent))
-    _git_commit(docs.parent, rel, f"gate(review): {review_id} → resolved")
+    _write_commit_or_rollback(review, docs, text, updated, f"gate(review): {review_id} → resolved")
     console.print(f"[green]✓[/green] {review_id}: PENDING → RESOLVED (committed)")
