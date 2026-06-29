@@ -1,7 +1,7 @@
 ---
 id: SPEC-dashboard-render
 type: spec
-status: approved
+status: implemented
 approved_at: 2026-06-29T14:39:39Z
 implements: [prd]
 parent: architecture
