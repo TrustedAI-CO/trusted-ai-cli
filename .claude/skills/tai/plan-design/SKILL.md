@@ -54,6 +54,37 @@ Assume the user hasn't looked at this window in 20 minutes and doesn't have the 
 
 Per-skill instructions may add additional formatting rules on top of this baseline.
 
+## Talk-then-write — present the plan VISUALLY before writing any docs/ file (ADR 0004)
+
+**Never draft `docs/design/visual.md` or a design ADR in `docs/decisions/` silently and ask
+for approval after.** Show the design decision in the conversation FIRST; write the file
+only once the human confirms the direction:
+
+1. **Lead with an ASCII diagram** — the screen/layout/IA structure or component tree of
+   what you're specifying, plus a compact interaction-state or hierarchy table. Visual-first:
+   the human should see the layout and what wins the eye at a glance in a TUI, not read
+   paragraphs. Prose is supporting.
+   ```
+   ┌─ Screen ──────────────────┐
+   │  [1] primary (hero CTA)   │   IA hierarchy:
+   │  ──────────────────────   │   1st → 2nd → 3rd
+   │  [2] secondary list       │
+   │  [3] tertiary / meta      │
+   └───────────────────────────┘
+   ```
+   | Feature | Loading | Empty | Error | Success |
+   |---------|---------|-------|-------|---------|
+   | ... | what user SEES | ... | ... | ... |
+2. **Confirm/steer via AskUserQuestion** (proceed as-is / adjust the layout / rethink the
+   pattern) before persisting — one issue per question, per the rule below.
+3. **Write the file ONLY after** the human confirms. Visual decisions go to
+   `docs/design/visual.md`; interaction/UX decisions land as `docs/decisions/` ADRs. Never
+   invent a full visual system here without confirmation — if none exists, recommend
+   `/design-consultation`.
+
+`quick`/abbreviated mode: present a single one-shot screen/IA outline diagram + confirm,
+instead of a per-pass walk.
+
 ## Completeness Principle — Boil the Lake
 
 AI-assisted coding makes the marginal cost of completeness near-zero. When you present options:
@@ -385,7 +416,7 @@ If any AskUserQuestion goes unanswered, note it here. Never silently default to 
 
 ## Write Design Decisions to Docs
 
-After the design review is complete, you MUST persist any design decisions or findings to docs.
+After the design review is complete, you MUST persist any design decisions or findings to docs. (present + confirm per Talk-then-write above before writing)
 
 ### Visual Design Decisions
 If visual design decisions were made (typography, color, spacing, layout, component choices, responsive breakpoints), update `docs/design/visual.md`.

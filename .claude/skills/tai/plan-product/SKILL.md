@@ -54,6 +54,32 @@ Assume the user hasn't looked at this window in 20 minutes and doesn't have the 
 
 Per-skill instructions may add additional formatting rules on top of this baseline.
 
+## Talk-then-write — present the plan VISUALLY before writing any docs/ file (ADR 0004)
+
+**Never draft the design doc or `docs/prd.md` product-intent silently and ask for approval
+after.** Office hours is a conversation — show the shape of the thinking FIRST, get a
+nod, then write the file:
+
+1. **Lead with an ASCII diagram** of the product shape — the problem → narrowest wedge →
+   solution arc, plus a compact findings table from the session (the six forcing
+   questions, or the builder-mode delight signals). Visual-first: the founder should see
+   the bet at a glance in a TUI, not read paragraphs. Prose is supporting.
+   ```
+   PROBLEM ──▶ NARROWEST WEDGE ──▶ SOLUTION ──▶ FUTURE-FIT
+     │              │                 │             │
+   who hurts?   ship this week?    the build     more essential in 3y?
+   ```
+   | Forcing Q | Founder's answer (specific?) | Verdict |
+   |-----------|------------------------------|---------|
+   | Demand reality | ... | evidence / red flag |
+2. **Confirm/steer via AskUserQuestion** (proceed as-is / adjust the wedge / rethink the
+   problem) before persisting anything.
+3. **Write the file ONLY after** the founder confirms the direction. `docs/prd.md` stays
+   HUMAN-owned — draft for approval, never finalize over their intent.
+
+`quick`/abbreviated mode: present a single one-shot outline diagram of the
+problem→wedge→solution shape + confirm, instead of a per-section walk.
+
 ## Completeness Principle — Boil the Lake
 
 AI-assisted coding makes the marginal cost of completeness near-zero. When you present options:
@@ -538,6 +564,8 @@ already has human-authored content, preserve it and propose additive edits rathe
 overwriting.
 
 ### 1. Draft `docs/prd.md` (human-owned PRD)
+
+(present + confirm per Talk-then-write above before writing)
 
 If `docs/prd.md` already exists, propose updates to its sections with real content
 from the session (filling TODO placeholders), but leave existing human-written content
