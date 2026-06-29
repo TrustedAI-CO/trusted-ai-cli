@@ -82,17 +82,28 @@ Three rules make every change reviewable and traceable:
 | | Layers | Who edits | When |
 |--|--------|-----------|------|
 | **Source** (authored, gated) | `docs/prd.md`, `docs/decisions/`, `docs/specs/` | Human-gated | Before code, via plan skills + human approval |
-| **Derived** (living, agent-maintained) | `README.md`, `docs/architecture.md`, `docs/matrix.md`, `docs/changelog.md`, `docs/contributing.md`, `CLAUDE.md` | Agent | Any time, incl. post-ship via `docs-update` |
+| **Derived** (living, agent-maintained) | `README.md`, `docs/architecture.md`, `docs/matrix.md`, `docs/changelog.md`, `docs/contributing.md`, `CLAUDE.md` | Agent, **live** | Maintained *as the change is made* — never caught up afterward |
 
-`docs-update` is **post-ship** and touches **derived docs only**. It must NEVER edit a
-source layer (`specs/`, `prd.md`, `decisions/`).
+**Docs are maintained live, verified at the gate — there is no terminal docs-update step.**
+- Source docs lead: plan-eng authors specs/ADRs *before* code (doc-first).
+- Derived docs are kept current *during* implementation: `/tai-execute` maintains
+  `matrix.md` + `architecture.md` §4 + any touched derived prose as part of its
+  definition-of-done; `/ship` writes `changelog.md`.
+- `/ship`'s conformance gate **verifies** the machine-checkable derived docs are in sync
+  and blocks if stale — `matrix.md`, `architecture.md` §4, `changelog.md`. It verifies, it
+  doesn't sweep. (Derived *prose* — README/CLAUDE/contributing — is execute's responsibility
+  but best-effort/unverified, not gate-blocked.) A stale gate-checked doc is a failure to
+  fix before shipping, not a post-ship chore.
+- `/docs-update` is **on-demand only** (onboarding, regenerating a disposable map, a
+  periodic consistency pass) — never auto-chained by `/tai-flow`, never run by `/ship`.
+- No skill edits a source layer (`specs/`, `prd.md`, `decisions/`) to match shipped code.
 
 **Derived docs carry a trust marker so a human reading one knows not to trust it as
 source.** Every derived doc has `derived: true` in frontmatter AND a one-line banner
 right under the frontmatter:
 
 ```
-> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source
+> ⚠️ Derived doc — maintained live by an agent as code changes; may still lag. Source
 > of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 ```
 
@@ -214,10 +225,10 @@ the gate humans flip.
 | `/plan-eng` | prd, architecture | `docs/architecture.md`, `docs/specs/` (draft), `docs/plan/tasks.md` | L1+L2 — author spec contracts |
 | `/plan-design` | prd, design/visual | `docs/design/visual.md`, `docs/decisions/` (ADRs) | L1 — design ADRs |
 | `/design-consultation` | — | `docs/design/visual.md` | design system |
-| `/tai-execute` (auto solo/team) | plan/tasks, **approved** specs | code+tests, `docs/matrix.md`, `docs/REVIEW.md` | L3 — implement against approved L2 |
+| `/tai-execute` (auto solo/team) | plan/tasks, **approved** specs | code+tests + **live** derived docs (`matrix.md`, `architecture.md` §4, touched prose), `docs/REVIEW.md` | L3 — implement against approved L2; maintain derived docs live |
 | `/review` | specs, matrix | — (conformance check) | L2 gate check |
-| `/ship` | REVIEW, matrix | — (pre-merge gates) | enforces doc-first gate |
-| `/docs-update` | all derived docs | derived docs only | post-ship — never touches source |
+| `/ship` | REVIEW, matrix | `changelog.md`; — (pre-merge gates incl. derived-doc sync verify) | enforces doc-first + verifies derived docs current |
+| `/docs-update` | all derived docs | derived docs only | **on-demand only** — refresh/regenerate; never auto-chained |
 | `/docs-init` | — | scaffolds the whole tree | bootstrap |
 
 See `docs-preamble.md` for init constants, frontmatter rules, and the spec/matrix file

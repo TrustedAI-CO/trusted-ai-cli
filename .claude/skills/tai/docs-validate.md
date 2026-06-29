@@ -47,7 +47,7 @@ any file under a spec's `code:` path **while that spec is not `status: approved`
 > No code under a spec's `code:` path may merge until that spec is `status: approved`.
 
 ### G2. Source-layer-after-code gate (BLOCK + flag)
-In a post-ship / `docs-update` context, if the diff edits any file under `docs/specs/`,
+In a derived-docs-maintenance context (e.g. an on-demand `docs-update` run), if the diff edits any file under `docs/specs/`,
 `docs/prd.md`, or `docs/decisions/` → BLOCK and emit a `[CRITICAL]` finding. Source layers
 are changed spec-first, never to match shipped code.
 

@@ -2,10 +2,12 @@
 name: docs-update
 version: 1.0.0
 description: |
-  [TAI] Post-ship documentation update. Reads all project docs, cross-references the
-  diff, updates README/docs/architecture.md/docs/contributing.md/CLAUDE.md to match what shipped,
-  polishes changelog voice, cleans up the backlog, and optionally bumps VERSION. Use when
-  asked to "update the docs", "sync documentation", or "post-ship docs".
+  [TAI] On-demand derived-docs refresh. NOT a pipeline step — derived docs are maintained
+  live by /tai-execute and verified by /ship's gate. Use this only to deliberately refresh
+  or regenerate derived docs (README/architecture/contributing/CLAUDE/changelog voice,
+  backlog cleanup, optional VERSION bump) — e.g. onboarding an existing repo, regenerating
+  a disposable map, or a periodic consistency pass. Use when asked to "refresh the docs",
+  "regenerate the docs map", or "do a docs consistency pass".
 allowed-tools:
   - Bash
   - Read
@@ -15,6 +17,16 @@ allowed-tools:
   - Glob
   - AskUserQuestion
 ---
+
+## Not a pipeline step (read first)
+
+**Derived docs are maintained LIVE, not synced at the end.** `/tai-execute` keeps matrix +
+architecture §4 + touched derived prose current as it implements; `/ship` writes the
+changelog and its gate VERIFIES derived docs are in sync (failing the ship if not). So
+this skill is **not** auto-chained by `/tai-flow` and is **not** run by `/ship`. It exists
+only as an **on-demand** tool: onboarding an existing/legacy repo, regenerating a
+deliberately-disposable map, or a periodic consistency pass a human chooses to run. If
+you reached here as part of a normal ship, you don't need it — the docs are already current.
 
 ## Framework Guardrails (read first)
 
@@ -124,11 +136,13 @@ branch name wherever the instructions say "the base branch."
 
 ---
 
-# Document Release: Post-Ship Documentation Update
+# Document Refresh: On-Demand Derived-Docs Pass
 
-You are running the `/docs-update` workflow. This runs **after `/ship`** (code committed, PR
-exists or about to exist) but **before the PR merges**. Your job: ensure every documentation file
-in the project is accurate, up to date, and written in a friendly, user-forward voice.
+You are running the `/docs-update` workflow. This is an **on-demand** refresh — NOT a
+pipeline step, NOT run by `/ship`. A human invokes it deliberately (onboarding an existing
+repo, regenerating a disposable map, or a periodic consistency pass). Normal feature work
+keeps derived docs current live via `/tai-execute`. Your job here: ensure every derived
+documentation file is accurate, up to date, and written in a friendly, user-forward voice.
 
 You are mostly automated. Make obvious factual updates directly. Stop and ask only for risky or
 subjective decisions.
@@ -137,7 +151,7 @@ subjective decisions.
 
 ## ⛔ HARD RULE — DERIVED DOCS ONLY (READ FIRST, NON-NEGOTIABLE)
 
-This is a **post-ship** skill. It may update **derived / living docs ONLY**:
+This is an **on-demand** skill (not a pipeline step). It may update **derived / living docs ONLY**:
 
 - `README.md`
 - `docs/architecture.md` (derived sections only — e.g. §4 code map)
@@ -304,7 +318,7 @@ repos pick up the banner on their next `/docs-update` run):
    the first line if there is no frontmatter):
 
    ```
-   > ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
+   > ⚠️ Derived doc — maintained live by an agent as code changes; may still lag. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
    ```
 
 This is a factual, mechanical auto-fix — apply it directly, do not ask. **NEVER** add

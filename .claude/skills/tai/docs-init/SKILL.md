@@ -46,7 +46,7 @@ This scaffold implements a layered, doc-first workflow. The layers, in order:
 Core invariant — **doc-first order:** change the spec *before* the code, in the
 same PR. Code under a spec's `code:` path may not merge until that spec is
 `status: approved`. `docs/specs/` is the L2 layer; never edit a spec to match
-code already written (that inverts the order). `docs-update` is post-ship and
+code already written (that inverts the order). `docs-update` is an on-demand tool that
 touches derived/living docs only — it never edits `docs/specs/`.
 
 ## Outputs
@@ -283,7 +283,7 @@ related: []
 derived: true
 ---
 
-> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
+> ⚠️ Derived doc — maintained live by an agent as code changes; may still lag. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 
 # Architecture — <Project>
 
@@ -436,7 +436,7 @@ related: []
 derived: true
 ---
 
-> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
+> ⚠️ Derived doc — maintained live by an agent as code changes; may still lag. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 
 # Changelog
 
@@ -458,7 +458,7 @@ related: []
 derived: true
 ---
 
-> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
+> ⚠️ Derived doc — maintained live by an agent as code changes; may still lag. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 
 # Contributing
 
@@ -615,7 +615,7 @@ related: []
 derived: true
 ---
 
-> ⚠️ Derived doc — generated/maintained post-ship by an agent; may lag the code. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
+> ⚠️ Derived doc — maintained live by an agent as code changes; may still lag. Source of truth is `docs/specs/` + `docs/prd.md`. Regenerate, don't hand-edit as canon.
 
 # Requirements Traceability Matrix
 
@@ -630,7 +630,7 @@ derived: true
 - Draft: 0
 
 ## Untraced Code
-Files with significant logic not governed by any spec — populated by `/docs-update`.
+Files with significant logic not governed by any spec — maintained live by `/tai-execute`, or refreshed by an on-demand `/docs-update`.
 ```
 
 Replace `YYYY-MM-DD` with the actual date (`$_DATE`).

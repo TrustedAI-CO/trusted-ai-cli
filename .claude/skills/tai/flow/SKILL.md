@@ -84,9 +84,14 @@ removal as mandatory cleanup on every exit path.
 [S2 build]  specs approved           → /tai-execute (auto-picks solo vs team)
 [S3 review] code written             → /review
 [S4 qa]     review clean             → /qa (web only; CLI/lib → smoke check or skip, see Step 4)
-[S5 ship]   qa clean                 → /ship
-[S6 docs]   shipped                  → /docs-update
+[S5 ship]   qa clean                 → /ship  (derived docs already current — verified by ship's gate)
 [DONE]
+
+Note: there is NO separate docs-update stage. In a doc-driven pipeline, docs are
+maintained LIVE (specs first by plan-eng; matrix + architecture §4 + touched derived prose
+by /tai-execute as it implements; changelog by /ship). Ship's conformance gate VERIFIES
+they're in sync and blocks if stale. `/docs-update` survives only as an on-demand refresh
+tool (onboarding, regenerating a disposable map) — never an auto-chained step.
 ```
 
 ## Step 1 — Detect Stage
@@ -113,7 +118,7 @@ Read state, do not guess from conversation:
 4. Any `docs/decisions/*.md` with `status:` not `accepted` that the task depends on
    → **GATE B**.
 5. All relevant specs `approved`, code not yet matching → **S2 build**.
-6. Code present but not reviewed/qa'd/shipped this branch → walk S3→S6 using
+6. Code present but not reviewed/qa'd/shipped this branch → walk S3→S5 using
    `.tai/state/` logs + git status to find the highest completed step.
 
 When ambiguous which stage, state your reading and the evidence, then proceed with
@@ -175,11 +180,10 @@ report and HALT — the human edits `status:` in the file directly later and re-
 Once gates clear, chain WITHOUT asking between steps:
 
 ```
-/tai-execute (auto-picks solo vs team)
+/tai-execute (auto-picks solo vs team; maintains derived docs live)
   → /review
     → /qa
-      → /ship
-        → /docs-update
+      → /ship   (verifies derived docs are in sync; ends the chain)
 ```
 
 - `/tai-execute` auto-selects its strategy: it uses the parallel team strategy when
@@ -236,7 +240,7 @@ End every run with a one-block status so the dev knows where things stand:
 ```
 flow: {stage reached}
   ✓ done: {steps completed this run}
-  ⏸ paused at: {gate / failure}  — OR —  ✅ DONE: shipped + docs updated
+  ⏸ paused at: {gate / failure}  — OR —  ✅ DONE: shipped (docs maintained live)
   next: {what /flow will do on next invocation, or what human must do}
 ```
 

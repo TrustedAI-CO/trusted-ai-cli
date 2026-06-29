@@ -930,9 +930,26 @@ PRs. The enforceable rule:
    - It is **counted** and reported (how many findings it waived, and which).
    - An exempt that is author-supplied, mis-categorized, or uncounted does NOT waive — treat the finding as a **FAIL**.
 
+**7. Derived docs in sync (VERIFY, don't sweep).** Derived docs are maintained live by
+`/tai-execute`; this gate confirms they actually are. There is no post-ship docs-update
+step to lean on — if any of these is stale, **FAIL** (fix before shipping):
+   - **matrix:** every Behavior row of a spec touched by the diff has a `docs/matrix.md`
+     row whose cited test path exists and was referenced by a passing test this run. A
+     row marked COVERED whose test no longer exists → FAIL (stale matrix).
+   - **architecture §4:** every new top-level code directory in the diff sits under a
+     container declared in `docs/architecture.md` §4 (this overlaps check 1's per-spec
+     trace; here it's the directory-map view). A new container absent from §4 → FAIL.
+   - **changelog:** `docs/changelog.md` has an entry for this version with the **spec-id**
+     cross-ref (Step 5). Missing → FAIL. (The PR number `(#NNN)` is backfilled in Step 8
+     after the PR exists — do NOT require it at this gate.)
+   Derived prose (README/CLAUDE/contributing) is execute's responsibility but is **not**
+   blocked here (best-effort, unverified) — only matrix, §4, and changelog are gate-enforced.
+   Fixing derived docs is allowed at this gate (they're derived, not source) — but it is
+   a *fix to pass*, surfaced as a finding, not a silent post-ship rewrite.
+
 **On any FAIL (not waived by a valid spec-exempt):**
 
-**HARD-STOP the ship.** Do NOT run Step 6 (commit), Step 7 (push), or Step 8 (PR). Report each violation with: the check that failed (Trace / Doc-first / Row coverage / Unspec'd module / Declared specs), the spec ID and/or file:line, and what is missing. Then use AskUserQuestion (following the AskUserQuestion Format above — re-ground, simplify, recommend, options):
+**HARD-STOP the ship.** Do NOT run Step 6 (commit), Step 7 (push), or Step 8 (PR). Report each violation with: the check that failed (Trace / Doc-first / Row coverage / Unspec'd module / Declared specs / Derived-doc sync), the spec ID and/or file:line, and what is missing. Then use AskUserQuestion (following the AskUserQuestion Format above — re-ground, simplify, recommend, options):
 - Explain in plain English which framework rule was broken and why it blocks the ship.
 - `RECOMMENDATION: Choose A because the spec is the ground truth code is verified against — fixing it now keeps doc and code in sync.`
 - Options:
@@ -1048,36 +1065,22 @@ EOF
 
 **Backfill changelog PR refs.** If the changelog bullets (Step 5) were written with spec
 ids but no `(#NNN)` because the PR didn't exist yet, edit `docs/changelog.md` now to add
-the PR number to each new bullet, then amend the final commit (or include in the Step 8.5
-docs commit). The changelog is the trace index — it must carry the PR number.
+the PR number to each new bullet, then amend the final commit. The changelog is the trace
+index — it must carry the PR number.
 
 ---
 
-## Step 8.5: Documentation Update (if docs/ exists)
+## Step 8.5: (removed) — docs are maintained live, not synced at ship
 
-If `docs/` directory exists, run the docs-update workflow inline:
-
-1. **Sync derived docs** — Cross-reference the diff against `docs/matrix.md` and
-   `docs/architecture.md`. Auto-update factual content (paths, commands, component
-   lists; architecture §4 container → directory map). Leave narrative sections alone.
-
-2. **Sync derived docs only** — Update `README`, `docs/matrix.md`,
-   `docs/architecture.md`, `changelog.md`, `contributing.md`, `CLAUDE.md`. NEVER
-   touch `docs/specs/`, `docs/prd.md`, or
-   `docs/decisions/` here — post-ship edits to those invert doc-first. If a spec is
-   stale vs shipped code, that's a Framework Conformance failure (Step 5.75), not a
-   docs-update fix.
-
-3. **Commit docs changes** (if any) and push:
-
-```bash
-git add docs/
-git diff --cached --quiet || git commit -m "docs: sync documentation for $(git log -1 --format=%s HEAD~1)"
-git push
-```
-
-This is a lightweight inline version. For full docs audit (CHANGELOG voice polish,
-cross-doc consistency, VERSION check), run `/docs-update` separately.
+There is **no post-ship docs-update sweep**. In a doc-driven pipeline derived docs are
+maintained LIVE as the change is made — `/tai-execute` keeps `docs/matrix.md`,
+`docs/architecture.md` §4, and any touched derived prose (`README`, `CLAUDE.md`,
+`contributing.md`) current as part of its definition-of-done; `/ship` writes the
+changelog (Step 5). Ship's job here is to **verify**, not to write: the Framework
+Conformance Gate (Step 5.75) already blocks if derived docs are out of sync with the
+shipped diff (see check 7 there). A stale derived doc is a **gate failure to fix before
+shipping**, never a thing to patch up afterward. `/docs-update` survives only as an
+on-demand refresh/regenerate tool, never an auto-run ship step.
 
 ---
 

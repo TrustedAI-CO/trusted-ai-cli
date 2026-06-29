@@ -364,7 +364,9 @@ If specs exist:
    - `[INFO] {N} pending review items in docs/REVIEW.md`
 
 Include these findings in the review output. Spec conformance findings are
-INFORMATIONAL — they guide docs-update to keep specs current.
+INFORMATIONAL — they flag spec/code drift for human attention (via `docs/REVIEW.md` → an
+ADR or a spec revision through the proper doc-first flow). Never auto-edit specs to match
+code, and don't route this to `docs-update` (it never touches source layers).
 
 ---
 
