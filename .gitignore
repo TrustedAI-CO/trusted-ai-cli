@@ -40,3 +40,4 @@ htmlcov/
 .gstack/
 .omx/
 .tai/
+.playwright-mcp/

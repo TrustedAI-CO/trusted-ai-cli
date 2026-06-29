@@ -9,11 +9,13 @@ from __future__ import annotations
 import json as _json
 import re
 import socket
+import threading
 import webbrowser
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Optional
+from urllib.parse import parse_qs, unquote, urlparse
 
 import typer
 from rich.console import Console
@@ -274,43 +276,100 @@ def render(d: Dashboard, out: Console) -> None:
 _PAGE = """<!doctype html><html><head><meta charset=utf-8>
 <title>tai dashboard</title>
 <style>
- body{font:14px/1.5 ui-monospace,monospace;background:#0d1117;color:#c9d1d9;margin:0;padding:24px}
- h1{font-size:18px;color:#58a6ff;margin:0 0 16px}
+ body{font:14px/1.5 ui-monospace,monospace;background:#ffffff;color:#1f2328;margin:0;padding:24px}
+ h1{font-size:18px;color:#0969da;margin:0 0 12px}
+ nav button{font:inherit;background:#f6f8fa;color:#1f2328;border:1px solid #d0d7de;border-radius:6px;padding:6px 14px;margin-right:6px;cursor:pointer}
+ nav button.on{background:#0969da;border-color:#0969da;color:#fff}
  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
- .card{border:1px solid #30363d;border-radius:8px;padding:16px}
+ .card{border:1px solid #d0d7de;border-radius:8px;padding:16px;background:#fff}
  .card h2{font-size:13px;text-transform:uppercase;letter-spacing:.05em;margin:0 0 10px}
- .cyan{color:#39c5cf}.yellow{color:#d29922}.green{color:#3fb950}.blue{color:#58a6ff}.red{color:#f85149}
- .row{display:flex;justify-content:space-between;border-bottom:1px solid #21262d;padding:3px 0}
- .muted{color:#8b949e}.foot{margin-top:16px;color:#8b949e;font-size:12px}
-</style></head><body>
+ .cyan{color:#0550ae}.yellow{color:#9a6700}.green{color:#1a7f37}.blue{color:#0969da}.red{color:#cf222e}.mag{color:#8250df}
+ .row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #d8dee4;padding:4px 0}
+ .muted{color:#656d76}.foot{margin-top:16px;color:#656d76;font-size:12px}
+ a{color:#0969da;cursor:pointer;text-decoration:none}
+ input{font:inherit;background:#fff;color:#1f2328;border:1px solid #d0d7de;border-radius:6px;padding:6px 10px;width:280px}
+ button.act{font:inherit;background:#1a7f37;color:#fff;border:0;border-radius:5px;padding:3px 10px;cursor:pointer}
+ pre{white-space:pre-wrap;background:#f6f8fa;border:1px solid #d0d7de;border-radius:6px;padding:12px;overflow:auto}
+ .pill{font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid #d0d7de}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+</head><body>
 <h1>tai dashboard <span class=muted id=ts></span></h1>
-<div class=grid id=app></div>
-<div class=foot>auto-refresh every 5s · read-only · localhost</div>
+<nav><button data-t=overview class=on>Overview</button><button data-t=specs>Specs</button><button data-t=gates>Gates</button></nav>
+<div id=app style=margin-top:16px></div>
+<div class=foot>localhost · reads live · gate actions write + commit</div>
 <script>
-async function tick(){
- try{const d=await (await fetch('/api/dashboard.json')).json();render(d);}
- catch(e){document.getElementById('app').innerHTML='<div class=card><span class=red>fetch failed</span></div>';}
-}
+try{mermaid&&mermaid.initialize({startOnLoad:false,theme:'default',securityLevel:'strict'});}catch(e){}
+const app=document.getElementById('app');let tab='overview';
+const esc=s=>(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const j=async(u,o)=>(await fetch(u,o)).json();
+function setTab(t){tab=t;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));draw();}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>setTab(b.dataset.t));
+
 function card(title,cls,body){return `<div class=card><h2 class="${cls}">${title}</h2>${body}</div>`;}
-function rows(pairs){return pairs.map(([k,v])=>`<div class=row><span>${k}</span><span>${v}</span></div>`).join('');}
-function render(d){
- const p=d.pipeline,c=d.coverage;
+function rows(p){return p.map(([k,v])=>`<div class=row><span>${k}</span><span>${v}</span></div>`).join('');}
+
+async function drawOverview(){
+ const d=await j('/api/dashboard.json');const p=d.pipeline,c=d.coverage;
  const cov=c.total?`${c.covered}/${c.total} (${c.percent}%)`:'n/a';
- const pipe=card('Pipeline','cyan',rows([['Specs',p.total],['draft',p.draft],['approved',p.approved],['implemented',p.implemented],['Coverage',cov]]));
- const ny=d.needs_you.length
-   ?card(`Needs you (${d.needs_you.length})`,'yellow',d.needs_you.map(i=>`<div class=row><span class=yellow>${i.id}</span><span>${i.title}</span></div>`).join(''))
-   :card('Needs you (0)','green','<span class=green>nothing pending</span>');
- const rec=d.recent.length
-   ?card('Recent','blue',d.recent.map(b=>`<div class=row><b>${b.version}</b></div>`+b.entries.slice(0,5).map(e=>`<div class=row><span class=muted>• ${e}</span></div>`).join('')).join(''))
-   :card('Recent','blue','<span class=muted>none</span>');
  const h=d.doc_health,iss=h.orphans.length+h.broken_links.length+h.missing_frontmatter.length;
- const dh=iss===0?card('Doc Health','green','<span class=green>healthy — graph intact</span>')
-   :card(`Doc Health (${iss})`,'red',[].concat(h.missing_frontmatter.map(x=>['no frontmatter',x]),h.orphans.map(x=>['orphan',x]),h.broken_links.map(x=>['broken link',x])).map(([k,v])=>`<div class=row><span class=red>${k}</span><span>${v}</span></div>`).join(''));
- document.getElementById('app').innerHTML=pipe+ny+rec+dh;
- document.getElementById('ts').textContent=new Date().toLocaleTimeString();
+ app.className='grid';
+ app.innerHTML=
+  card('Pipeline','cyan',rows([['Specs',p.total],['draft',p.draft],['approved',p.approved],['implemented',p.implemented],['Coverage',cov]]))+
+  (d.needs_you.length?card(`Needs you (${d.needs_you.length})`,'yellow',d.needs_you.map(i=>`<div class=row><span class=yellow>${i.id}</span><span>${esc(i.title)}</span></div>`).join('')):card('Needs you (0)','green','<span class=green>nothing pending</span>'))+
+  (d.recent.length?card('Recent','blue',d.recent.map(b=>`<div class=row><b>${esc(b.version)}</b></div>`+b.entries.slice(0,5).map(e=>`<div class=row><span class=muted>• ${esc(e)}</span></div>`).join('')).join('')):card('Recent','blue','<span class=muted>none</span>'))+
+  (iss===0?card('Doc Health','green','<span class=green>healthy — graph intact</span>'):card(`Doc Health (${iss})`,'red',[].concat(h.missing_frontmatter.map(x=>['no frontmatter',x]),h.orphans.map(x=>['orphan',x]),h.broken_links.map(x=>['broken link',x])).map(([k,v])=>`<div class=row><span class=red>${k}</span><span>${esc(v)}</span></div>`).join('')));
 }
-tick();setInterval(tick,5000);
+async function drawSpecs(){
+ app.className='';
+ app.innerHTML='<input id=q placeholder="search specs + ADRs…"><div id=list style=margin-top:12px></div><div id=detail style=margin-top:16px></div>';
+ const q=document.getElementById('q'),list=document.getElementById('list');
+ async function load(){const rows=await j(q.value?('/api/search?q='+encodeURIComponent(q.value)):'/api/docs');
+  list.innerHTML=rows.map(r=>`<div class=row><a class=doclink data-id="${esc(r.id)}">${esc(r.id)}</a><span class=muted>${esc(r.type)}</span><span class="pill">${esc(r.status)}</span></div>`).join('')||'<span class=muted>none</span>';
+  list.querySelectorAll('.doclink').forEach(a=>a.onclick=()=>showDoc(a.dataset.id));}
+ q.oninput=load;await load();
+}
+async function showDoc(id){
+ const d=await j('/api/doc/'+encodeURIComponent(id));const det=document.getElementById('detail');
+ const meta=Object.entries(d.frontmatter).filter(([k])=>['id','type','status','approved_at'].includes(k)).map(([k,v])=>`<span class=pill>${k}: ${esc(''+v)}</span>`).join(' ');
+ // render body; swap each ```mermaid block for a .mermaid div (degrades to <pre> if no mermaid lib)
+ let i=0;const html=esc(d.body).replace(/```mermaid([\\s\\S]*?)```/g,(m,code)=>window.mermaid?`<div class=mermaid>${code.trim()}</div>`:`<pre>${code.trim()}</pre>`);
+ det.innerHTML=card(esc(id),'cyan',`<div>${meta}</div><div style=margin-top:10px>${html}</div>`);
+ if(window.mermaid){try{await mermaid.run({nodes:det.querySelectorAll('.mermaid')});}catch(e){}}
+}
+async function drawGates(){
+ app.className='';const g=await j('/api/gates');
+ const groups=[['gate_a','GATE A — PRD','mag'],['gate_b','GATE B — ADR','blue'],['gate_c','GATE C — spec','yellow'],['review','REVIEW','red']];
+ const total=groups.reduce((n,[k])=>n+g[k].length,0);
+ if(!total){app.className='grid';app.innerHTML=card('Gates','green','<span class=green>all clear — no gates open</span>');return;}
+ app.innerHTML=groups.filter(([k])=>g[k].length).map(([k,label,cls])=>card(`${label} (${g[k].length})`,cls,
+   g[k].map(it=>`<div class=row><span class=${cls}>${esc(it.id)}</span><span>${esc(it.title)}</span>`+
+     (it.action==='sign'?'<span class=muted>sign (manual)</span>':`<button class=act data-action="${esc(it.action)}" data-id="${esc(it.id)}">${esc(it.action)}</button>`)+`</div>`).join(''))).join('');
+ app.querySelectorAll('button.act').forEach(b=>b.onclick=()=>act(b.dataset.action,b.dataset.id));
+}
+async function act(action,id){
+ if(!confirm(`${action} ${id}? This writes to the doc and commits.`))return;
+ const r=await j('/api/gate/'+action,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id})});
+ if(!r.ok)alert('Refused: '+r.message);
+ drawGates();
+}
+function draw(){({overview:drawOverview,specs:drawSpecs,gates:drawGates}[tab])();document.getElementById('ts').textContent=new Date().toLocaleTimeString();}
+draw();
 </script></body></html>"""
+
+
+def doc_detail(docs: Path, doc_id: str) -> Optional[dict]:
+    """One doc: {id, frontmatter, body, mermaid:[blocks]}. None if absent."""
+    path = find_doc_by_id(docs, doc_id)
+    if path is None:
+        return None
+    text = _read(path)
+    body = _doc_body(text)
+    mermaid = re.findall(r"```mermaid\s*\n(.*?)```", body, re.S)
+    return {"id": doc_id, "frontmatter": parse_frontmatter(text), "body": body, "mermaid": mermaid}
+
+
+_GATE_LOCK = threading.Lock()  # serialize web gate writes (one git index at a time)
 
 
 def _make_handler(docs: Path):
@@ -318,14 +377,74 @@ def _make_handler(docs: Path):
         def log_message(self, *a):  # silence default stderr logging
             pass
 
+        def _host_ok(self) -> bool:
+            # DNS-rebinding / cross-origin guard: only serve requests whose Host is loopback.
+            host = (self.headers.get("Host") or "").rsplit(":", 1)[0].strip("[]")
+            return host in ("127.0.0.1", "localhost", "::1", "")
+
         def do_GET(self):  # noqa: N802
-            if self.path.startswith("/api/dashboard.json"):
-                payload = _json.dumps(build_dashboard(docs).to_dict()).encode()
-                self._send(200, "application/json", payload)
-            elif self.path in ("/", "/index.html"):
+            if not self._host_ok():
+                self._send(403, "text/plain", b"forbidden host")
+                return
+            u = urlparse(self.path)
+            path, qs = u.path, parse_qs(u.query)
+            if path == "/api/dashboard.json":
+                self._json(build_dashboard(docs).to_dict())
+            elif path == "/api/docs":
+                rows = collect_list(docs, (qs.get("type", ["all"])[0]), (qs.get("status", [None])[0]))
+                self._json([r.to_dict() for r in rows])
+            elif path == "/api/search":
+                rows = collect_search(docs, qs.get("q", [""])[0])
+                self._json([r.to_dict() for r in rows])
+            elif path == "/api/gates":
+                self._json(collect_gates(docs))
+            elif path.startswith("/api/doc/"):
+                detail = doc_detail(docs, unquote(path[len("/api/doc/"):]))
+                self._json(detail) if detail else self._send(404, "application/json", b'{"error":"not found"}')
+            elif path in ("/", "/index.html"):
                 self._send(200, "text/html; charset=utf-8", _PAGE.encode())
             else:
                 self._send(404, "text/plain", b"not found")
+
+        def do_POST(self):  # noqa: N802
+            if not self._host_ok():
+                self._send(403, "text/plain", b"forbidden host")
+                return
+            # Writes are loopback-only by design: if the server was bound to a non-loopback
+            # host (--host 0.0.0.0), refuse all gate writes regardless of Host/Origin.
+            if self.server.server_address[0] not in ("127.0.0.1", "::1", "localhost"):
+                self._send(403, "text/plain", b"gate writes are localhost-only")
+                return
+            path = urlparse(self.path).path
+            actions = {"/api/gate/approve": "approve", "/api/gate/accept": "accept",
+                       "/api/gate/resolve": "resolve"}
+            if path not in actions:
+                self._send(404, "text/plain", b"not found")
+                return
+            # CSRF guard: require JSON content-type (forces a CORS preflight for cross-origin,
+            # which we don't answer → blocked); reject a present non-loopback Origin outright.
+            if "application/json" not in (self.headers.get("Content-Type") or ""):
+                self._send(415, "text/plain", b"application/json required")
+                return
+            origin = self.headers.get("Origin")
+            if origin and urlparse(origin).hostname not in ("127.0.0.1", "localhost", "::1"):
+                self._send(403, "text/plain", b"forbidden origin")
+                return
+            try:
+                length = int(self.headers.get("Content-Length", 0) or 0)
+                body = _json.loads(self.rfile.read(length) or b"{}")
+                doc_id = body["id"]
+            except Exception:
+                self._json({"ok": False, "message": "missing id"})  # 200 + ok:false (client reads `ok`)
+                return
+            from tai.commands import gate  # lazy import — avoids dashboard↔gate cycle
+            fn = {"approve": gate.gate_approve, "accept": gate.gate_accept, "resolve": gate.gate_resolve}[actions[path]]
+            with _GATE_LOCK:  # serialize concurrent writes/commits
+                ok, message = fn(docs, doc_id)
+            self._json({"ok": ok, "message": message})
+
+        def _json(self, obj, code: int = 200):
+            self._send(code, "application/json", _json.dumps(obj).encode())
 
         def _send(self, code: int, ctype: str, body: bytes):
             self.send_response(code)

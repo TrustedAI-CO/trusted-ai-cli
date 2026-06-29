@@ -72,24 +72,23 @@ def _git_commit(repo: Path, rel: str, message: str) -> None:
                    check=True, capture_output=True)
 
 
-def _write_commit_or_rollback(path: Path, docs: Path, original: str, updated: str, message: str) -> None:
-    """Write `updated`, commit just this file; on any commit failure restore `original`
-    (working tree) AND unstage the file, so a failed action leaves no uncommitted source
-    mutation (INV4). Note: a version of this same file the user had pre-staged before the
-    action is not preserved — the gate file is expected to be clean before invoking."""
+def _commit_or_rollback(path: Path, docs: Path, original: str, updated: str, message: str) -> Optional[str]:
+    """Write `updated`, commit just this file. Returns None on success; on any commit
+    failure restores `original` (working tree) AND unstages the file — so a failed action
+    leaves no uncommitted source mutation (INV4) — and returns an error message.
+    (A version of this same file the user pre-staged is not preserved; the gate file is
+    expected clean before invoking.)"""
     root = _repo_root(docs)
     rel = str(path.relative_to(root))
     path.write_text(updated, encoding="utf-8")
     try:
         _git_commit(root, rel, message)
+        return None
     except subprocess.CalledProcessError as exc:
         path.write_text(original, encoding="utf-8")                       # restore working tree
         subprocess.run(["git", "-C", str(root), "reset", "-q", "--", rel], capture_output=True)  # unstage
-        err_console.print("[bold red]Commit failed — reverted, no change.[/bold red]")
         detail = (exc.stderr.decode() if isinstance(exc.stderr, bytes) else (exc.stderr or "")).strip()
-        if detail:
-            err_console.print(f"[dim]{detail.splitlines()[-1]}[/dim]")
-        raise typer.Exit(1)
+        return "commit failed" + (f": {detail.splitlines()[-1]}" if detail else "")
 
 
 def _flip_status(text: str, current: str, new: str, stamp_at: Optional[str]) -> Optional[str]:
@@ -112,67 +111,89 @@ def _flip_status(text: str, current: str, new: str, stamp_at: Optional[str]) -> 
     return head + sep + body
 
 
-def _require_type(path: Path, expected: str, doc_id: str) -> None:
-    actual = parse_frontmatter(_read(path)).get("type")
-    if actual != expected:
-        err_console.print(f"[bold red]{doc_id} is a '{actual}', not a '{expected}'.[/bold red] No change.")
-        raise typer.Exit(1)
+# ── core actions (shared by CLI commands AND the web POST handlers) ───────────
+# Return (ok, message); no printing/prompting/exiting. The ONE write path (INV2).
 
-
-def _apply(path: Path, docs: Path, current: str, new: str, stamp: bool, label: str, doc_id: str) -> None:
+def _flip_and_commit(path: Path, docs: Path, current: str, new: str, stamp: bool,
+                     label: str, doc_id: str) -> tuple:
     text = _read(path)
     updated = _flip_status(text, current, new, _now() if stamp else None)
     if updated is None:
-        cur = parse_frontmatter(text).get("status")
-        err_console.print(f"[bold red]{doc_id} is '{cur}', not '{current}'.[/bold red] No change.")
-        raise typer.Exit(1)
-    _write_commit_or_rollback(path, docs, text, updated, f"gate({label}): {doc_id} → {new}")
-    console.print(f"[green]✓[/green] {doc_id}: {current} → {new} (committed)")
+        return False, f"{doc_id} is '{parse_frontmatter(text).get('status')}', not '{current}'"
+    err = _commit_or_rollback(path, docs, text, updated, f"gate({label}): {doc_id} → {new}")
+    return (False, err) if err else (True, f"{doc_id}: {current} → {new}")
 
+
+def gate_approve(docs: Path, spec_id: str) -> tuple:
+    """GATE C — spec draft → approved (+ approved_at). (ok, message)."""
+    path = find_doc_by_id(docs, spec_id)
+    if path is None:
+        return False, f"{spec_id}: not found"
+    if parse_frontmatter(_read(path)).get("type") != "spec":
+        return False, f"{spec_id} is not a spec"
+    return _flip_and_commit(path, docs, "draft", "approved", True, "C", spec_id)
+
+
+def gate_accept(docs: Path, adr_id: str) -> tuple:
+    """GATE B — ADR proposed → accepted. (ok, message)."""
+    path = find_doc_by_id(docs, adr_id)
+    if path is None:
+        return False, f"{adr_id}: not found"
+    if parse_frontmatter(_read(path)).get("type") != "decision":
+        return False, f"{adr_id} is not a decision"
+    return _flip_and_commit(path, docs, "proposed", "accepted", False, "B", adr_id)
+
+
+def gate_resolve(docs: Path, review_id: str) -> tuple:
+    """REVIEW — open PENDING item → RESOLVED. (ok, message)."""
+    review = docs / "REVIEW.md"
+    if not review.exists():
+        return False, "no docs/REVIEW.md"
+    text = _read(review)
+    open_section = text.split("## Resolved", 1)[0]
+    # require the closing bracket so REVIEW-001 can't match REVIEW-0011
+    m = re.compile(rf"(?ms)^### \[{re.escape(review_id)}\].*?(?=^### |\Z)").search(open_section)
+    if not m or not re.search(r"(?i)status:\**\s*pending", m.group(0)):
+        return False, f"{review_id}: not an open PENDING item"
+    new_block = re.sub(r"(?i)(status:\**\s*)pending", r"\1RESOLVED", m.group(0), count=1)
+    updated = text[:m.start()] + new_block + text[m.end():]
+    err = _commit_or_rollback(review, docs, text, updated, f"gate(review): {review_id} → resolved")
+    return (False, err) if err else (True, f"{review_id}: PENDING → RESOLVED")
+
+
+def _report(ok: bool, msg: str) -> None:
+    if ok:
+        console.print(f"[green]✓[/green] {msg} (committed)")
+    else:
+        err_console.print(f"[bold red]{msg}.[/bold red] No change.")
+        raise typer.Exit(1)
+
+
+# ── CLI commands (thin wrappers: not-found hint + confirm, then call core) ─────
 
 @app.command("approve")
 def approve(spec_id: str = typer.Argument(...), yes: bool = typer.Option(False, "--yes")) -> None:
     """GATE C — approve a spec (draft → approved, stamps approved_at)."""
     docs = _require_docs()
-    path = find_doc_by_id(docs, spec_id)
-    if path is None:
+    if find_doc_by_id(docs, spec_id) is None:
         raise _not_found(docs, spec_id)
-    _require_type(path, "spec", spec_id)
     _confirm("approve", spec_id, "draft → approved", yes)
-    _apply(path, docs, "draft", "approved", stamp=True, label="C", doc_id=spec_id)
+    _report(*gate_approve(docs, spec_id))
 
 
 @app.command("accept")
 def accept(adr_id: str = typer.Argument(...), yes: bool = typer.Option(False, "--yes")) -> None:
     """GATE B — accept an ADR (proposed → accepted)."""
     docs = _require_docs()
-    path = find_doc_by_id(docs, adr_id)
-    if path is None:
+    if find_doc_by_id(docs, adr_id) is None:
         raise _not_found(docs, adr_id)
-    _require_type(path, "decision", adr_id)
     _confirm("accept", adr_id, "proposed → accepted", yes)
-    _apply(path, docs, "proposed", "accepted", stamp=False, label="B", doc_id=adr_id)
+    _report(*gate_accept(docs, adr_id))
 
 
 @app.command("resolve")
 def resolve(review_id: str = typer.Argument(...), yes: bool = typer.Option(False, "--yes")) -> None:
     """REVIEW — mark an open PENDING attention-log item resolved."""
     docs = _require_docs()
-    review = docs / "REVIEW.md"
-    if not review.exists():
-        err_console.print("[bold red]No docs/REVIEW.md.[/bold red]")
-        raise typer.Exit(1)
-    text = _read(review)
-    # locate the [REVIEW-id] block and confirm it's PENDING in the open section.
-    # Require the closing bracket so REVIEW-001 can't match REVIEW-0011.
-    open_section = text.split("## Resolved", 1)[0]
-    block_re = re.compile(rf"(?ms)^### \[{re.escape(review_id)}\].*?(?=^### |\Z)")
-    m = block_re.search(open_section)
-    if not m or not re.search(r"(?i)status:\**\s*pending", m.group(0)):
-        err_console.print(f"[bold red]{review_id} not found as an open PENDING item.[/bold red]")
-        raise typer.Exit(1)
     _confirm("resolve", review_id, "PENDING → RESOLVED", yes)
-    new_block = re.sub(r"(?i)(status:\**\s*)pending", r"\1RESOLVED", m.group(0), count=1)
-    updated = text[:m.start()] + new_block + text[m.end():]
-    _write_commit_or_rollback(review, docs, text, updated, f"gate(review): {review_id} → resolved")
-    console.print(f"[green]✓[/green] {review_id}: PENDING → RESOLVED (committed)")
+    _report(*gate_resolve(docs, review_id))
