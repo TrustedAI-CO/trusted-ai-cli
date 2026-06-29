@@ -60,9 +60,10 @@ Downstream skills that honor the marker should treat it as **absent if older tha
 A stale marker from a crashed run then can't silently suppress a later standalone skill's
 preamble.
 
-Then read **`docs-philosophy.md` ONCE** for this whole flow run. The `flow-session`
-marker tells every delegated skill the framework + interaction conventions are already
-loaded, so they skip re-reading it — load it here, not 5 times downstream.
+Then read **`docs-philosophy.md` AND `docs-conventions.md` ONCE** for this whole flow run
+(the framework rules + the shared interaction conventions — AskUserQuestion Format,
+Boil-the-Lake, field-report). The `flow-session` marker tells every delegated skill these
+are already loaded, so they skip re-reading — load them here, not 5× downstream.
 
 **Always remove the marker before flow returns** (at any HALT, gate, failure, or DONE):
 

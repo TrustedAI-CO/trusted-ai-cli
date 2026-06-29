@@ -47,6 +47,12 @@ single source of truth) before acting. Non-negotiable:
    flag staleness as `[CRITICAL]`; a human reconciles.
 4. **Tests reference Behavior row IDs** (`test_R3_*` / `// covers: SPEC-... R3`).
 
+## Conventions
+
+Shared conventions (AskUserQuestion Format, Boil-the-Lake, tai Field Report) live in
+`docs-conventions.md` (ADR 0005). `/tai-flow` loads it once per run; in a standalone run,
+read it once.
+
 ## Language
 
 Respond in the same language the user is using. If the user writes in Japanese,
@@ -879,12 +885,6 @@ Agent(
 )
 ```
 
-**Why team agents, not standalone agents:**
-- Named agents persist after their initial task completes
-- The team lead can send review feedback via `SendMessage(to: "eng-{slug}", ...)`
-- The engineer can fix issues and respond without spawning a new agent
-- This enables the review → fix → re-review loop within one agent context
-
 Each engineer works in an **isolated git worktree** — this is critical. The
 engineer prompt instructs them to create their own worktree. Never let parallel
 engineers share a working directory.
@@ -1215,46 +1215,6 @@ confirms your PR has been merged.
 - Every Behavior row ID (R1…RN) must be covered by a test that references it
   (`test_R3_*` or `// covers: <SPEC-id> R3`)
 ```
-
-### Retro Lessons (baked in)
-
-These are the hard-won lessons from Phase 1. They're embedded throughout
-the team strategy but listed here for transparency:
-
-1. **Git worktree isolation** — Every engineer works in their own worktree.
-   Shared directories cause silent data loss from branch-switching collisions.
-
-2. **Wave execution** — Merge foundation (models, migrations) to main before
-   branching dependent work. Prevents cherry-pick fragility and duplicate models.
-
-3. **API contract sharing** — Generate contracts from design docs before
-   spawning parallel frontend/backend engineers. Prevents field-mismatch bugs.
-
-4. **Pre-PR quality gate** — Every engineer runs the full checklist before
-   creating a PR. Catches "app won't start" and "routers not mounted" bugs.
-
-5. **CI-green enforcement** — No merge without green CI. Red main is highest
-   priority fix.
-
-6. **Rolling merge** — Merge PRs as ready, don't batch. Reduces conflict risk.
-
-7. **PR size limit** — Under 800 lines per PR. Large PRs slow reviews and
-   increase conflict probability.
-
-8. **Shared test fixtures** — Consolidate conftest.py early. Prevents fixture
-   drift between test suites.
-
-9. **TeamCreate is mandatory, not optional** — Always use TeamCreate + named agents
-   with SendMessage for the review/fix loop. Standalone Agent() calls without a
-   team cannot receive follow-up messages, so the team lead has to spawn a NEW
-   agent for every fix round (losing context each time). Team agents persist and
-   can receive multiple rounds of feedback without respawning. Never skip TeamCreate.
-
-10. **Team lead = coordinator, not implementer** — The team lead never writes code,
-    reviews diffs, runs tests, or fixes bugs. Every action flows through an agent.
-    The team lead's job is message routing, CI status checks, merge timing, and
-    user communication. This prevents the team lead's context window from filling
-    up with code details that belong to the engineers.
 
 ### Error Recovery (Team)
 
