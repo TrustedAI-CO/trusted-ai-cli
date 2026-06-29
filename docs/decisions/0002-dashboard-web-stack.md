@@ -1,7 +1,7 @@
 ---
 id: 0002-dashboard-web-stack
 type: decision
-status: proposed
+status: accepted
 parent: architecture
 children: []
 related: [SPEC-dashboard-serve]
