@@ -64,9 +64,9 @@ governing this task. Decide per spec:
   via GATE C. Building behavior never approved at GATE C — against a stale `approved` or
   `implemented` spec — skips the human gate. Flag `[CRITICAL]` if asked to proceed anyway.
 
-When invoked standalone (not via `/tai-flow`), also confirm the spec's depended-on ADRs are
-`accepted` (GATE B) before building — a hand-edited `approved` spec could sit atop an
-un-accepted ADR. **Whether a change "exceeds Behavior rows" is a judgment call — resolve
+When invoked standalone (not via `/tai-flow`), also confirm `docs/prd.md` is signed (GATE A)
+and the spec's depended-on ADRs are `accepted` (GATE B) before building — a hand-edited
+`approved` spec could sit atop an unsigned PRD or un-accepted ADR. **Whether a change "exceeds Behavior rows" is a judgment call — resolve
 ambiguity toward STOP/`/tai-flow-plan`, never toward proceed.**
 
 ## Resume — don't redo completed steps
