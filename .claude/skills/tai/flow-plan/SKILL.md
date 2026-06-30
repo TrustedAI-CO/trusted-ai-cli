@@ -37,14 +37,16 @@ Shared conventions live in `docs-conventions.md` (ADR 0005). Loaded once here fo
 ```bash
 _REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 _STATE_DIR="$_REPO_ROOT/.tai/state"; mkdir -p "$_STATE_DIR"
-rm -f "$_STATE_DIR/flow-session"
-trap 'rm -f "$_STATE_DIR/flow-session"' EXIT INT TERM
-date +%s > "$_STATE_DIR/flow-session"   # downstream skills skip redundant preamble
+_MARK="$_STATE_DIR/flow-session"
+# Inherited LIVE marker (<2h) means a parent /tai-flow already owns the session and loaded
+# the framework — don't clobber it, don't read philosophy again, don't remove it on exit.
+if [ -f "$_MARK" ] && [ $(( $(date +%s) - $(cat "$_MARK") )) -lt 7200 ]; then _OWN=0; else
+  _OWN=1; date +%s > "$_MARK"; trap 'rm -f "$_MARK"' EXIT INT TERM; fi
 git branch --show-current
 ls "$_REPO_ROOT/docs" 2>/dev/null || echo "NO docs/"
 ```
-Read `docs-philosophy.md` + `docs-conventions.md` ONCE here. Remove the marker on every
-exit (gate/halt/done).
+If `_OWN=1`, read `docs-philosophy.md` + `docs-conventions.md` ONCE here and remove the
+marker on every exit (gate/halt/done). If `_OWN=0`, a parent flow already loaded them — skip.
 
 ## Stages (this skill owns S0 → gates)
 
@@ -95,8 +97,9 @@ draft. The human then approves a *reviewed* plan, not a first draft. Specs stay
 `status: draft` through review; plan-review never flips status.
 
 ## Step 4 — Human gates (HALT)
-At GATE A/B/C present the (now reviewed) doc + offer interactive approval (same as
-`/tai-flow` Step 3):
+At GATE A/B/C present the (now reviewed) doc + offer interactive approval. The gate exists
+so a *human decides* — an explicit in-session approval IS that decision; auto-flipping on
+agent judgment alone is banned.
 - **Approve** → flow-plan writes `status:` (`draft`→`approved` / `proposed`→`accepted` /
   PRD→signed), stamps `approved_at` for specs, commits, continues to the next gate.
 - **Request changes** → route back to the plan skill to revise, re-run plan-review,

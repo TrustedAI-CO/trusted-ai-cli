@@ -37,12 +37,15 @@ Shared conventions live in `docs-conventions.md` (ADR 0005). Loaded once here fo
 ```bash
 _REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
 _STATE_DIR="$_REPO_ROOT/.tai/state"; mkdir -p "$_STATE_DIR"
-rm -f "$_STATE_DIR/flow-session"
-trap 'rm -f "$_STATE_DIR/flow-session"' EXIT INT TERM
-date +%s > "$_STATE_DIR/flow-session"
+_MARK="$_STATE_DIR/flow-session"
+# Inherited LIVE marker (<2h) means a parent /tai-flow owns the session + already loaded the
+# framework — don't clobber it, don't re-read philosophy, don't remove it on exit.
+if [ -f "$_MARK" ] && [ $(( $(date +%s) - $(cat "$_MARK") )) -lt 7200 ]; then _OWN=0; else
+  _OWN=1; date +%s > "$_MARK"; trap 'rm -f "$_MARK"' EXIT INT TERM; fi
 git branch --show-current
 ```
-Read `docs-philosophy.md` + `docs-conventions.md` ONCE. Remove the marker on every exit.
+If `_OWN=1`, read `docs-philosophy.md` + `docs-conventions.md` ONCE and remove the marker on
+every exit. If `_OWN=0`, a parent flow already loaded them — skip.
 
 ## Precondition — governing spec approved AND covers the task
 
@@ -53,11 +56,11 @@ governing this task. Decide per spec:
   (`implemented` is a built `approved` spec; flow routes both here.)
 - **missing, or `draft`** → STOP. Planning isn't done — tell the dev to run
   **`/tai-flow-plan`** first. Never build against a missing/unapproved spec (doc-first gate).
-- **`implemented` BUT the requested change exceeds its Behavior rows** (new option, new
-  rule, changed interface) → this is a **spec evolution**. STOP and route to
+- **`approved` OR `implemented` BUT the requested change exceeds its Behavior rows** (new
+  option, new rule, changed interface) → this is a **spec evolution**. STOP and route to
   **`/tai-flow-plan`**: the spec must be revised, which resets it to `draft` and re-gates
-  via GATE C. Building new behavior against a stale `implemented` spec would skip the human
-  gate. Flag `[CRITICAL]` if asked to proceed anyway.
+  via GATE C. Building behavior never approved at GATE C — against a stale `approved` or
+  `implemented` spec — skips the human gate. Flag `[CRITICAL]` if asked to proceed anyway.
 
 ## Resume — don't redo completed steps
 

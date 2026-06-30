@@ -84,7 +84,8 @@ report findings only; the controller fixes the drafts.
 When converged (or at the cap), present the vetted plan to the human concisely — lead with
 the visual shape (per `/plan-eng` talk-then-write: spec surface + Behavior-row table +
 `code:`/`tests:` map), then note what the review rounds changed and any unresolved items.
-This hand-off feeds **GATE C** (the human approves). Do NOT flip `status:` yourself.
+This hand-off feeds the relevant human gate — **GATE B** for proposed ADRs, **GATE C** for
+draft specs (and PRD sign-off if touched). Do NOT flip `status:` yourself.
 
 ## Report
 
@@ -92,5 +93,5 @@ This hand-off feeds **GATE C** (the human approves). Do NOT flip `status:` yours
 plan-review: converged in {N} round(s) ({2N} reviewers)
   ✓ hardened: {what the rounds fixed}
   ⚠ unresolved (if capped): {CRITICAL/HIGH left for the human}
-  → ready for GATE C: {spec ids at status: draft awaiting approval}
+  → ready for gate: {spec ids draft → GATE C; ADR ids proposed → GATE B}
 ```
