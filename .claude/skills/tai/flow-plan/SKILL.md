@@ -41,7 +41,9 @@ _MARK="$_STATE_DIR/flow-session"
 # Inherited LIVE marker (<2h) means a parent /tai-flow already owns the session and loaded
 # the framework — don't clobber it, don't read philosophy again, don't remove it on exit.
 if [ -f "$_MARK" ] && [ $(( $(date +%s) - $(cat "$_MARK") )) -lt 7200 ]; then _OWN=0; else
-  _OWN=1; date +%s > "$_MARK"; trap 'rm -f "$_MARK"' EXIT INT TERM; fi
+  _OWN=1; date +%s > "$_MARK"; trap 'rm -f "$_MARK"' INT TERM; fi
+# No EXIT trap: each Bash call is its own shell; EXIT would delete the marker immediately.
+# Remove it explicitly on every exit path (gate/halt/done); 2h timestamp self-heals crashes.
 git branch --show-current
 ls "$_REPO_ROOT/docs" 2>/dev/null || echo "NO docs/"
 ```
@@ -66,10 +68,11 @@ Read state, don't guess; never skip a gate:
 2. `docs/prd.md` signed? missing/stub → S1 plan (or `/plan-product` if no product intent).
 3. Glob `docs/specs/*.md`, read each `status:`:
    - no spec covering the task → S1 plan.
-   - `draft` → GATE C.
-   - `implemented` but the change exceeds its Behavior rows → **spec evolution** → S1 plan
-     to revise. Editing a spec's Interface/Behavior resets it to `draft` and clears
-     `approved_at`, so it re-flows through GATE C.
+   - `draft` → if not yet hardened by `/tai-plan-review` this session → S1.5 review first,
+     then GATE C; otherwise GATE C.
+   - `approved` OR `implemented` but the change exceeds its Behavior rows → **spec evolution**
+     → S1 plan to revise. Editing a spec's Interface/Behavior resets it to `draft` and
+     clears `approved_at`, so it re-flows through (review →) GATE C.
 4. Any depended-on `docs/decisions/*.md` not `accepted` → GATE B.
 
 **Spec-evolution reset backstop:** after a plan skill revises an evolved spec, verify its

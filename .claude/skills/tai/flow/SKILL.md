@@ -45,10 +45,13 @@ _STATE_DIR="$_REPO_ROOT/.tai/state"
 _BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 mkdir -p "$_STATE_DIR"
 # Self-heal: a pre-existing marker means a prior flow died without cleanup. A new run
-# owns the session, so clear any orphan first, then write OUR marker with a timestamp,
-# and trap so Ctrl-C / TERM still clean up (SIGKILL/context-reset won't — hence timestamp).
+# owns the session, so clear any orphan first, then write OUR marker with a timestamp.
+# NOTE: do NOT trap EXIT — each Bash tool call is its own short-lived shell, so an EXIT
+# trap fires the instant this block ends and deletes the marker before any delegated skill
+# sees it (killing the load-once optimization). Trap only INT/TERM; rely on the explicit
+# end-of-run `rm` below + the 2h timestamp self-heal for cleanup.
 rm -f "$_STATE_DIR/flow-session"
-trap 'rm -f "$_STATE_DIR/flow-session"' EXIT INT TERM
+trap 'rm -f "$_STATE_DIR/flow-session"' INT TERM
 date +%s > "$_STATE_DIR/flow-session"   # signals downstream skills to skip redundant preamble
 echo "BRANCH: $_BRANCH"
 echo "DOCS: $_DOCS_DIR"

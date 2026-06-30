@@ -41,7 +41,9 @@ _MARK="$_STATE_DIR/flow-session"
 # Inherited LIVE marker (<2h) means a parent /tai-flow owns the session + already loaded the
 # framework — don't clobber it, don't re-read philosophy, don't remove it on exit.
 if [ -f "$_MARK" ] && [ $(( $(date +%s) - $(cat "$_MARK") )) -lt 7200 ]; then _OWN=0; else
-  _OWN=1; date +%s > "$_MARK"; trap 'rm -f "$_MARK"' EXIT INT TERM; fi
+  _OWN=1; date +%s > "$_MARK"; trap 'rm -f "$_MARK"' INT TERM; fi
+# No EXIT trap: each Bash call is its own shell; EXIT would delete the marker immediately.
+# Remove it explicitly on every exit path (halt/done); 2h timestamp self-heals crashes.
 git branch --show-current
 ```
 If `_OWN=1`, read `docs-philosophy.md` + `docs-conventions.md` ONCE and remove the marker on
@@ -61,6 +63,11 @@ governing this task. Decide per spec:
   **`/tai-flow-plan`**: the spec must be revised, which resets it to `draft` and re-gates
   via GATE C. Building behavior never approved at GATE C — against a stale `approved` or
   `implemented` spec — skips the human gate. Flag `[CRITICAL]` if asked to proceed anyway.
+
+When invoked standalone (not via `/tai-flow`), also confirm the spec's depended-on ADRs are
+`accepted` (GATE B) before building — a hand-edited `approved` spec could sit atop an
+un-accepted ADR. **Whether a change "exceeds Behavior rows" is a judgment call — resolve
+ambiguity toward STOP/`/tai-flow-plan`, never toward proceed.**
 
 ## Resume — don't redo completed steps
 

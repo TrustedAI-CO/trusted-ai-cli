@@ -25,8 +25,10 @@ Part of the Document-Driven pipeline. Read **`docs-philosophy.md`** (single sour
 Non-negotiable: `docs/prd.md` is HUMAN-owned; doc-first order; never edit a source layer to
 match code; tests reference Behavior row IDs.
 
-> **Flow mode:** if `.tai/state/flow-session` exists, framework + conventions are already
-> loaded — skip re-reading.
+> **Flow mode:** if `.tai/state/flow-session` exists AND is fresh (<2h —
+> `[ -f F ] && [ $(( $(date +%s) - $(cat F) )) -lt 7200 ]`), framework + conventions are
+> already loaded by the parent flow — skip re-reading. A stale/orphan marker does NOT
+> suppress the load; read them.
 
 ## Conventions
 
