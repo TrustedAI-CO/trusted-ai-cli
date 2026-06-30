@@ -12,6 +12,13 @@ related: []
 - [ ] (scheduled deferred work)
 
 ## Backlog
+- flow-split nits (ADR 0006 plan-review rounds, LOW/INFO deferred — non-blocking): build-chain
+  steps `/review`/`/qa`/`/ship` lack the `/tai-` prefix used elsewhere (mixed but matches the
+  established skill names — normalize repo-wide if those skills get renamed); flow-plan's "not
+  yet hardened by plan-review this session" is an untracked condition (no per-spec review stamp
+  — record one in `.tai/state` or drop the shortcut); flow-plan gate-letter numbering (A=PRD,
+  B=ADR, C=spec) vs Step-1 detection order (specs before ADRs) is cosmetic; `_OWN=1` writes the
+  marker before the prose "read philosophy" step (harmless — load completes before delegation).
 - dashboard mdRender XSS coverage gap (#81 review): `mdRender`/`inl` are client JS, not
   reachable by pytest — R13/INV4 (escape-first, no javascript: hrefs, escaped mermaid blocks)
   verified live/by-review only. Add a headless (playwright) render test, or extract mdRender

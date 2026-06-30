@@ -45,10 +45,13 @@ _STATE_DIR="$_REPO_ROOT/.tai/state"
 _BRANCH=$(git branch --show-current 2>/dev/null || echo "unknown")
 mkdir -p "$_STATE_DIR"
 # Self-heal: a pre-existing marker means a prior flow died without cleanup. A new run
-# owns the session, so clear any orphan first, then write OUR marker with a timestamp,
-# and trap so Ctrl-C / TERM still clean up (SIGKILL/context-reset won't — hence timestamp).
+# owns the session, so clear any orphan first, then write OUR marker with a timestamp.
+# NOTE: do NOT trap EXIT — each Bash tool call is its own short-lived shell, so an EXIT
+# trap fires the instant this block ends and deletes the marker before any delegated skill
+# sees it (killing the load-once optimization). Trap only INT/TERM; rely on the explicit
+# end-of-run `rm` below + the 2h timestamp self-heal for cleanup.
 rm -f "$_STATE_DIR/flow-session"
-trap 'rm -f "$_STATE_DIR/flow-session"' EXIT INT TERM
+trap 'rm -f "$_STATE_DIR/flow-session"' INT TERM
 date +%s > "$_STATE_DIR/flow-session"   # signals downstream skills to skip redundant preamble
 echo "BRANCH: $_BRANCH"
 echo "DOCS: $_DOCS_DIR"
@@ -74,179 +77,45 @@ rm -f "$_REPO_ROOT/.tai/state/flow-session"
 A stale marker would make a later standalone skill run skip its own preamble. Treat
 removal as mandatory cleanup on every exit path.
 
-## The Pipeline (stages flow advances through)
+## The Pipeline — flow = plan half + build half (ADR 0006)
+
+`/tai-flow` is the **one-shot orchestrator**: it delegates to the two halves and never
+duplicates their logic.
 
 ```
-[S0 init]   docs/ missing            → /docs-init
-[S1 plan]   no spec, or task unclear → plan cluster (auto-route, see below)
-[GATE A]    prd.md draft/unsigned    → HALT: human signs PRD wording
-[GATE B]    ADR status != accepted   → HALT: human flips status: accepted
-[GATE C]    spec status != approved  → HALT: human flips status: approved
-[S2 build]  specs approved           → /tai-execute (auto-picks solo vs team)
-[S3 review] code written             → /review
-[S4 qa]     review clean             → /qa (web only; CLI/lib → smoke check or skip, see Step 4)
-[S5 ship]   qa clean                 → /ship  (derived docs already current — verified by ship's gate)
-[DONE]
-
-Note: there is NO separate docs-update stage. In a doc-driven pipeline, docs are
-maintained LIVE (specs first by plan-eng; matrix + architecture §4 + touched derived prose
-by /tai-execute as it implements; changelog by /ship). Ship's conformance gate VERIFIES
-they're in sync and blocks if stale. `/docs-update` survives only as an on-demand refresh
-tool (onboarding, regenerating a disposable map) — never an auto-chained step.
+/tai-flow-plan      S0 init → S1 plan (talk-then-write) → /tai-plan-review (converge)
+                    → GATE A/B/C (human approves)        →  specs approved
+        │
+        ▼  (once the relevant specs are approved)
+/tai-flow-execute   /tai-execute → /review → /qa → /ship
 ```
 
-## Step 1 — Detect Stage
+## Step 1 — Detect stage, then delegate
 
-Read state, do not guess from conversation:
+Read state (don't guess): `ls docs/`; is `prd.md` signed; glob `docs/specs/*.md` statuses.
 
-1. `ls docs/` — present? If not → **S0**, run `/docs-init`, then re-detect.
-2. `docs/prd.md` exists with signed-off wording? Frontmatter present, not a bare
-   draft stub? If missing/stub → **S1 plan**.
-3. Glob `docs/specs/*.md`. Read frontmatter `status:` of each.
-   - No spec covering the current task → **S1 plan**.
-   - Spec exists, `status: draft` → **GATE C** (halt for human approval).
-   - Spec exists and `status: implemented` BUT the requested change exceeds what its
-     Behavior rows cover (a new option, a new rule, a changed interface) → this is a
-     **spec evolution**: route to **S1 plan** to revise the spec. Per the philosophy
-     "Spec Evolution" rule, editing its Interface/Behavior resets it to `draft` and
-     clears `approved_at` → it then flows through **GATE C** for re-approval. Do NOT let code for the new behavior proceed against an
-     `implemented` spec that doesn't cover it.
-     **Verify the reset before routing onward:** after plan-eng revises an evolved spec,
-     confirm its `status` is now `draft` (plan-eng owns this write). If a spec whose
-     Interface/Behavior just changed is still `implemented`, the reset was missed — do
-     NOT advance to build; force it back to `draft` and GATE C. This is the backstop
-     against silently skipping the human gate on a shipped-surface change.
-4. Any `docs/decisions/*.md` with `status:` not `accepted` that the task depends on
-   → **GATE B**.
-5. All relevant specs `approved`, code not yet matching → **S2 build**.
-6. Code present but not reviewed/qa'd/shipped this branch → walk S3→S5 using
-   `.tai/state/` logs + git status to find the highest completed step.
+- **Any relevant spec missing / `draft` / a spec-evolution (implemented but the change
+  exceeds its Behavior rows), or no docs/ yet** → the plan is not locked → invoke
+  **`/tai-flow-plan`**. It inits, plans (talk-then-write), runs `/tai-plan-review` to
+  converge, and halts at the human gates. When it reports DONE-PLAN (specs approved),
+  continue below.
+- **The relevant spec(s) already `approved` (or `implemented`) and code not yet shipped**
+  → invoke **`/tai-flow-execute`** (build → review → qa → ship).
 
-When ambiguous which stage, state your reading and the evidence, then proceed with
-the earliest plausible stage (never skip a gate).
+Never skip a gate; `/tai-flow-plan` owns them. Never build against an unapproved spec;
+`/tai-flow-execute` enforces that precondition.
 
-## Step 2 — Plan Cluster Auto-Routing
+## Step 2 — Run end-to-end
 
-When in **S1**, pick ONE plan skill from the task's nature. Do not run all three.
+For a fresh task, run `/tai-flow-plan` first; when it reaches DONE-PLAN, run
+`/tai-flow-execute`. If invoked mid-pipeline, Step 1's detection picks the right half to
+(re-)enter. `/tai-flow` is idempotent — re-running at a completed stage reports DONE.
 
-| Task signal | Route to |
-|-------------|----------|
-| Scope/ambition question, "think bigger", strategy, business bet | `/plan-ceo` |
-| Clear feature, needs architecture + spec contracts before code | `/plan-eng` |
-| UI/UX-heavy, interaction/IA/accessibility decisions | `/plan-design` |
-
-Heuristic: default to `/plan-eng` to author specs once intent is clear. `/plan-ceo`
-and `/plan-design` are invoked only when the task explicitly raises scope or design
-questions. `/plan-product` is OUT of flow scope — product discovery ("is this worth
-building") is a human-driven step run manually before `/flow`. If the task has no clear
-product intent yet, HALT and tell the dev to run `/plan-product` first. State your
-routing choice + the signal that drove it before delegating.
-
-After a plan skill produces draft specs/ADRs/PRD → advance to the matching GATE and HALT.
-
-## Step 3 — Human Gates (HALT points)
-
-At GATE A/B/C the human must consciously authorize before flow crosses. The gate
-exists so a *human decides* — NOT so the agent is forbidden from writing the byte.
-An explicit in-session approval IS that decision. Auto-flipping on agent judgment is
-banned; flipping because the human just clicked Approve is allowed.
-
-Present the doc for decision, then offer interactive approval:
+## Report
 
 ```
-⏸  GATE {A|B|C} — needs human decision
-
-  What: {PRD wording | ADR 0003-slug | SPEC-auth-login}
-  Status: {draft | proposed}  →  needs: {signed | accepted | approved}
-  File: docs/{path}
-  Summary: {2-3 line plain-English summary of what's being approved}
-  Why it matters: {one line}
+flow: {plan | build | done}
+  ⏸ paused at: {gate (in flow-plan) / failure (in flow-execute)}
+  ✅ DONE: shipped (docs maintained live)
+  next: {what to run next, or what the human must do}
 ```
-
-Then `AskUserQuestion`:
-- **Approve** → flow writes the `status:` field (`draft`→`approved`, `proposed`→
-  `accepted`, PRD→signed). For a spec, in the SAME write stamp `approved_at: <current ISO
-  timestamp>` (approval provenance). Commit the frontmatter change, then CONTINUE the
-  pipeline. The click is the authorization; flow only types the keystroke the human
-  ordered.
-- **Request changes** → flow records the feedback, routes back to the matching plan
-  skill to revise the draft, then re-presents the gate.
-
-**Async fallback:** if running headless / no human present, do NOT flip. Print the gate
-report and HALT — the human edits `status:` in the file directly later and re-runs
-`/flow`. Never flip a status on agent judgment alone in either mode.
-
-## Step 4 — Build Cluster Auto-Chain
-
-Once gates clear, chain WITHOUT asking between steps:
-
-```
-/tai-execute (auto-picks solo vs team; maintains derived docs live)
-  → /review
-    → /qa
-      → /ship   (verifies derived docs are in sync; ends the chain)
-```
-
-- `/tai-execute` auto-selects its strategy: it uses the parallel team strategy when
-  `docs/plan/tasks.md` has ≥2 independent sub-phases, otherwise the solo
-  single-context strategy. No manual choice needed.
-- **QA surface-type guard (do NOT chain `/qa` blindly).** `/qa` is a **web/browser**
-  tester (it drives a browser, takes screenshots, scores a running web app). Before the
-  qa step, detect the surface type of what shipped:
-  - **Web app** (frontend files changed, a dev server / localhost target exists) → run
-    `/qa` as normal.
-  - **CLI / library / backend-only** (no servable UI — e.g. a `tai notes` command) →
-    do NOT run `/qa`; it would find no app and emit a vacuous "clean" report, which is
-    false confidence. Instead run a **CLI/lib smoke check**: invoke the shipped surface
-    (run the command / call the API) and assert exit codes, stdout, file effects, and
-    error paths against the spec's Behavior rows. If no smoke path is feasible, SKIP qa
-    with an explicit line: `▶ S4 qa SKIPPED — CLI/lib target, no servable UI; relying on
-    execute + ship test gates.` Never let a non-web target pass through a silent green qa.
-- Pass each step's output to the next. Announce each transition with one line:
-  `▶ S3 review (specs: 3, diff: 412 lines)`.
-- Surface to the human only on: failure (see Step 5), a new `docs/REVIEW.md` entry,
-  or DONE.
-
-## Step 5 — Auto-Fix + Retry on Failure
-
-When a step fails (test fail, review `[CRITICAL]`/`[HIGH]`, qa bug, ship gate block):
-
-1. **Classify** the failure: implementation bug, spec gap, or environment.
-2. **Spawn a fix pass** with the right skill:
-   - Test/logic failure or qa bug → `/investigate` (root-cause) then `/tai-execute`
-     to apply the verified fix.
-   - Review CRITICAL/HIGH → feed findings back to `/tai-execute` for targeted fix.
-3. **Retry the failed step ONCE.** If it now passes → resume the chain.
-4. **If it still fails → HALT.** Print failure + repro + what was tried:
-
-```
-✗ S{n} {step} failed after auto-fix retry
-
-  Failure: {message, quoted exactly}
-  Repro: {command / steps}
-  Auto-fix tried: {what investigate/execute changed}
-  Still failing because: {hypothesis}
-
-  Needs human. Pipeline paused at S{n}.
-```
-
-Never edit a source layer (spec/PRD/ADR) to make a step pass — that inverts doc-first
-order. If the failure is a spec/code mismatch where the spec is wrong, flag `[CRITICAL]`
-and HALT for human reconciliation.
-
-## Step 6 — Report
-
-End every run with a one-block status so the dev knows where things stand:
-
-```
-flow: {stage reached}
-  ✓ done: {steps completed this run}
-  ⏸ paused at: {gate / failure}  — OR —  ✅ DONE: shipped (docs maintained live)
-  next: {what /flow will do on next invocation, or what human must do}
-```
-
-## Loop Behavior
-
-`/flow` advances as far as it can per invocation, then halts at the next gate/failure.
-The dev re-runs `/flow` after clearing a gate. It is idempotent: re-running at a
-completed stage detects completion and reports DONE rather than redoing work.
