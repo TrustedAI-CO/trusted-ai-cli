@@ -59,9 +59,21 @@ exit (gate/halt/done).
 ```
 
 ## Step 1 — Detect stage
-Same as `/tai-flow` Step 1: `ls docs/`; check `prd.md` signed; glob `docs/specs/*.md`
-statuses (draft → GATE C; implemented-but-change-exceeds-rows → spec evolution → S1).
-Read state, don't guess. Never skip a gate.
+Read state, don't guess; never skip a gate:
+1. `ls docs/` — missing → S0 (`/docs-init`), then re-detect.
+2. `docs/prd.md` signed? missing/stub → S1 plan (or `/plan-product` if no product intent).
+3. Glob `docs/specs/*.md`, read each `status:`:
+   - no spec covering the task → S1 plan.
+   - `draft` → GATE C.
+   - `implemented` but the change exceeds its Behavior rows → **spec evolution** → S1 plan
+     to revise. Editing a spec's Interface/Behavior resets it to `draft` and clears
+     `approved_at`, so it re-flows through GATE C.
+4. Any depended-on `docs/decisions/*.md` not `accepted` → GATE B.
+
+**Spec-evolution reset backstop:** after a plan skill revises an evolved spec, verify its
+`status` is now `draft`. If a spec whose Interface/Behavior just changed is still
+`implemented`, the reset was missed — force it back to `draft` and GATE C, never advance.
+This is the guard against silently skipping the human gate on a shipped-surface change.
 
 ## Step 2 — Plan cluster auto-routing
 When in S1, pick ONE plan skill (do not run all):

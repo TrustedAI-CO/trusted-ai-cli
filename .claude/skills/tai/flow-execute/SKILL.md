@@ -44,11 +44,27 @@ git branch --show-current
 ```
 Read `docs-philosophy.md` + `docs-conventions.md` ONCE. Remove the marker on every exit.
 
-## Precondition — specs approved
+## Precondition — governing spec approved AND covers the task
 
-Glob `docs/specs/*.md`. If the spec(s) governing this task are NOT `status: approved`
-(still `draft`), STOP: this is the plan half's job — tell the dev to run **`/tai-flow-plan`**
-first. Do NOT build against an unapproved or missing spec (doc-first gate).
+Glob `docs/specs/*.md`; read the frontmatter `status:` and Behavior rows of the spec(s)
+governing this task. Decide per spec:
+
+- **`approved` OR `implemented`, and its Behavior rows cover the task** → PROCEED to build.
+  (`implemented` is a built `approved` spec; flow routes both here.)
+- **missing, or `draft`** → STOP. Planning isn't done — tell the dev to run
+  **`/tai-flow-plan`** first. Never build against a missing/unapproved spec (doc-first gate).
+- **`implemented` BUT the requested change exceeds its Behavior rows** (new option, new
+  rule, changed interface) → this is a **spec evolution**. STOP and route to
+  **`/tai-flow-plan`**: the spec must be revised, which resets it to `draft` and re-gates
+  via GATE C. Building new behavior against a stale `implemented` spec would skip the human
+  gate. Flag `[CRITICAL]` if asked to proceed anyway.
+
+## Resume — don't redo completed steps
+
+Before starting, find the highest completed build step from `.tai/state/` logs + `git
+status` (code present? review entry in `docs/REVIEW.md`? ship/changelog done?). Resume at
+the first incomplete step rather than restarting at `/tai-execute`. Re-running at a
+finished chain detects completion and reports DONE — idempotent.
 
 ## Build chain (auto-chain, no asking between steps)
 
