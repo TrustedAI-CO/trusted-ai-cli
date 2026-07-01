@@ -90,7 +90,7 @@ def test_get_access_token_refreshes_within_300s_window():
         )
         token = auth.get_access_token("default", "client-id")
     assert token == "refreshed-token"
-    mock_refresh.assert_called_once_with("default", "client-id")
+    mock_refresh.assert_called_once_with("default", "client-id", "")
 
 
 def test_get_access_token_skips_refresh_outside_window():
