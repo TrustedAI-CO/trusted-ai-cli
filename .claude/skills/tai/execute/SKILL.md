@@ -982,8 +982,12 @@ After code review passes:
 
 Once a PR passes both review and QA:
 1. Merge the PR: `gh pr merge <number> --squash --delete-branch`
-2. Verify main CI stays green: `gh run list --branch main --limit 1`
-3. After ALL Wave N PRs are merged + main CI green → spawn Wave N+1
+2. **Remove the engineer's worktree** (branch is gone; the dir would otherwise
+   linger forever): `git worktree remove ../eng-{slug} --force`. If the engineer
+   is still alive, `SendMessage` it to stop first. Worktrees left on disk are the
+   #1 cleanup miss — never skip this.
+3. Verify main CI stays green: `gh run list --branch main --limit 1`
+4. After ALL Wave N PRs are merged + main CI green → spawn Wave N+1
    engineers (new agents in the same team, branching off updated main)
 
 Rolling merge within a wave: merge PRs as they pass review+QA — don't wait
@@ -1028,7 +1032,11 @@ When all sub-phases have passed review + QA + merged:
 
 1. Verify all PRs merged and main CI green
 2. Verify all sub-phase branches merged into main
-3. Report to user:
+3. **Sweep stale worktrees**: `git worktree prune` then `git worktree list` —
+   confirm no `../eng-*` dirs remain. Force-remove any leftover:
+   `git worktree remove ../eng-{slug} --force`. The phase is not COMPLETE until
+   the worktree list is clean.
+4. Report to user:
 
 ```
 ╔═══════════════════════════════════════════════════════════╗

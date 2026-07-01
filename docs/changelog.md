@@ -11,6 +11,13 @@ derived: true
 
 # Changelog
 
+## [0.37.2] - 2026-07-01
+
+### Fixed
+- `/tai-execute` team mode now removes each engineer's git worktree after its PR
+  merges (`git worktree remove --force`) and sweeps stragglers with `git worktree
+  prune` at phase completion — stale `../eng-*` worktrees no longer linger on disk.
+
 ## [0.37.0] - 2026-06-30
 
 ### Added
